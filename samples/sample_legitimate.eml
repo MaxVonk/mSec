@@ -1,0 +1,18 @@
+From: "Microsoft Weekly" <newsletter@microsoft.com>
+To: user@company.com
+Subject: Your weekly Microsoft digest
+Date: Fri, 04 Sep 2026 12:00:00 +0200
+Message-ID: <abcdefg@microsoft.com>
+Reply-To: newsletter@microsoft.com
+Return-Path: <newsletter@microsoft.com>
+Authentication-Results: mx.company.com; spf=pass (sender IP is 104.40.10.10); dkim=pass; dmarc=pass
+Received: from mail.microsoft.com (104.40.10.10) by mx.company.com;
+Content-Type: text/html; charset="UTF-8"
+
+<html>
+<body>
+<p>Hello,</p>
+<p>Here is your weekly digest of Microsoft news.</p>
+<p>Read more at <a href="https://www.microsoft.com/news">Microsoft News</a>.</p>
+</body>
+</html>

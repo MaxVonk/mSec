@@ -1,0 +1,5 @@
+IncidentId,Title,Severity,Status,User,Host,IP,TimeGenerated,Description
+SEC-SENTINEL-901,Brute Force Authentication on Azure Portal,High,Active,billing.admin@contoso.com,AzureAD-Gateway,195.154.60.21,2026-09-04T12:00:00Z,Multiple failed logins from single IP within 3 minutes
+SEC-SENTINEL-902,New Azure Role Assignment: Contributor Granted,Medium,Active,secops@contoso.com,Azure-ARM,45.33.18.9,2026-09-04T12:10:00Z,Global Admin assigned Contributor role to newly registered application
+SEC-SENTINEL-903,Suspicious Port Scanning against Bastion Subnet,Low,Resolved,system@azure,Azure-Bastion-01,185.143.223.10,2026-09-04T11:45:00Z,Port scan on TCP ports 22 and 3389 blocked by NSG
+

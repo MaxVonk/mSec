@@ -1,0 +1,44 @@
+[
+  {
+    "incidentId": "INC-DEFENDER-7890",
+    "displayName": "Suspicious PowerShell Invocations and Defense Evasion",
+    "severity": "High",
+    "status": "Active",
+    "createdDateTime": "2026-09-04T12:15:00Z",
+    "lastUpdateDateTime": "2026-09-04T12:20:00Z",
+    "description": "Obfuscated PowerShell script attempted to disable Windows Defender Real-time Protection on executive laptop.",
+    "evidence": [
+      {
+        "@odata.type": "#microsoft.graph.security.userEvidence",
+        "userAccount": { "userPrincipalName": "cfo.corp@contoso.com" }
+      },
+      {
+        "@odata.type": "#microsoft.graph.security.deviceEvidence",
+        "deviceDnsName": "CFO-SURFACE-BOOK.corp.contoso.com"
+      },
+      {
+        "@odata.type": "#microsoft.graph.security.ipEvidence",
+        "ipAddress": "89.208.104.12"
+      },
+      {
+        "@odata.type": "#microsoft.graph.security.fileEvidence",
+        "fileName": "calc_payload.ps1",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    ],
+    "mitreTechniques": [
+      { "tactic": "Execution", "techniqueId": "T1059.001", "techniqueName": "PowerShell" },
+      { "tactic": "Defense Evasion", "techniqueId": "T1562.001", "techniqueName": "Disable or Modify Tools" }
+    ],
+    "alerts": [
+      {
+        "id": "ALT-MDE-881",
+        "title": "Set-MpPreference -DisableRealtimeMonitoring executed",
+        "severity": "High",
+        "serviceSource": "microsoftDefenderForEndpoint",
+        "createdDateTime": "2026-09-04T12:15:00Z"
+      }
+    ]
+  }
+]
+

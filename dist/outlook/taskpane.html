@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PhishPilot Reporter</title>
+  <!-- Office.js SDK -->
+  <script type="text/javascript" src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      margin: 0;
+      padding: 16px;
+      background: #090d16;
+      color: #f1f5f9;
+      font-size: 13px;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 1px solid #1e293b;
+      padding-bottom: 12px;
+      margin-bottom: 16px;
+    }
+    .logo {
+      font-weight: 900;
+      font-size: 16px;
+      color: #38bdf8;
+    }
+    .subtitle {
+      font-size: 11px;
+      color: #64748b;
+    }
+    .email-card {
+      background: #0f172a;
+      border: 1px solid #1e293b;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 16px;
+    }
+    .btn {
+      width: 100%;
+      background: #0284c7;
+      color: white;
+      border: none;
+      padding: 10px;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: background 0.2s;
+    }
+    .btn:hover { background: #0369a1; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .verdict-card {
+      margin-top: 16px;
+      padding: 16px;
+      border-radius: 8px;
+      border: 1px solid transparent;
+      display: none;
+    }
+    .verdict-phish { background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.4); color: #f87171; }
+    .verdict-safe { background: rgba(16, 185, 129, 0.1); border-color: rgba(16, 185, 129, 0.4); color: #34d399; }
+    .verdict-sus { background: rgba(245, 158, 11, 0.1); border-color: rgba(245, 158, 11, 0.4); color: #fbbf24; }
+    .verdict-title { font-size: 16px; font-weight: bold; margin-bottom: 4px; }
+    .verdict-desc { font-size: 12px; color: #cbd5e1; line-height: 1.4; }
+    .spinner {
+      border: 2px solid rgba(255,255,255,0.2);
+      border-top-color: white;
+      border-radius: 50%;
+      width: 14px;
+      height: 14px;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <div class="logo">PhishPilot</div>
+      <div class="subtitle">AI Security Threat Reporter</div>
+    </div>
+  </div>
+
+  <div class="email-card">
+    <div style="color: #64748b; font-size: 11px; margin-bottom: 2px;">Subject:</div>
+    <div id="emailSubject" style="font-weight: bold; margin-bottom: 8px;">Loading message...</div>
+    <div style="color: #64748b; font-size: 11px; margin-bottom: 2px;">Sender:</div>
+    <div id="emailFrom" style="font-family: monospace; color: #93c5fd; font-size: 11px;"></div>
+  </div>
+
+  <button id="analyzeBtn" class="btn" onclick="analyzeEmail()">
+    <span>Scan & Report Threat</span>
+  </button>
+
+  <div id="verdictCard" class="verdict-card">
+    <div id="verdictTitle" class="verdict-title"></div>
+    <div id="verdictScore" style="font-size: 11px; font-weight: bold; margin-bottom: 6px;"></div>
+    <div id="verdictDesc" class="verdict-desc"></div>
+  </div>
+
+  <script>
+    let currentItem = null;
+
+    Office.onReady((info) => {
+      if (info.host === Office.HostType.Outlook) {
+        currentItem = Office.context.mailbox.item;
+        if (currentItem) {
+          document.getElementById('emailSubject').innerText = currentItem.subject || '(No Subject)';
+          document.getElementById('emailFrom').innerText = currentItem.from?.emailAddress || 'Unknown sender';
+        }
+      } else {
+        // Standalone preview fallback
+        document.getElementById('emailSubject').innerText = 'Suspicious Account Suspension Notice';
+        document.getElementById('emailFrom').innerText = 'admin@it-secure-dept.com';
+      }
+    });
+
+    async function analyzeEmail() {
+      const btn = document.getElementById('analyzeBtn');
+      const verdictCard = document.getElementById('verdictCard');
+      btn.disabled = true;
+      btn.innerHTML = '<div class="spinner"></div><span>Analyzing Threat...</span>';
+      verdictCard.style.display = 'none';
+
+      try {
+        let rawContent = '';
+        if (currentItem && currentItem.body) {
+          const bodyText = await new Promise((resolve) => {
+            currentItem.body.getAsync(Office.CoercionType.Text, (res) => resolve(res.value || ''));
+          });
+          rawContent = [
+            `From: ${currentItem.from?.displayName || ''} <${currentItem.from?.emailAddress || ''}>`,
+            `Subject: ${currentItem.subject || ''}`,
+            `Date: ${currentItem.dateTimeCreated ? currentItem.dateTimeCreated.toISOString() : new Date().toISOString()}`,
+            '',
+            bodyText
+          ].join('\\n');
+        } else {
+          rawContent = 'From: "IT Support" <admin@it-secure-dept.com>\\nSubject: URGENT: Account Suspension\\n\\nPlease verify your credentials immediately.';
+        }
+
+        const res = await fetch('/api/phishpilot/analyze', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ rawEmail: rawContent })
+        });
+
+        const report = await res.json();
+        renderVerdict(report);
+      } catch (err) {
+        alert('Analysis failed: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<span>Scan & Report Threat</span>';
+      }
+    }
+
+    function renderVerdict(report) {
+      const card = document.getElementById('verdictCard');
+      const title = document.getElementById('verdictTitle');
+      const score = document.getElementById('verdictScore');
+      const desc = document.getElementById('verdictDesc');
+
+      card.className = 'verdict-card ' + (
+        report.verdict === 'PHISHING' ? 'verdict-phish' :
+        report.verdict === 'SUSPICIOUS' ? 'verdict-sus' : 'verdict-safe'
+      );
+
+      title.innerText = 'Verdict: ' + report.verdict;
+      score.innerText = 'Risk Score: ' + report.riskScore + '/100 (' + (report.confidence * 100).toFixed(0) + '% Confidence)';
+      desc.innerText = report.recommendedActions[0] || 'Investigation complete.';
+      card.style.display = 'block';
+    }
+  </script>
+</body>
+</html>

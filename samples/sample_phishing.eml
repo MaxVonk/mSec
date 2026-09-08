@@ -1,0 +1,19 @@
+From: "IT Support" <admin@it-secure-dept.com>
+To: victim@company.com
+Subject: URGENT: Verify your account immediately
+Date: Fri, 04 Sep 2026 10:00:00 +0200
+Message-ID: <1234567890@it-secure-dept.com>
+Reply-To: attacker@hacker-mail.ru
+Return-Path: <attacker@hacker-mail.ru>
+Authentication-Results: mx.company.com; spf=fail (sender IP is 192.168.1.1); dkim=fail; dmarc=fail
+Received: from unknown (192.168.1.1) by mx.company.com;
+Content-Type: text/html; charset="UTF-8"
+
+<html>
+<body>
+<p>Dear user,</p>
+<p>Your account has been suspended. Please verify your credentials immediately to restore access.</p>
+<p><a href="http://secure-login.account-verify.xyz/login">Click here to login</a></p>
+<p>Failure to do so within 24 hours will result in permanent deletion.</p>
+</body>
+</html>

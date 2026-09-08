@@ -1,0 +1,7 @@
+{
+  "mailbox": "test-phish@example.com",
+  "enabled": false,
+  "pollingIntervalMinutes": 5,
+  "lastStatus": "IDLE",
+  "totalImportedCount": 0
+}
