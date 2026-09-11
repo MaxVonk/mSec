@@ -28,7 +28,8 @@ import {
   Lightbulb,
   UserCheck,
   Layers,
-  Download
+  Download,
+  Sparkles
 } from 'lucide-react';
 import { InvestigationGraph } from './graph/InvestigationGraph';
 import { buildIncidentGraph } from '../utils/graphBuilder';
@@ -40,6 +41,8 @@ interface IncidentDetailModalProps {
   onExecuteAction: (incidentId: string, actionId: string) => Promise<void>;
   onUpdateStatus: (id: string, status: IncidentStatus) => void;
   onDelete: (id: string) => void;
+  onOpenPlaybook?: (incident: UnifiedIncident) => void;
+  onOpenCopilot?: (incident: UnifiedIncident) => void;
 }
 
 export const IncidentDetailModal: React.FC<IncidentDetailModalProps> = ({
@@ -47,7 +50,9 @@ export const IncidentDetailModal: React.FC<IncidentDetailModalProps> = ({
   onClose,
   onExecuteAction,
   onUpdateStatus,
-  onDelete
+  onDelete,
+  onOpenPlaybook,
+  onOpenCopilot
 }) => {
   const [activeTab, setActiveTab] = useState<'threat' | 'graph' | 'timeline' | 'entities' | 'comments' | 'raw'>('threat');
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -166,6 +171,28 @@ export const IncidentDetailModal: React.FC<IncidentDetailModalProps> = ({
                 <ExternalLink className="w-3.5 h-3.5" />
                 <span>Defender Portal</span>
               </a>
+            )}
+
+            {onOpenPlaybook && (
+              <button
+                onClick={() => onOpenPlaybook(incident)}
+                title="Launch Automated SOAR Containment Playbook"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-500/50 text-cyan-300 rounded-lg text-xs font-semibold transition-colors cursor-pointer shadow-sm"
+              >
+                <Play className="w-3.5 h-3.5 fill-current" />
+                <span>Playbook</span>
+              </button>
+            )}
+
+            {onOpenCopilot && (
+              <button
+                onClick={() => onOpenCopilot(incident)}
+                title="Ask mSec Copilot about this incident"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-950/80 hover:bg-purple-900 border border-purple-500/50 text-purple-300 rounded-lg text-xs font-semibold transition-colors cursor-pointer shadow-sm"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-purple-400 animate-pulse" />
+                <span>Ask Copilot</span>
+              </button>
             )}
 
             <button

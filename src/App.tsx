@@ -16,6 +16,11 @@ import { SocTrendCharts } from './components/analytics/SocTrendCharts';
 import { ShiftHandoverModal } from './components/reporting/ShiftHandoverModal';
 import { LoginPage } from './components/auth/LoginPage';
 import { UserManagementModal } from './components/auth/UserManagementModal';
+import { MitreMatrixModal } from './components/mitre/MitreMatrixModal';
+import { PlaybookRunnerModal } from './components/soar/PlaybookRunnerModal';
+import { WarRoomModal } from './components/warroom/WarRoomModal';
+import { CommandPaletteModal } from './components/command/CommandPaletteModal';
+import { SecOpsCopilotDrawer } from './components/copilot/SecOpsCopilotDrawer';
 import { 
   Users, 
   Settings, 
@@ -45,6 +50,24 @@ export const App: React.FC = () => {
   const [selectedIncident, setSelectedIncident] = useState<UnifiedIncident | null>(null);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isShiftHandoverOpen, setIsShiftHandoverOpen] = useState(false);
+  const [isMitreOpen, setIsMitreOpen] = useState(false);
+  const [isPlaybooksOpen, setIsPlaybooksOpen] = useState(false);
+  const [playbookIncident, setPlaybookIncident] = useState<UnifiedIncident | null>(null);
+  const [isWarRoomOpen, setIsWarRoomOpen] = useState(false);
+  const [isCopilotOpen, setIsCopilotOpen] = useState(false);
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+
+  // Global Ctrl + K / Cmd + K keyboard shortcut
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setIsCommandPaletteOpen(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const fetchCurrentUser = async () => {
     try {
@@ -249,10 +272,14 @@ export const App: React.FC = () => {
         onRefresh={() => { fetchIncidents(); fetchStats(); }}
         onOpenShiftHandover={() => setIsShiftHandoverOpen(true)}
         onOpenUserManagement={() => setIsUserManagementOpen(true)}
+        onOpenWarRoom={() => setIsWarRoomOpen(true)}
+        onOpenMitre={() => setIsMitreOpen(true)}
+        onOpenCopilot={() => setIsCopilotOpen(true)}
+        onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
         currentUser={currentUser}
         onLogout={handleLogout}
         isRefreshing={isRefreshing}
-        totalIncidents={stats?.totalIncidents || 0}
+        totalIncidents={stats?.totalIncidents || incidents.length}
       />
 
       {/* Main Container */}
@@ -370,6 +397,14 @@ export const App: React.FC = () => {
         onExecuteAction={handleExecuteAction}
         onUpdateStatus={handleUpdateStatus}
         onDelete={handleDeleteIncident}
+        onOpenPlaybook={(inc) => {
+          setPlaybookIncident(inc);
+          setIsPlaybooksOpen(true);
+        }}
+        onOpenCopilot={(inc) => {
+          setSelectedIncident(inc);
+          setIsCopilotOpen(true);
+        }}
       />
 
       <DataImportModal
@@ -389,6 +424,67 @@ export const App: React.FC = () => {
         isOpen={isUserManagementOpen}
         onClose={() => setIsUserManagementOpen(false)}
         currentUserId={currentUser?.id}
+      />
+
+      {/* MITRE ATT&CK Enterprise Matrix */}
+      <MitreMatrixModal
+        isOpen={isMitreOpen}
+        onClose={() => setIsMitreOpen(false)}
+        incidents={incidents}
+        onSelectIncident={inc => setSelectedIncident(inc)}
+        onRunPlaybook={inc => {
+          setPlaybookIncident(inc || null);
+          setIsPlaybooksOpen(true);
+        }}
+      />
+
+      {/* SOAR Automated Playbook Runner */}
+      <PlaybookRunnerModal
+        isOpen={isPlaybooksOpen}
+        onClose={() => {
+          setIsPlaybooksOpen(false);
+          setPlaybookIncident(null);
+        }}
+        incident={playbookIncident || selectedIncident}
+      />
+
+      {/* Fullscreen SOC War Room HUD */}
+      <WarRoomModal
+        isOpen={isWarRoomOpen}
+        onClose={() => setIsWarRoomOpen(false)}
+        incidents={incidents}
+        onSelectIncident={inc => setSelectedIncident(inc)}
+        onRunPlaybook={inc => {
+          setPlaybookIncident(inc || null);
+          setIsPlaybooksOpen(true);
+        }}
+        onOpenShiftHandover={() => setIsShiftHandoverOpen(true)}
+      />
+
+      {/* Global Command Palette (Ctrl+K) */}
+      <CommandPaletteModal
+        isOpen={isCommandPaletteOpen}
+        onClose={() => setIsCommandPaletteOpen(false)}
+        incidents={incidents}
+        currentUser={currentUser || undefined}
+        onSelectIncident={inc => setSelectedIncident(inc)}
+        onOpenMitre={() => setIsMitreOpen(true)}
+        onOpenWarRoom={() => setIsWarRoomOpen(true)}
+        onOpenShiftHandover={() => setIsShiftHandoverOpen(true)}
+        onOpenUserManagement={() => setIsUserManagementOpen(true)}
+        onOpenPlaybooks={inc => {
+          setPlaybookIncident(inc || null);
+          setIsPlaybooksOpen(true);
+        }}
+        onOpenConnectors={() => setIsImportModalOpen(true)}
+        onOpenCopilot={() => setIsCopilotOpen(true)}
+      />
+
+      {/* AI SecOps Copilot Slide-over Drawer */}
+      <SecOpsCopilotDrawer
+        isOpen={isCopilotOpen}
+        onClose={() => setIsCopilotOpen(false)}
+        incident={selectedIncident}
       />
     </div>
   );

@@ -18,6 +18,7 @@ import { ThreatIntelService } from './services/threatIntelService';
 import { SocReportService } from './services/socReportService';
 
 import authRoutes from './routes/authRoutes';
+import copilotRoutes from './routes/copilotRoutes';
 
 MailboxPollerService.init().catch(err => console.error('[MailboxPoller] Init error:', err));
 IngestionSchedulerService.init().catch(err => console.error('[Scheduler] Init error:', err));
@@ -33,11 +34,14 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 25 
 app.use(cors());
 app.use(express.json({ limit: '25mb' }));
 
-// Authentication routes (Microsoft Entra SSO)
+// Authentication routes (Microsoft Entra SSO & Local Auth)
 app.use('/api/auth', authRoutes);
 
 // PhishPilot email threat analysis routes
 app.use('/api/phishpilot', phishpilotRoutes);
+
+// AI SecOps Copilot routes
+app.use('/api/copilot', copilotRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Shield, Upload, RefreshCw, Database, Radio, LogOut, Users, FileText } from 'lucide-react';
+import { Shield, Upload, RefreshCw, Database, Radio, LogOut, Users, FileText, Monitor, Crosshair, Sparkles, Search, Volume2, VolumeX } from 'lucide-react';
 import { UserSessionProfile } from '../types';
+import { audioService } from '../utils/audioService';
 
 interface HeaderProps {
   onOpenImport: () => void;
@@ -8,6 +9,10 @@ interface HeaderProps {
   onRefresh: () => void;
   onOpenShiftHandover?: () => void;
   onOpenUserManagement?: () => void;
+  onOpenWarRoom?: () => void;
+  onOpenMitre?: () => void;
+  onOpenCopilot?: () => void;
+  onOpenCommandPalette?: () => void;
   currentUser: UserSessionProfile | null;
   onLogout: () => void;
   isRefreshing: boolean;
@@ -20,12 +25,23 @@ export const Header: React.FC<HeaderProps> = ({
   onRefresh,
   onOpenShiftHandover,
   onOpenUserManagement,
+  onOpenWarRoom,
+  onOpenMitre,
+  onOpenCopilot,
+  onOpenCommandPalette,
   currentUser,
   onLogout,
   isRefreshing,
   totalIncidents
 }) => {
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [isMuted, setIsMuted] = useState(audioService.isMuted());
+
+  const handleToggleAudio = () => {
+    const muted = audioService.toggleMute();
+    setIsMuted(muted);
+    if (!muted) audioService.playInfoChime();
+  };
 
   const handleLogout = () => {
     setShowUserMenu(false);
@@ -53,50 +69,107 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* Status Indicators & SSO */}
-        <div className="flex items-center gap-3">
-          <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800/80 border border-slate-700/60 text-xs">
-            <Radio className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
-            <span className="text-slate-300">Ingestion Active</span>
-            <span className="text-slate-500">•</span>
-            <span className="font-semibold text-slate-200">{totalIncidents} Records</span>
-          </div>
+        {/* Status Indicators & Navigation Shortcuts */}
+        <div className="flex items-center gap-2.5 flex-wrap">
+          {/* Quick Omnisearch Pill (Ctrl+K) */}
+          {onOpenCommandPalette && (
+            <button
+              onClick={onOpenCommandPalette}
+              title="Open Command Palette (Ctrl + K)"
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800/90 hover:bg-slate-750 border border-slate-700/80 text-xs text-slate-300 transition-all cursor-pointer shadow-sm hover:border-cyan-500/50"
+            >
+              <Search className="w-3.5 h-3.5 text-cyan-400" />
+              <span className="hidden md:inline text-slate-400">Search commands...</span>
+              <kbd className="px-1.5 py-0.2 text-[10px] font-mono bg-slate-900 border border-slate-700 rounded text-slate-400">
+                Ctrl K
+              </kbd>
+            </button>
+          )}
 
+          {/* War Room Wallboard Button */}
+          {onOpenWarRoom && (
+            <button
+              onClick={onOpenWarRoom}
+              title="Open Fullscreen SOC War Room HUD"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-emerald-300 bg-emerald-950/60 hover:bg-emerald-900/60 border border-emerald-800/80 rounded-lg transition-colors cursor-pointer shadow-sm shadow-emerald-950/50"
+            >
+              <Monitor className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">War Room</span>
+            </button>
+          )}
+
+          {/* MITRE ATT&CK Matrix Button */}
+          {onOpenMitre && (
+            <button
+              onClick={onOpenMitre}
+              title="Open MITRE ATT&CK Enterprise Matrix Heatmap"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-purple-300 bg-purple-950/60 hover:bg-purple-900/60 border border-purple-800/80 rounded-lg transition-colors cursor-pointer shadow-sm shadow-purple-950/50"
+            >
+              <Crosshair className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">MITRE Matrix</span>
+            </button>
+          )}
+
+          {/* mSec Copilot Assistant Button */}
+          {onOpenCopilot && (
+            <button
+              onClick={onOpenCopilot}
+              title="Open mSec AI SecOps Copilot Drawer"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-cyan-300 bg-cyan-950/60 hover:bg-cyan-900/60 border border-cyan-800/80 rounded-lg transition-colors cursor-pointer shadow-sm shadow-cyan-950/50"
+            >
+              <Sparkles className="w-3.5 h-3.5 animate-pulse text-cyan-400" />
+              <span className="hidden sm:inline">Copilot</span>
+            </button>
+          )}
+
+          {/* Audio Mute/Unmute Toggle */}
           <button
-            onClick={onResetDemo}
-            title="Reset to pre-packaged M365 & Sentinel datasets"
-            className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-slate-300 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg transition-colors cursor-pointer"
+            onClick={handleToggleAudio}
+            title={isMuted ? 'Unmute Tactical Cyber Audio' : 'Mute Tactical Cyber Audio'}
+            className={`p-2 rounded-lg border text-xs transition-colors cursor-pointer ${
+              isMuted
+                ? 'bg-slate-800/80 border-slate-700 text-slate-500 hover:text-slate-300'
+                : 'bg-slate-800/80 border-slate-700 text-emerald-400 hover:bg-slate-700'
+            }`}
           >
-            <Database className="w-3.5 h-3.5 text-cyan-400" />
-            <span>Reset Demo</span>
+            {isMuted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
           </button>
 
           {onOpenShiftHandover && (
             <button
               onClick={onOpenShiftHandover}
               title="Open Executive Shift Handover Briefing"
-              className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-purple-300 bg-purple-950/60 hover:bg-purple-900/60 border border-purple-800/80 rounded-lg transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-amber-300 bg-amber-950/50 hover:bg-amber-900/50 border border-amber-800/80 rounded-lg transition-colors cursor-pointer"
             >
               <FileText className="w-3.5 h-3.5" />
-              <span>Shift Handover</span>
+              <span className="hidden md:inline">Shift Report</span>
             </button>
           )}
+
+          <button
+            onClick={onResetDemo}
+            title="Reset to pre-packaged M365 & Sentinel datasets"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-300 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg transition-colors cursor-pointer"
+          >
+            <Database className="w-3.5 h-3.5 text-cyan-400" />
+            <span className="hidden xl:inline">Reset Demo</span>
+          </button>
 
           <button
             onClick={onRefresh}
             disabled={isRefreshing}
             title="Refresh feeds"
-            className="p-2 text-slate-300 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg transition-colors disabled:opacity-50 cursor-pointer"
+            className="p-1.5 text-slate-300 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg transition-colors disabled:opacity-50 cursor-pointer"
           >
-            <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-cyan-400' : ''}`} />
+            <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-cyan-400' : ''}`} />
           </button>
 
           <button
             onClick={onOpenImport}
-            className="flex items-center gap-2 px-4 py-2 text-xs font-semibold text-white bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 rounded-lg shadow-lg shadow-cyan-600/25 transition-all cursor-pointer"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-white bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 rounded-lg shadow-md shadow-cyan-600/25 transition-all cursor-pointer"
           >
-            <Upload className="w-4 h-4" />
-            <span>Import Data</span>
+            <Upload className="w-3.5 h-3.5" />
+            <span>Import</span>
           </button>
 
           {/* User Profile Menu */}

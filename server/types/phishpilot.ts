@@ -220,6 +220,7 @@ export interface UserSessionProfile {
   avatarUrl?: string;
   isAuthenticated: boolean;
   tenantId?: string;
+  mustChangePassword?: boolean;
 }
 
 export interface UserRecord {
@@ -231,6 +232,7 @@ export interface UserRecord {
   passwordHash: string;
   salt: string;
   isActive: boolean;
+  mustChangePassword?: boolean;
   createdAt: string;
   lastLogin?: string;
 }
@@ -242,6 +244,7 @@ export interface PublicUser {
   email: string;
   role: UserRole;
   isActive: boolean;
+  mustChangePassword?: boolean;
   createdAt: string;
   lastLogin?: string;
 }

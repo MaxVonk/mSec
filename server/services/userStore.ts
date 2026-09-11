@@ -125,6 +125,7 @@ export class UserStore {
       role?: UserRole;
       isActive?: boolean;
       password?: string;
+      mustChangePassword?: boolean;
     }
   ): PublicUser {
     this.init();
@@ -149,6 +150,7 @@ export class UserStore {
     if (updates.email !== undefined) user.email = updates.email.trim();
     if (updates.role !== undefined) user.role = updates.role;
     if (updates.isActive !== undefined) user.isActive = updates.isActive;
+    if (updates.mustChangePassword !== undefined) user.mustChangePassword = updates.mustChangePassword;
 
     if (updates.password) {
       if (updates.password.length < 6) {
