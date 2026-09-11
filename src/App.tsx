@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { 
   UnifiedIncident, 
   IngestionStats, 
-  IncidentStatus 
+  IncidentStatus,
+  UserSessionProfile 
 } from './types';
 import { Header } from './components/Header';
 import { StatsCards } from './components/StatsCards';
@@ -13,6 +14,8 @@ import { EntityExplorer } from './components/EntityExplorer';
 import { PhishPilotDashboard } from './components/phishpilot/PhishPilotDashboard';
 import { SocTrendCharts } from './components/analytics/SocTrendCharts';
 import { ShiftHandoverModal } from './components/reporting/ShiftHandoverModal';
+import { LoginPage } from './components/auth/LoginPage';
+import { UserManagementModal } from './components/auth/UserManagementModal';
 import { 
   Users, 
   Settings, 
@@ -22,6 +25,11 @@ import {
 } from 'lucide-react';
 
 export const App: React.FC = () => {
+  // Auth state
+  const [currentUser, setCurrentUser] = useState<UserSessionProfile | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [isUserManagementOpen, setIsUserManagementOpen] = useState(false);
+
   const [incidents, setIncidents] = useState<UnifiedIncident[]>([]);
   const [stats, setStats] = useState<IngestionStats | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -37,6 +45,33 @@ export const App: React.FC = () => {
   const [selectedIncident, setSelectedIncident] = useState<UnifiedIncident | null>(null);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isShiftHandoverOpen, setIsShiftHandoverOpen] = useState(false);
+
+  const fetchCurrentUser = async () => {
+    try {
+      const res = await fetch('/api/auth/me');
+      if (res.ok) {
+        const data: UserSessionProfile = await res.json();
+        setCurrentUser(data);
+      }
+    } catch {
+      // Ignore
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCurrentUser();
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+      setCurrentUser(null);
+    } catch (e) {
+      console.error('Logout error:', e);
+    }
+  };
 
   const fetchIncidents = async () => {
     setIsRefreshing(true);
@@ -184,6 +219,27 @@ export const App: React.FC = () => {
     }
   };
 
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-slate-400 gap-3 select-none">
+        <div className="w-8 h-8 border-2 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin"></div>
+        <span className="text-xs font-mono tracking-wider text-slate-400">Verifying Security Session...</span>
+      </div>
+    );
+  }
+
+  if (!currentUser?.isAuthenticated) {
+    return (
+      <LoginPage 
+        onLoginSuccess={(user) => {
+          setCurrentUser(user);
+          fetchIncidents();
+          fetchStats();
+        }} 
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-cyan-500 selection:text-white">
       {/* Header */}
@@ -192,6 +248,9 @@ export const App: React.FC = () => {
         onResetDemo={handleResetDemo}
         onRefresh={() => { fetchIncidents(); fetchStats(); }}
         onOpenShiftHandover={() => setIsShiftHandoverOpen(true)}
+        onOpenUserManagement={() => setIsUserManagementOpen(true)}
+        currentUser={currentUser}
+        onLogout={handleLogout}
         isRefreshing={isRefreshing}
         totalIncidents={stats?.totalIncidents || 0}
       />
@@ -325,6 +384,12 @@ export const App: React.FC = () => {
       {isShiftHandoverOpen && (
         <ShiftHandoverModal onClose={() => setIsShiftHandoverOpen(false)} />
       )}
+
+      <UserManagementModal
+        isOpen={isUserManagementOpen}
+        onClose={() => setIsUserManagementOpen(false)}
+        currentUserId={currentUser?.id}
+      />
     </div>
   );
 };

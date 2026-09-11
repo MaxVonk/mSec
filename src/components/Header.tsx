@@ -1,12 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import { Shield, Upload, RefreshCw, Database, Radio, LogIn, LogOut, UserCheck, FileText } from 'lucide-react';
-import { UserSessionProfile } from '../phishpilotTypes';
+import React, { useState } from 'react';
+import { Shield, Upload, RefreshCw, Database, Radio, LogOut, Users, FileText } from 'lucide-react';
+import { UserSessionProfile } from '../types';
 
 interface HeaderProps {
   onOpenImport: () => void;
   onResetDemo: () => void;
   onRefresh: () => void;
   onOpenShiftHandover?: () => void;
+  onOpenUserManagement?: () => void;
+  currentUser: UserSessionProfile | null;
+  onLogout: () => void;
   isRefreshing: boolean;
   totalIncidents: number;
 }
@@ -16,37 +19,17 @@ export const Header: React.FC<HeaderProps> = ({
   onResetDemo,
   onRefresh,
   onOpenShiftHandover,
+  onOpenUserManagement,
+  currentUser,
+  onLogout,
   isRefreshing,
   totalIncidents
 }) => {
-  const [currentUser, setCurrentUser] = useState<UserSessionProfile | null>(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
 
-  const fetchSession = async () => {
-    try {
-      const res = await fetch('/api/auth/me');
-      if (res.ok) {
-        const data: UserSessionProfile = await res.json();
-        setCurrentUser(data);
-      }
-    } catch {
-      // Ignore session fetch errors
-    }
-  };
-
-  useEffect(() => {
-    fetchSession();
-  }, []);
-
-  const handleLogout = async () => {
-    try {
-      await fetch('/api/auth/logout', { method: 'POST' });
-      setCurrentUser(null);
-      setShowUserMenu(false);
-      window.location.reload();
-    } catch (e) {
-      console.error('Logout error:', e);
-    }
+  const handleLogout = () => {
+    setShowUserMenu(false);
+    onLogout();
   };
 
   return (
@@ -116,19 +99,29 @@ export const Header: React.FC<HeaderProps> = ({
             <span>Import Data</span>
           </button>
 
-          {/* Microsoft SSO Button / User Profile Menu */}
+          {/* User Profile Menu */}
           {currentUser?.isAuthenticated ? (
             <div className="relative">
               <button
                 onClick={() => setShowUserMenu(!showUserMenu)}
-                className="flex items-center gap-2 px-3 py-1.5 bg-slate-800 hover:bg-slate-750 border border-cyan-800/60 rounded-lg text-xs font-medium text-slate-200 transition-colors cursor-pointer"
+                className="flex items-center gap-2 px-3 py-1.5 bg-slate-800 hover:bg-slate-750 border border-slate-700 rounded-lg text-xs font-medium text-slate-200 transition-colors cursor-pointer"
               >
                 <div className="w-6 h-6 rounded-full bg-cyan-600 flex items-center justify-center text-[11px] font-bold text-white shadow-sm">
                   {currentUser.displayName.charAt(0).toUpperCase()}
                 </div>
                 <div className="text-left hidden md:block">
                   <div className="font-bold text-slate-100 truncate max-w-[120px]">{currentUser.displayName}</div>
-                  <div className="text-[10px] text-cyan-400 truncate max-w-[120px]">Entra Verified</div>
+                  <div className="flex items-center gap-1">
+                    <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded border ${
+                      currentUser.role === 'ADMIN'
+                        ? 'bg-purple-950/80 text-purple-300 border-purple-800'
+                        : currentUser.role === 'ANALYST'
+                        ? 'bg-cyan-950/80 text-cyan-300 border-cyan-800'
+                        : 'bg-slate-800 text-slate-400 border-slate-700'
+                    }`}>
+                      {currentUser.role}
+                    </span>
+                  </div>
                 </div>
               </button>
 
@@ -136,12 +129,33 @@ export const Header: React.FC<HeaderProps> = ({
                 <div className="absolute right-0 mt-2 w-56 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl p-3 z-50 text-xs space-y-2 animate-in fade-in zoom-in-95">
                   <div className="border-b border-slate-800 pb-2">
                     <p className="font-bold text-slate-100">{currentUser.displayName}</p>
-                    <p className="text-slate-400 text-[11px] truncate">{currentUser.email}</p>
-                    <p className="text-cyan-400 text-[10px] mt-0.5">{currentUser.jobTitle || 'Security Analyst'}</p>
+                    <p className="text-slate-400 text-[11px] truncate">@{currentUser.username || currentUser.email}</p>
+                    <div className="mt-1">
+                      <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${
+                        currentUser.role === 'ADMIN'
+                          ? 'bg-purple-950 text-purple-300 border-purple-800'
+                          : currentUser.role === 'ANALYST'
+                          ? 'bg-cyan-950 text-cyan-300 border-cyan-800'
+                          : 'bg-slate-800 text-slate-400 border-slate-700'
+                      }`}>
+                        Role: {currentUser.role}
+                      </span>
+                    </div>
                   </div>
+
+                  {currentUser.role === 'ADMIN' && onOpenUserManagement && (
+                    <button
+                      onClick={() => { setShowUserMenu(false); onOpenUserManagement(); }}
+                      className="w-full flex items-center gap-2 px-2.5 py-1.5 text-purple-300 hover:bg-purple-950/40 rounded-lg transition-colors cursor-pointer"
+                    >
+                      <Users className="w-4 h-4 text-purple-400" />
+                      <span>User Management</span>
+                    </button>
+                  )}
+
                   <button
-                    onClick={handleLogout}
-                    className="w-full flex items-center gap-2 px-2.5 py-1.5 text-red-400 hover:bg-red-950/30 rounded-lg transition-colors cursor-pointer"
+                    onClick={() => { setShowUserMenu(false); onLogout(); }}
+                    className="w-full flex items-center gap-2 px-2.5 py-1.5 text-rose-400 hover:bg-rose-950/30 rounded-lg transition-colors cursor-pointer"
                   >
                     <LogOut className="w-4 h-4" />
                     <span>Sign Out</span>
@@ -150,19 +164,12 @@ export const Header: React.FC<HeaderProps> = ({
               )}
             </div>
           ) : (
-            <a
-              href="/api/auth/login"
-              title="Sign in with your Microsoft 365 / Entra ID corporate account"
-              className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-slate-100 bg-[#0078d4] hover:bg-[#106ebe] rounded-lg shadow-md transition-all cursor-pointer"
+            <button
+              onClick={onLogout}
+              className="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold rounded-lg transition-colors cursor-pointer"
             >
-              <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 21 21">
-                <rect x="1" y="1" width="9" height="9" fill="#f25022"/>
-                <rect x="1" y="11" width="9" height="9" fill="#00a4ef"/>
-                <rect x="11" y="1" width="9" height="9" fill="#7fba00"/>
-                <rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
-              </svg>
-              <span>Sign in with Microsoft</span>
-            </a>
+              Sign In
+            </button>
           )}
         </div>
       </div>

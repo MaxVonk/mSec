@@ -208,12 +208,40 @@ export interface MailboxPollerConfig {
   totalImportedCount: number;
 }
 
+export type UserRole = 'ADMIN' | 'ANALYST' | 'READONLY';
+
 export interface UserSessionProfile {
   id: string;
+  username?: string;
   displayName: string;
   email: string;
+  role: UserRole;
   jobTitle?: string;
   avatarUrl?: string;
   isAuthenticated: boolean;
   tenantId?: string;
+}
+
+export interface UserRecord {
+  id: string;
+  username: string;
+  displayName: string;
+  email: string;
+  role: UserRole;
+  passwordHash: string;
+  salt: string;
+  isActive: boolean;
+  createdAt: string;
+  lastLogin?: string;
+}
+
+export interface PublicUser {
+  id: string;
+  username: string;
+  displayName: string;
+  email: string;
+  role: UserRole;
+  isActive: boolean;
+  createdAt: string;
+  lastLogin?: string;
 }

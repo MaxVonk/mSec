@@ -1,9 +1,46 @@
 import { Router } from 'express';
 import { AuthService } from '../services/authService.js';
+import { UserStore } from '../services/userStore.js';
 
 const router = Router();
 
-router.get('/login', (req, res) => {
+function getSessionId(req: any): string | undefined {
+  const authHeader = req.headers.authorization;
+  const cookieHeader = req.headers.cookie;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    return authHeader.slice(7);
+  } else if (cookieHeader) {
+    const match = cookieHeader.match(/msec_session=([a-zA-Z0-9_-]+)/);
+    if (match) return match[1];
+  }
+  return undefined;
+}
+
+// 1. Password Login
+router.post('/login', (req, res) => {
+  const { username, password } = req.body;
+  if (!username || !password) {
+    return res.status(400).json({ success: false, error: 'Username and password are required.' });
+  }
+
+  try {
+    const { sessionId, user } = AuthService.loginWithPassword(username, password);
+
+    res.cookie('msec_session', sessionId, {
+      httpOnly: true,
+      secure: req.protocol === 'https',
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    });
+
+    res.json({ success: true, sessionId, user });
+  } catch (err: any) {
+    res.status(401).json({ success: false, error: err.message });
+  }
+});
+
+// 2. Microsoft SSO Login
+router.get('/microsoft', (req, res) => {
   try {
     const origin = `${req.protocol}://${req.get('host')}`;
     const { url } = AuthService.generateAuthUrl(origin);
@@ -11,6 +48,11 @@ router.get('/login', (req, res) => {
   } catch (err: any) {
     res.status(400).send(`Authentication setup error: ${err.message}`);
   }
+});
+
+// Legacy SSO redirect endpoint
+router.get('/login', (req, res) => {
+  res.redirect('/api/auth/microsoft');
 });
 
 router.get('/callback', async (req, res) => {
@@ -28,7 +70,6 @@ router.get('/callback', async (req, res) => {
     const origin = `${req.protocol}://${req.get('host')}`;
     const { sessionId } = await AuthService.handleCallback(String(code), String(state), origin);
 
-    // Set secure cookie for session
     res.cookie('msec_session', sessionId, {
       httpOnly: true,
       secure: req.protocol === 'https',
@@ -36,38 +77,99 @@ router.get('/callback', async (req, res) => {
       maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
     });
 
-    // Redirect to home dashboard
     res.redirect('/');
   } catch (err: any) {
     res.status(500).send(`Failed to complete Microsoft login: ${err.message}`);
   }
 });
 
+// 3. Current User Profile
 router.get('/me', (req, res) => {
-  // Read session from cookie or Authorization header
-  const authHeader = req.headers.authorization;
-  const cookieHeader = req.headers.cookie;
-  let sessionId: string | undefined;
-
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    sessionId = authHeader.slice(7);
-  } else if (cookieHeader) {
-    const match = cookieHeader.match(/msec_session=([a-zA-Z0-9_-]+)/);
-    if (match) sessionId = match[1];
-  }
-
+  const sessionId = getSessionId(req);
   const user = AuthService.getSession(sessionId);
   res.json(user);
 });
 
+// 4. Logout
 router.post('/logout', (req, res) => {
-  const cookieHeader = req.headers.cookie;
-  if (cookieHeader) {
-    const match = cookieHeader.match(/msec_session=([a-zA-Z0-9_-]+)/);
-    if (match) AuthService.destroySession(match[1]);
+  const sessionId = getSessionId(req);
+  if (sessionId) {
+    AuthService.destroySession(sessionId);
   }
   res.clearCookie('msec_session');
   res.json({ success: true, message: 'Logged out' });
+});
+
+// 5. User Management API (Admin Only)
+router.get('/users', (req, res) => {
+  const sessionId = getSessionId(req);
+  const currentUser = AuthService.getSession(sessionId);
+
+  if (!currentUser.isAuthenticated || currentUser.role !== 'ADMIN') {
+    return res.status(403).json({ error: 'Access denied: Administrator role required.' });
+  }
+
+  res.json(UserStore.getAll());
+});
+
+router.post('/users', (req, res) => {
+  const sessionId = getSessionId(req);
+  const currentUser = AuthService.getSession(sessionId);
+
+  if (!currentUser.isAuthenticated || currentUser.role !== 'ADMIN') {
+    return res.status(403).json({ error: 'Access denied: Administrator role required.' });
+  }
+
+  try {
+    const user = UserStore.create(req.body);
+    res.status(201).json(user);
+  } catch (err: any) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.patch('/users/:id', (req, res) => {
+  const sessionId = getSessionId(req);
+  const currentUser = AuthService.getSession(sessionId);
+
+  // Allow admins to edit anyone, or non-admins to edit their own password
+  const isSelf = currentUser.isAuthenticated && currentUser.id === req.params.id;
+  const isAdmin = currentUser.isAuthenticated && currentUser.role === 'ADMIN';
+
+  if (!isAdmin && !isSelf) {
+    return res.status(403).json({ error: 'Access denied.' });
+  }
+
+  try {
+    // If self non-admin, only allow password/displayName update
+    const updatePayload = isAdmin ? req.body : {
+      password: req.body.password,
+      displayName: req.body.displayName
+    };
+    const updated = UserStore.update(req.params.id, updatePayload);
+    res.json(updated);
+  } catch (err: any) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.delete('/users/:id', (req, res) => {
+  const sessionId = getSessionId(req);
+  const currentUser = AuthService.getSession(sessionId);
+
+  if (!currentUser.isAuthenticated || currentUser.role !== 'ADMIN') {
+    return res.status(403).json({ error: 'Access denied: Administrator role required.' });
+  }
+
+  try {
+    const deleted = UserStore.delete(req.params.id);
+    if (!deleted) {
+      return res.status(404).json({ error: 'User not found.' });
+    }
+    res.json({ success: true, message: 'User deleted.' });
+  } catch (err: any) {
+    res.status(400).json({ error: err.message });
+  }
 });
 
 export default router;

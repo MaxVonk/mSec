@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 import { UserSessionProfile } from '../types/phishpilot.js';
 import { store } from './store.js';
+import { UserStore } from './userStore.js';
 
 interface OAuthState {
   codeVerifier: string;
@@ -111,8 +112,10 @@ export class AuthService {
     const sessionId = crypto.randomUUID();
     const user: UserSessionProfile = {
       id: meData.id || crypto.randomUUID(),
+      username: meData.userPrincipalName || 'entra_user',
       displayName: meData.displayName || meData.userPrincipalName || 'Security Analyst',
       email: meData.mail || meData.userPrincipalName || 'analyst@company.com',
+      role: 'ADMIN',
       jobTitle: meData.jobTitle || 'SOC Analyst',
       isAuthenticated: true,
       tenantId: tenantId
@@ -122,6 +125,36 @@ export class AuthService {
     return { sessionId, user };
   }
 
+  /**
+   * Authenticates local user with username and password
+   */
+  public static loginWithPassword(username: string, password: string): { sessionId: string; user: UserSessionProfile } {
+    const userRecord = UserStore.getByUsername(username);
+
+    if (!userRecord || !UserStore.verifyPassword(password, userRecord)) {
+      throw new Error('Invalid username or password.');
+    }
+
+    if (!userRecord.isActive) {
+      throw new Error('This account is disabled. Please contact your administrator.');
+    }
+
+    UserStore.recordLogin(userRecord.id);
+
+    const sessionId = crypto.randomUUID();
+    const profile: UserSessionProfile = {
+      id: userRecord.id,
+      username: userRecord.username,
+      displayName: userRecord.displayName,
+      email: userRecord.email,
+      role: userRecord.role,
+      isAuthenticated: true
+    };
+
+    this.sessions.set(sessionId, profile);
+    return { sessionId, user: profile };
+  }
+
   public static getSession(sessionId?: string): UserSessionProfile {
     if (sessionId && this.sessions.has(sessionId)) {
       return this.sessions.get(sessionId)!;
@@ -129,8 +162,9 @@ export class AuthService {
     // Return unauthenticated guest profile
     return {
       id: 'guest',
-      displayName: 'SecOps Analyst (Guest)',
-      email: 'guest@local',
+      displayName: 'Guest / Unauthenticated',
+      email: '',
+      role: 'READONLY',
       isAuthenticated: false
     };
   }

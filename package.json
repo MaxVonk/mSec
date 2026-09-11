@@ -11,7 +11,7 @@
     "build": "tsc && vite build",
     "start": "tsx server/index.ts",
     "setup:entra": "bash ./scripts/setup-entra.sh",
-    "test": "tsx --test test/normalizer.test.ts test/phishpilot.test.ts test/auth.test.ts test/enhancements.test.ts test/analytics_graph.test.ts test/operations_suite.test.ts"
+    "test": "tsx --test test/normalizer.test.ts test/phishpilot.test.ts test/auth.test.ts test/enhancements.test.ts test/analytics_graph.test.ts test/operations_suite.test.ts test/auth_usermgmt.test.ts"
   },
   "dependencies": {
     "@types/mailparser": "^3.4.6",
