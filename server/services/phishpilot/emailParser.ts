@@ -21,8 +21,55 @@ export class EmailParserService {
       headersMap[key.toLowerCase()] = getHeaderString(value);
     });
 
+    // 1. Check if this email has a nested attached email (e.g. Outlook Report Phishing button or Forward as Attachment)
+    const attachedEmail = (parsed.attachments || []).find(att => {
+      const ct = (att.contentType || '').toLowerCase();
+      const fn = (att.filename || '').toLowerCase();
+      return ct.includes('message/rfc822') || fn.endsWith('.eml') || (
+        att.content && (
+          att.content.slice(0, 100).toString().includes('From:') ||
+          att.content.slice(0, 100).toString().includes('Received:')
+        )
+      );
+    });
+
+    if (attachedEmail?.content) {
+      try {
+        const innerParsed = await EmailParserService.parse(attachedEmail.content);
+        innerParsed.isForwarded = true;
+        innerParsed.forwardedBy = parsed.from?.text || getHeaderString(parsed.headers.get('from')) || 'Internal Reporter';
+        return innerParsed;
+      } catch (err) {
+        console.warn('[EmailParser] Failed to unwrap nested email attachment, evaluating outer message:', err);
+      }
+    }
+
     const plainTextBody = parsed.text || '';
     const htmlBody = parsed.html || '';
+    
+    // 2. Check if this email was forwarded inline (e.g. user clicked "Forward" in Outlook/Gmail)
+    let finalFrom = parsed.from?.text || '';
+    let finalSubject = parsed.subject || '';
+    let isForwarded = false;
+    let forwardedBy: string | undefined;
+
+    const forwardHeaderRegex = /(?:-----Original Message-----|---------- Forwarded message ---------|Begin forwarded message:)\s*[\r\n]+([\s\S]+?)(?:[\r\n]{2,}|$)/i;
+    const forwardMatch = plainTextBody.match(forwardHeaderRegex);
+
+    if (forwardMatch) {
+      const headerBlock = forwardMatch[1];
+      const fromMatch = headerBlock.match(/From:\s*([^\r\n]+)/i);
+      const subjectMatch = headerBlock.match(/Subject:\s*([^\r\n]+)/i);
+
+      if (fromMatch) {
+        isForwarded = true;
+        forwardedBy = parsed.from?.text || 'Internal Reporter';
+        finalFrom = fromMatch[1].trim();
+        if (subjectMatch) {
+          finalSubject = subjectMatch[1].trim();
+        }
+      }
+    }
     
     // Extract URLs (simple regex)
     const urlRegex = /(https?:\/\/[^\s<>'"]+)/gi;
@@ -42,9 +89,9 @@ export class EmailParserService {
     const returnPath = returnPathRaw ? getHeaderString(returnPathRaw) : (headersMap['return-path'] || null);
 
     return {
-      from: parsed.from?.text || '',
+      from: finalFrom,
       to: parsed.to ? (Array.isArray(parsed.to) ? parsed.to.map(t => t.text).join(', ') : parsed.to.text) : '',
-      subject: parsed.subject || '',
+      subject: finalSubject,
       date: parsed.date || null,
       messageId: parsed.messageId || '',
       replyTo: parsed.replyTo?.text || null,
@@ -53,7 +100,9 @@ export class EmailParserService {
       plainTextBody,
       htmlBody,
       urls,
-      attachments
+      attachments,
+      isForwarded,
+      forwardedBy
     };
   }
 }

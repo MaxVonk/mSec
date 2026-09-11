@@ -10,6 +10,8 @@ export interface ParsedEmailSummary {
   bodyPreview: string;
   urlCount: number;
   attachmentCount: number;
+  isForwarded?: boolean;
+  forwardedBy?: string;
 }
 
 export interface HeaderCheck {

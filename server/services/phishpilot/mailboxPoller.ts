@@ -109,31 +109,45 @@ export class MailboxPollerService {
       for (const msg of messages) {
         let emlContentToAnalyze: string | Buffer = '';
 
-        // Check if message contains forwarded .eml attachment
-        const emlAttachment = msg.attachments?.find((att: any) => 
-          att['@odata.type']?.includes('fileAttachment') && 
-          (att.name?.toLowerCase().endsWith('.eml') || att.contentType === 'message/rfc822')
-        );
+        // 1. Try to fetch raw MIME ($value) from Graph API (contains all nested .eml attachments intact)
+        try {
+          const mimeUrl = `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(mailbox)}/messages/${msg.id}/$value`;
+          const mimeRes = await fetch(mimeUrl, { headers });
+          if (mimeRes.ok) {
+            const buf = await mimeRes.arrayBuffer();
+            emlContentToAnalyze = Buffer.from(buf);
+          }
+        } catch (mimeErr) {
+          console.warn('[MailboxPoller] Could not fetch raw MIME, falling back to message metadata:', mimeErr);
+        }
 
-        if (emlAttachment?.contentBytes) {
-          emlContentToAnalyze = Buffer.from(emlAttachment.contentBytes, 'base64');
-        } else {
-          // Construct RFC 822 format from Graph message metadata
-          const fromAddr = msg.from?.emailAddress?.address || 'unknown';
-          const toAddr = (msg.toRecipients || []).map((r: any) => r.emailAddress?.address).join(', ');
-          const subject = msg.subject || '(No Subject)';
-          const date = msg.receivedDateTime || new Date().toISOString();
-          const body = msg.body?.content || msg.bodyPreview || '';
+        if (!emlContentToAnalyze) {
+          // Check if message contains forwarded .eml attachment in JSON metadata
+          const emlAttachment = msg.attachments?.find((att: any) => 
+            (att['@odata.type']?.includes('fileAttachment') || att['@odata.type']?.includes('itemAttachment')) && 
+            (att.name?.toLowerCase().endsWith('.eml') || att.contentType === 'message/rfc822')
+          );
 
-          emlContentToAnalyze = [
-            `From: ${fromAddr}`,
-            `To: ${toAddr}`,
-            `Subject: ${subject}`,
-            `Date: ${date}`,
-            `Content-Type: text/html; charset=UTF-8`,
-            '',
-            body
-          ].join('\n');
+          if (emlAttachment?.contentBytes) {
+            emlContentToAnalyze = Buffer.from(emlAttachment.contentBytes, 'base64');
+          } else {
+            // Construct RFC 822 format from Graph message metadata
+            const fromAddr = msg.from?.emailAddress?.address || 'unknown';
+            const toAddr = (msg.toRecipients || []).map((r: any) => r.emailAddress?.address).join(', ');
+            const subject = msg.subject || '(No Subject)';
+            const date = msg.receivedDateTime || new Date().toISOString();
+            const body = msg.body?.content || msg.bodyPreview || '';
+
+            emlContentToAnalyze = [
+              `From: ${fromAddr}`,
+              `To: ${toAddr}`,
+              `Subject: ${subject}`,
+              `Date: ${date}`,
+              `Content-Type: text/html; charset=UTF-8`,
+              '',
+              body
+            ].join('\n');
+          }
         }
 
         if (emlContentToAnalyze) {

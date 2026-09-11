@@ -113,4 +113,36 @@ describe('PhishPilot Email Threat Analysis Suite', () => {
     const updated = await MailboxPollerService.updateConfig({ mailbox: 'test-phish@example.com' });
     assert.strictEqual(updated.mailbox, 'test-phish@example.com');
   });
+
+  it('should detect and unwrap inline forwarded emails from internal reporters', async () => {
+    const inlineForwardRaw = [
+      'From: Max <max@vermiculus.se>',
+      'To: phish-reports@vermiculus.se',
+      'Subject: FW: Action Required: Reset Password Now',
+      'Date: Fri, 11 Sep 2026 10:00:00 +0200',
+      'Authentication-Results: spf=pass dkim=pass',
+      'Content-Type: text/plain; charset=UTF-8',
+      '',
+      'Hey SOC team, please check this email.',
+      '',
+      '-----Original Message-----',
+      'From: Security Alert <phisher@evil-bank-login.xyz>',
+      'Sent: Friday, September 11, 2026 9:55 AM',
+      'To: Max <max@vermiculus.se>',
+      'Subject: Action Required: Reset Password Now',
+      '',
+      'Your account is compromised. Click here: http://evil-bank-login.xyz/login to reset.'
+    ].join('\r\n');
+
+    const parsed = await EmailParserService.parse(inlineForwardRaw);
+    assert.strictEqual(parsed.isForwarded, true);
+    assert.ok(parsed.from.includes('phisher@evil-bank-login.xyz'));
+    assert.ok(parsed.forwardedBy?.includes('max@vermiculus.se'));
+    assert.strictEqual(parsed.subject, 'Action Required: Reset Password Now');
+    assert.ok(parsed.urls.some(u => u.includes('evil-bank-login.xyz')));
+
+    const headers = await HeaderAnalyzerService.analyze(parsed);
+    // Should NOT credit internal vermiculus.se SPF pass to the evil external domain
+    assert.notStrictEqual(headers.spf.detail, 'Sender Policy Framework gateway status: pass');
+  });
 });

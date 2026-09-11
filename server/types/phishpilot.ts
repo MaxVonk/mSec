@@ -18,6 +18,8 @@ export interface ParsedEmail {
     size: number;
     content: Buffer;
   }[];
+  isForwarded?: boolean;
+  forwardedBy?: string;
 }
 
 export interface ParsedEmailSummary {
@@ -30,6 +32,8 @@ export interface ParsedEmailSummary {
   bodyPreview: string;
   urlCount: number;
   attachmentCount: number;
+  isForwarded?: boolean;
+  forwardedBy?: string;
 }
 
 export interface HeaderCheck {

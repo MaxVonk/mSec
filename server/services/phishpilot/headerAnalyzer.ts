@@ -6,9 +6,9 @@ export class HeaderAnalyzerService {
     const authResults = parsed.headersMap['authentication-results'] || '';
     
     // 1. Gateway header results
-    const gatewaySpf = this.extractAuthResult(authResults, 'spf');
-    const gatewayDkim = this.extractAuthResult(authResults, 'dkim');
-    const gatewayDmarc = this.extractAuthResult(authResults, 'dmarc');
+    let gatewaySpf = this.extractAuthResult(authResults, 'spf');
+    let gatewayDkim = this.extractAuthResult(authResults, 'dkim');
+    let gatewayDmarc = this.extractAuthResult(authResults, 'dmarc');
 
     // Mismatches
     const extractDomain = (emailStr: string) => {
@@ -17,6 +17,16 @@ export class HeaderAnalyzerService {
     };
 
     const fromDomain = extractDomain(parsed.from);
+
+    // If email was forwarded by an internal employee, do not credit internal reporter's SPF/DKIM to external sender
+    if (parsed.isForwarded && parsed.forwardedBy) {
+      const reporterDomain = extractDomain(parsed.forwardedBy);
+      if (reporterDomain && fromDomain && reporterDomain !== fromDomain) {
+        gatewaySpf = 'none';
+        gatewayDkim = 'none';
+        gatewayDmarc = 'none';
+      }
+    }
     let replyToMismatch = false;
     if (parsed.replyTo) {
       const replyToDomain = extractDomain(parsed.replyTo);

@@ -670,8 +670,8 @@
     "provider": "DEFENDER_ENDPOINT",
     "severity": "HIGH",
     "status": "ACTIVE",
-    "createdTime": "2026-09-04T13:50:28.607Z",
-    "lastUpdatedTime": "2026-09-04T13:50:28.607Z",
+    "createdTime": "2026-09-11T08:17:06.023Z",
+    "lastUpdatedTime": "2026-09-11T08:17:06.023Z",
     "entities": [
       {
         "id": "e1",
@@ -1912,6 +1912,274 @@
         "to": "target.employee@company.com",
         "subject": "Critical: Immediate Account Verification Required",
         "date": "2026-09-04T13:50:28.571Z",
+        "replyTo": "phisher@evil-domain.com",
+        "returnPath": "bounce@evil-domain.com",
+        "bodyPreview": "Please verify your credentials immediately at the link below.",
+        "urlCount": 1,
+        "attachmentCount": 1
+      },
+      "headerAnalysis": {
+        "spf": {
+          "name": "SPF",
+          "result": "fail",
+          "detail": "SPF softfail"
+        },
+        "dkim": {
+          "name": "DKIM",
+          "result": "fail",
+          "detail": "No DKIM signature"
+        },
+        "dmarc": {
+          "name": "DMARC",
+          "result": "fail",
+          "detail": "DMARC failed"
+        },
+        "replyToMismatch": true,
+        "returnPathMismatch": true,
+        "receivedHops": 3,
+        "originIps": [
+          "198.51.100.42"
+        ]
+      },
+      "urlAnalysis": [
+        {
+          "url": "http://micr0soft-update.com/login",
+          "domain": "micr0soft-update.com",
+          "domainAgeDays": 2,
+          "isMalicious": true,
+          "isDeceptive": true,
+          "reputationSources": [
+            {
+              "source": "VirusTotal",
+              "result": "malicious"
+            }
+          ],
+          "homoglyph": {
+            "isSuspicious": true,
+            "impersonatedBrand": "Microsoft",
+            "matchedTarget": "microsoft.com",
+            "similarityScore": 0.85,
+            "explanation": "Detected typosquatting / leetspeak mimic of brand \"Microsoft\""
+          }
+        }
+      ],
+      "attachmentAnalysis": [
+        {
+          "filename": "invoice_malicious.exe",
+          "mimeType": "application/x-msdownload",
+          "size": 45000,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "md5": "d41d8cd98f00b204e9800998ecf8427e",
+          "isSuspiciousExtension": true,
+          "isPasswordProtected": false,
+          "isMalicious": true,
+          "reputationSources": [
+            {
+              "source": "VirusTotal",
+              "result": "malicious"
+            }
+          ]
+        }
+      ],
+      "aiClassification": {
+        "classification": "PHISHING",
+        "confidence": 0.95,
+        "keyFindings": [
+          "Brand impersonation",
+          "Urgent credential harvesting prompt"
+        ],
+        "indicators": [
+          "micr0soft-update.com",
+          "invoice_malicious.exe"
+        ],
+        "recommendedActions": [
+          "Block sender",
+          "Purge from all mailboxes",
+          "Revoke user credentials"
+        ],
+        "modelUsed": "Azure OpenAI GPT-4o"
+      },
+      "riskBreakdown": {
+        "totalScore": 85,
+        "maxPossible": 100,
+        "deterministicVerdict": "PHISHING",
+        "items": [
+          {
+            "condition": "SPF / DMARC Authentication Failures",
+            "points": 30,
+            "triggered": true
+          },
+          {
+            "condition": "Homoglyph / Brand Typosquatting Deception",
+            "points": 25,
+            "triggered": true
+          }
+        ]
+      },
+      "recommendedActions": [
+        "Purge message",
+        "Block sender in TABL",
+        "Revoke target user sessions"
+      ]
+    }
+  },
+  {
+    "id": "INC-PHISH-626024",
+    "incidentNumber": "PP-TEST-R",
+    "title": "[PhishPilot Escalation] Critical: Immediate Account Verification Required",
+    "description": "Escalated PhishPilot Report #test-rpt-enhancement-001. Multi-engine verdict: PHISHING (Risk Score: 85/100, Confidence: 95%). Sender: security@micr0soft-update.com.",
+    "severity": "HIGH",
+    "status": "ACTIVE",
+    "provider": "M365_DEFENDER",
+    "createdTime": "2026-09-11T08:17:05.992Z",
+    "lastUpdatedTime": "2026-09-11T08:17:06.024Z",
+    "entities": [
+      {
+        "id": "ent-usr-1789114626024-1",
+        "type": "USER",
+        "value": "security@micr0soft-update.com",
+        "riskScore": 90,
+        "details": {
+          "firstSeen": "2026-09-11T08:17:05.992Z",
+          "lastSeen": "2026-09-11T08:17:05.992Z"
+        }
+      },
+      {
+        "id": "ent-usr-1789114626024-2",
+        "type": "USER",
+        "value": "target.employee@company.com",
+        "details": {
+          "firstSeen": "2026-09-11T08:17:05.992Z",
+          "lastSeen": "2026-09-11T08:17:05.992Z"
+        }
+      },
+      {
+        "id": "ent-host-1789114626024-0",
+        "type": "HOST",
+        "value": "micr0soft-update.com",
+        "riskScore": 95,
+        "details": {
+          "firstSeen": "2026-09-11T08:17:05.992Z",
+          "lastSeen": "2026-09-11T08:17:05.992Z",
+          "url": "http://micr0soft-update.com/login"
+        }
+      },
+      {
+        "id": "ent-ip-1789114626024-0",
+        "type": "IP",
+        "value": "198.51.100.42",
+        "details": {
+          "firstSeen": "2026-09-11T08:17:05.992Z",
+          "lastSeen": "2026-09-11T08:17:05.992Z"
+        }
+      },
+      {
+        "id": "ent-file-1789114626024-0",
+        "type": "FILE",
+        "value": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "details": {
+          "filename": "invoice_malicious.exe",
+          "mimeType": "application/x-msdownload",
+          "size": 45000
+        }
+      }
+    ],
+    "alerts": [
+      {
+        "id": "ALT-PP-test-rpt",
+        "title": "PhishPilot Detected PHISHING: Critical: Immediate Account Verification Required",
+        "description": "PhishPilot automated escalation: High-risk phishing indicators detected.",
+        "severity": "HIGH",
+        "provider": "M365_DEFENDER",
+        "createdTime": "2026-09-11T08:17:05.992Z",
+        "mitreTechniques": [
+          {
+            "techniqueId": "T1566.001",
+            "techniqueName": "Phishing: Spearphishing Attachment",
+            "tactic": "Initial Access"
+          },
+          {
+            "techniqueId": "T1566.002",
+            "techniqueName": "Phishing: Spearphishing Link",
+            "tactic": "Initial Access"
+          }
+        ],
+        "entities": [
+          {
+            "id": "ent-usr-1789114626024-1",
+            "type": "USER",
+            "value": "security@micr0soft-update.com",
+            "riskScore": 90,
+            "details": {
+              "firstSeen": "2026-09-11T08:17:05.992Z",
+              "lastSeen": "2026-09-11T08:17:05.992Z"
+            }
+          },
+          {
+            "id": "ent-usr-1789114626024-2",
+            "type": "USER",
+            "value": "target.employee@company.com",
+            "details": {
+              "firstSeen": "2026-09-11T08:17:05.992Z",
+              "lastSeen": "2026-09-11T08:17:05.992Z"
+            }
+          },
+          {
+            "id": "ent-host-1789114626024-0",
+            "type": "HOST",
+            "value": "micr0soft-update.com",
+            "riskScore": 95,
+            "details": {
+              "firstSeen": "2026-09-11T08:17:05.992Z",
+              "lastSeen": "2026-09-11T08:17:05.992Z",
+              "url": "http://micr0soft-update.com/login"
+            }
+          },
+          {
+            "id": "ent-ip-1789114626024-0",
+            "type": "IP",
+            "value": "198.51.100.42",
+            "details": {
+              "firstSeen": "2026-09-11T08:17:05.992Z",
+              "lastSeen": "2026-09-11T08:17:05.992Z"
+            }
+          },
+          {
+            "id": "ent-file-1789114626024-0",
+            "type": "FILE",
+            "value": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "details": {
+              "filename": "invoice_malicious.exe",
+              "mimeType": "application/x-msdownload",
+              "size": 45000
+            }
+          }
+        ]
+      }
+    ],
+    "mitreTechniques": [
+      {
+        "techniqueId": "T1566.001",
+        "techniqueName": "Phishing: Spearphishing Attachment",
+        "tactic": "Initial Access"
+      },
+      {
+        "techniqueId": "T1566.002",
+        "techniqueName": "Phishing: Spearphishing Link",
+        "tactic": "Initial Access"
+      }
+    ],
+    "rawPayload": {
+      "id": "test-rpt-enhancement-001",
+      "timestamp": "2026-09-11T08:17:05.992Z",
+      "verdict": "PHISHING",
+      "riskScore": 85,
+      "confidence": 0.95,
+      "emailSummary": {
+        "from": "security@micr0soft-update.com",
+        "to": "target.employee@company.com",
+        "subject": "Critical: Immediate Account Verification Required",
+        "date": "2026-09-11T08:17:05.992Z",
         "replyTo": "phisher@evil-domain.com",
         "returnPath": "bounce@evil-domain.com",
         "bodyPreview": "Please verify your credentials immediately at the link below.",
