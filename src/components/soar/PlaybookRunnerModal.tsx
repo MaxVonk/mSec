@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { X, Play, CheckCircle2, AlertTriangle, ShieldCheck, Terminal, ArrowRight, RefreshCw, Layers } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { X, Play, CheckCircle2, AlertTriangle, ShieldCheck, Terminal, ArrowRight, RefreshCw, Layers, User, Server, Globe, Target } from 'lucide-react';
 import { PlaybookDefinition, StepExecutionState } from '../../types/soar';
 import { PREBUILT_PLAYBOOKS } from '../../utils/soarPlaybooks';
 import { UnifiedIncident } from '../../types';
@@ -11,6 +11,7 @@ interface PlaybookRunnerModalProps {
   incident?: UnifiedIncident | null;
   initialPlaybookId?: string;
   inline?: boolean;
+  incidents?: UnifiedIncident[];
 }
 
 export const PlaybookRunnerModal: React.FC<PlaybookRunnerModalProps> = ({
@@ -18,8 +19,17 @@ export const PlaybookRunnerModal: React.FC<PlaybookRunnerModalProps> = ({
   onClose,
   incident,
   initialPlaybookId,
-  inline = false
+  inline = false,
+  incidents
 }) => {
+  const [selectedIncidentId, setSelectedIncidentId] = useState<string>(() => incident?.id || '');
+  const activeIncident = useMemo(() => {
+    if (selectedIncidentId) {
+      return incidents?.find(i => i.id === selectedIncidentId) || (incident?.id === selectedIncidentId ? incident : null);
+    }
+    return incident || null;
+  }, [selectedIncidentId, incidents, incident]);
+
   const [selectedPlaybook, setSelectedPlaybook] = useState<PlaybookDefinition>(() => {
     if (initialPlaybookId) {
       const found = PREBUILT_PLAYBOOKS.find(p => p.id === initialPlaybookId);
@@ -28,22 +38,68 @@ export const PlaybookRunnerModal: React.FC<PlaybookRunnerModalProps> = ({
     return PREBUILT_PLAYBOOKS[0];
   });
 
+  const [targetUser, setTargetUser] = useState<string>('');
+  const [targetHost, setTargetHost] = useState<string>('');
+  const [targetIp, setTargetIp] = useState<string>('');
+
   const [stepStates, setStepStates] = useState<StepExecutionState[]>([]);
   const [isRunning, setIsRunning] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
   const [logs, setLogs] = useState<string[]>([]);
   const [isDryRun, setIsDryRun] = useState(false);
 
+  // Discover distinct users across available incidents for suggestions
+  const discoveredUsers = useMemo(() => {
+    const set = new Set<string>();
+    if (incidents) {
+      incidents.forEach(inc => {
+        inc.entities?.forEach(e => {
+          if (e.type === 'USER' && e.value) set.add(e.value);
+        });
+      });
+    }
+    if (incident) {
+      incident.entities?.forEach(e => {
+        if (e.type === 'USER' && e.value) set.add(e.value);
+      });
+    }
+    return Array.from(set);
+  }, [incidents, incident]);
+
+  // Sync targets when active incident changes
+  useEffect(() => {
+    if (activeIncident) {
+      const u = activeIncident.entities?.find(e => e.type === 'USER')?.value || 'jdoe@vermiculus.se';
+      const h = activeIncident.entities?.find(e => e.type === 'HOST')?.value || 'DESKTOP-SEC-8901';
+      const ip = activeIncident.entities?.find(e => e.type === 'IP')?.value || '194.26.29.112';
+      setTargetUser(u);
+      setTargetHost(h);
+      setTargetIp(ip);
+    } else {
+      if (!targetUser) setTargetUser('jdoe@vermiculus.se');
+      if (!targetHost) setTargetHost('DESKTOP-SEC-8901');
+      if (!targetIp) setTargetIp('194.26.29.112');
+    }
+  }, [activeIncident]);
+
+  // External incident prop change sync
+  useEffect(() => {
+    if (incident?.id) {
+      setSelectedIncidentId(incident.id);
+    }
+  }, [incident]);
+
   // Auto-select most relevant playbook if opened with an incident
   useEffect(() => {
     if (isOpen || inline) {
       let bestPlaybook = PREBUILT_PLAYBOOKS[0];
+      const targetInc = activeIncident || incident;
       if (initialPlaybookId) {
         const found = PREBUILT_PLAYBOOKS.find(p => p.id === initialPlaybookId);
         if (found) bestPlaybook = found;
-      } else if (incident) {
-        const mitreStr = incident.mitreTechniques?.map(m => `${m.tactic} ${m.techniqueId} ${m.techniqueName}`).join(' ') || '';
-        const incText = `${incident.title} ${incident.description} ${mitreStr}`.toLowerCase();
+      } else if (targetInc) {
+        const mitreStr = targetInc.mitreTechniques?.map(m => `${m.tactic} ${m.techniqueId} ${m.techniqueName}`).join(' ') || '';
+        const incText = `${targetInc.title} ${targetInc.description} ${mitreStr}`.toLowerCase();
         if (incText.includes('phish') || incText.includes('email')) {
           bestPlaybook = PREBUILT_PLAYBOOKS.find(p => p.id === 'phishing-campaign-purge') || bestPlaybook;
         } else if (incText.includes('ransom') || incText.includes('cobalt') || incText.includes('endpoint') || incText.includes('mimikatz')) {
@@ -58,7 +114,7 @@ export const PlaybookRunnerModal: React.FC<PlaybookRunnerModalProps> = ({
       resetExecution(bestPlaybook);
       audioService.playCommandOpen();
     }
-  }, [isOpen, incident, initialPlaybookId]);
+  }, [isOpen, incident, initialPlaybookId, activeIncident]);
 
   const resetExecution = (playbook: PlaybookDefinition) => {
     setIsRunning(false);
@@ -83,9 +139,9 @@ export const PlaybookRunnerModal: React.FC<PlaybookRunnerModalProps> = ({
     setIsRunning(true);
     setLogs([`[${new Date().toLocaleTimeString()}] INITIATING SOAR RUNBOOK: "${selectedPlaybook.title}"...`]);
 
-    const targetUser = incident?.entities?.find(e => e.type === 'USER')?.value || 'jdoe@vermiculus.se';
-    const targetHost = incident?.entities?.find(e => e.type === 'HOST')?.value || 'DESKTOP-SEC-8901';
-    const targetIp = incident?.entities?.find(e => e.type === 'IP')?.value || '194.26.29.112';
+    const activeUser = targetUser.trim() || 'jdoe@vermiculus.se';
+    const activeHost = targetHost.trim() || 'DESKTOP-SEC-8901';
+    const activeIp = targetIp.trim() || '194.26.29.112';
 
     for (let i = 0; i < selectedPlaybook.steps.length; i++) {
       const step = selectedPlaybook.steps[i];
@@ -105,25 +161,25 @@ export const PlaybookRunnerModal: React.FC<PlaybookRunnerModalProps> = ({
 
       let stepOutput = '';
       if (step.actionType === 'REVOKE_ENTRA_SESSIONS') {
-        stepOutput = `✓ Entra ID API 200 OK: Revoked 3 active refresh tokens & web sessions for [${targetUser}].`;
+        stepOutput = `✓ Entra ID API 200 OK: Revoked active refresh tokens & web sessions for [${activeUser}].`;
       } else if (step.actionType === 'RESET_PASSWORD') {
-        stepOutput = `✓ Graph API PATCH /users/${targetUser}: forceChangePasswordNextSignIn set to TRUE.`;
+        stepOutput = `✓ Graph API PATCH /users/${activeUser}: forceChangePasswordNextSignIn set to TRUE.`;
       } else if (step.actionType === 'ENFORCE_MFA') {
-        stepOutput = `✓ Entra ID Risky User Flag: High Risk policy applied. Step-Up FIDO2/MFA required.`;
+        stepOutput = `✓ Entra ID Risky User Flag: High Risk policy applied for [${activeUser}]. Step-Up FIDO2/MFA required.`;
       } else if (step.actionType === 'ISOLATE_HOST') {
-        stepOutput = `✓ Defender for Endpoint Action ID 7a91bf: Host [${targetHost}] isolated. Telemetry port 443 preserved.`;
+        stepOutput = `✓ Defender for Endpoint Action ID 7a91bf: Host [${activeHost}] isolated. Telemetry port 443 preserved.`;
       } else if (step.actionType === 'KILL_PROCESS') {
-        stepOutput = `✓ Live Response remote shell: Terminated powershell.exe (PID 4920) and parent cmd.exe.`;
+        stepOutput = `✓ Live Response remote shell on [${activeHost}]: Terminated powershell.exe (PID 4920) and parent cmd.exe.`;
       } else if (step.actionType === 'BLOCK_IP_FIREWALL') {
-        stepOutput = `✓ M365 Defender Network Protection: Added drop indicator for C2 IP [${targetIp}].`;
+        stepOutput = `✓ M365 Defender Network Protection: Added drop indicator for C2 IP [${activeIp}].`;
       } else if (step.actionType === 'PURGE_MAILBOX') {
-        stepOutput = `✓ Exchange Online Compliance Search: 24 mailboxes purged of matching phishing message ID.`;
+        stepOutput = `✓ Exchange Online Compliance Search: Purged matching phishing campaign messages across mailboxes. Target: [${activeUser}].`;
       } else if (step.actionType === 'BLOCK_DOMAIN_TABL') {
         stepOutput = `✓ Tenant Allow/Block List (TABL): Domain entry added (Action: Block, Expires: 90 days).`;
       } else if (step.actionType === 'NOTIFY_RECIPIENTS') {
-        stepOutput = `✓ Exchange notification dispatched to 18 impacted employees with security coaching advisory.`;
+        stepOutput = `✓ Security Advisory dispatched to [${activeUser}] with tailored phishing coaching briefing.`;
       } else if (step.actionType === 'BLOCK_EGRESS') {
-        stepOutput = `✓ Perimeter Firewall Rule deployed: Block egress TCP 443/8443 to [${targetIp}].`;
+        stepOutput = `✓ Perimeter Firewall Rule deployed: Block egress TCP 443/8443 to [${activeIp}].`;
       } else if (step.actionType === 'QUARANTINE_OAUTH_APP') {
         stepOutput = `✓ Entra ID Service Principal: Revoked OAuth2 multi-tenant delegated grant permissions.`;
       } else {
@@ -144,7 +200,7 @@ export const PlaybookRunnerModal: React.FC<PlaybookRunnerModalProps> = ({
     setIsCompleted(true);
     setLogs(prev => [
       ...prev,
-      `[${new Date().toLocaleTimeString()}] 🛡️ SOAR PLAYBOOK EXECUTION FINISHED: All containment steps verified.`
+      `[${new Date().toLocaleTimeString()}] 🏁 SOAR AUTOMATED CONTAINMENT PIPELINE COMPLETED SUCCESSFULLY.`
     ]);
     audioService.playSuccessFanfare();
   };
@@ -182,35 +238,155 @@ export const PlaybookRunnerModal: React.FC<PlaybookRunnerModalProps> = ({
       </div>
 
       <div className="flex-1 overflow-y-auto p-6 space-y-6">
-          {/* Target Incident Context Banner */}
-          {incident && (
-            <div className="p-4 rounded-xl bg-slate-950/80 border border-slate-800 flex items-center justify-between">
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300">
-                    {incident.id}
-                  </span>
-                  <span className="text-sm font-semibold text-white">{incident.title}</span>
-                  <span
-                    className={`text-xs px-2 py-0.5 rounded font-bold ${
-                      incident.severity === 'CRITICAL'
-                        ? 'bg-red-500/20 text-red-400 border border-red-500/30'
-                        : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
-                    }`}
-                  >
-                    {incident.severity}
-                  </span>
-                </div>
-                <div className="text-xs text-slate-400 flex items-center gap-4">
-                  <span>Target: {incident.entities?.find(e => e.type === 'USER' || e.type === 'HOST')?.value || 'Tenant'}</span>
-                  <span>Scope: {incident.provider || 'Defender XDR'}</span>
-                </div>
-              </div>
-              <span className="text-xs text-cyan-400 font-mono bg-cyan-950/40 px-3 py-1.5 rounded-lg border border-cyan-800/50">
-                Recommended Runbook Matched
+        {/* Interactive Target Scope & Incident Context Selector */}
+        <div className="p-4 rounded-xl bg-slate-950/90 border border-slate-800 space-y-3.5">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800/80 pb-3">
+            <div className="flex items-center gap-2">
+              <Target className="w-4 h-4 text-cyan-400" />
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-200">
+                Remediation Target Scope
               </span>
+              {activeIncident ? (
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 font-medium flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span>
+                  Incident #{activeIncident.incidentNumber || activeIncident.id} Linked
+                </span>
+              ) : (
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700 font-medium">
+                  Ad-Hoc / Custom Target
+                </span>
+              )}
             </div>
-          )}
+
+            {/* Incident Selector Dropdown */}
+            <div className="flex items-center gap-2">
+              <label className="text-xs text-slate-400 font-medium">Link Incident:</label>
+              <select
+                value={selectedIncidentId}
+                onChange={e => {
+                  const newId = e.target.value;
+                  setSelectedIncidentId(newId);
+                  const matched = incidents?.find(i => i.id === newId);
+                  if (matched) {
+                    const mitreStr = matched.mitreTechniques?.map(m => `${m.tactic} ${m.techniqueId} ${m.techniqueName}`).join(' ') || '';
+                    const incText = `${matched.title} ${matched.description} ${mitreStr}`.toLowerCase();
+                    let bestPlaybook = PREBUILT_PLAYBOOKS[0];
+                    if (incText.includes('phish') || incText.includes('email')) {
+                      bestPlaybook = PREBUILT_PLAYBOOKS.find(p => p.id === 'phishing-campaign-purge') || bestPlaybook;
+                    } else if (incText.includes('ransom') || incText.includes('cobalt') || incText.includes('endpoint') || incText.includes('mimikatz')) {
+                      bestPlaybook = PREBUILT_PLAYBOOKS.find(p => p.id === 'ransomware-host-isolation') || bestPlaybook;
+                    } else if (incText.includes('exfiltrat') || incText.includes('download') || incText.includes('oauth')) {
+                      bestPlaybook = PREBUILT_PLAYBOOKS.find(p => p.id === 'data-exfiltration-blockade') || bestPlaybook;
+                    } else {
+                      bestPlaybook = PREBUILT_PLAYBOOKS.find(p => p.id === 'compromised-identity') || bestPlaybook;
+                    }
+                    setSelectedPlaybook(bestPlaybook);
+                    resetExecution(bestPlaybook);
+                  }
+                }}
+                disabled={isRunning}
+                className="text-xs bg-slate-900 border border-slate-700 text-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-cyan-500 max-w-xs truncate cursor-pointer hover:border-slate-600"
+              >
+                <option value="">[Ad-Hoc / Manual Target - No Incident]</option>
+                {incidents?.map(inc => (
+                  <option key={inc.id} value={inc.id}>
+                    #{inc.incidentNumber || inc.id} - {inc.title.slice(0, 40)} ({inc.severity})
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Active Target Entity Inputs */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {/* Target User */}
+            <div className={`p-3 rounded-lg border transition-all ${
+              selectedPlaybook.category === 'IDENTITY' || selectedPlaybook.category === 'EMAIL'
+                ? 'bg-purple-950/30 border-purple-500/60 ring-1 ring-purple-500/30'
+                : 'bg-slate-900/60 border-slate-800'
+            }`}>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-[11px] font-semibold flex items-center gap-1.5 text-slate-300">
+                  <User className="w-3.5 h-3.5 text-purple-400" />
+                  Target User (UPN / Email)
+                </label>
+                {(selectedPlaybook.category === 'IDENTITY' || selectedPlaybook.category === 'EMAIL') && (
+                  <span className="text-[9px] font-bold uppercase tracking-wider text-purple-300 bg-purple-500/20 px-1.5 py-0.5 rounded border border-purple-500/30">
+                    Active Target
+                  </span>
+                )}
+              </div>
+              <input
+                type="text"
+                list="discovered-users-list"
+                value={targetUser}
+                onChange={e => setTargetUser(e.target.value)}
+                placeholder="e.g. user@vermiculus.se"
+                disabled={isRunning}
+                className="w-full text-xs font-mono bg-slate-950 border border-slate-700 rounded px-2.5 py-1.5 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 transition-colors"
+              />
+              <datalist id="discovered-users-list">
+                {discoveredUsers.map(u => (
+                  <option key={u} value={u} />
+                ))}
+              </datalist>
+            </div>
+
+            {/* Target Host */}
+            <div className={`p-3 rounded-lg border transition-all ${
+              selectedPlaybook.category === 'ENDPOINT'
+                ? 'bg-red-950/30 border-red-500/60 ring-1 ring-red-500/30'
+                : 'bg-slate-900/60 border-slate-800'
+            }`}>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-[11px] font-semibold flex items-center gap-1.5 text-slate-300">
+                  <Server className="w-3.5 h-3.5 text-red-400" />
+                  Target Hostname
+                </label>
+                {selectedPlaybook.category === 'ENDPOINT' && (
+                  <span className="text-[9px] font-bold uppercase tracking-wider text-red-300 bg-red-500/20 px-1.5 py-0.5 rounded border border-red-500/30">
+                    Active Target
+                  </span>
+                )}
+              </div>
+              <input
+                type="text"
+                value={targetHost}
+                onChange={e => setTargetHost(e.target.value)}
+                placeholder="e.g. DESKTOP-SEC-8901"
+                disabled={isRunning}
+                className="w-full text-xs font-mono bg-slate-950 border border-slate-700 rounded px-2.5 py-1.5 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 transition-colors"
+              />
+            </div>
+
+            {/* Target IP */}
+            <div className={`p-3 rounded-lg border transition-all ${
+              selectedPlaybook.category === 'NETWORK'
+                ? 'bg-blue-950/30 border-blue-500/60 ring-1 ring-blue-500/30'
+                : 'bg-slate-900/60 border-slate-800'
+            }`}>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-[11px] font-semibold flex items-center gap-1.5 text-slate-300">
+                  <Globe className="w-3.5 h-3.5 text-blue-400" />
+                  Target IP / C2 Network
+                </label>
+                {selectedPlaybook.category === 'NETWORK' && (
+                  <span className="text-[9px] font-bold uppercase tracking-wider text-blue-300 bg-blue-500/20 px-1.5 py-0.5 rounded border border-blue-500/30">
+                    Active Target
+                  </span>
+                )}
+              </div>
+              <input
+                type="text"
+                value={targetIp}
+                onChange={e => setTargetIp(e.target.value)}
+                placeholder="e.g. 194.26.29.112"
+                disabled={isRunning}
+                className="w-full text-xs font-mono bg-slate-950 border border-slate-700 rounded px-2.5 py-1.5 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 transition-colors"
+              />
+            </div>
+          </div>
+        </div>
 
           {/* Playbook Selector Tabs */}
           <div>

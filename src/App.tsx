@@ -363,6 +363,7 @@ export const App: React.FC = () => {
             <PlaybookRunnerModal
               inline={true}
               incident={playbookIncident || selectedIncident}
+              incidents={incidents}
             />
           )}
 
@@ -452,6 +453,7 @@ export const App: React.FC = () => {
             setPlaybookIncident(null);
           }}
           incident={playbookIncident || selectedIncident}
+          incidents={incidents}
         />
       )}
 
