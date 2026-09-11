@@ -27,23 +27,27 @@ export class DataStore {
     this.incidentsFile = path.join(this.dataDir, 'incidents.json');
     this.configFile = path.join(this.dataDir, 'connectors.json');
 
+    const defaultTenantId = process.env.M365_TENANT_ID || process.env.GRAPH_TENANT_ID || '';
+    const defaultClientId = process.env.M365_CLIENT_ID || process.env.GRAPH_CLIENT_ID || '';
+    const defaultClientSecret = process.env.M365_CLIENT_SECRET || process.env.GRAPH_CLIENT_SECRET || '';
+
     this.config = {
       graph: {
-        tenantId: '',
-        clientId: '',
-        clientSecret: '',
-        enabled: false,
+        tenantId: defaultTenantId,
+        clientId: defaultClientId,
+        clientSecret: defaultClientSecret,
+        enabled: Boolean(defaultClientId && defaultClientSecret),
         status: 'IDLE',
       },
       sentinel: {
-        tenantId: '',
-        clientId: '',
-        clientSecret: '',
-        subscriptionId: '',
-        resourceGroup: '',
-        workspaceName: '',
+        tenantId: defaultTenantId,
+        clientId: defaultClientId,
+        clientSecret: defaultClientSecret,
+        subscriptionId: process.env.SENTINEL_SUBSCRIPTION_ID || '',
+        resourceGroup: process.env.SENTINEL_RESOURCE_GROUP || '',
+        workspaceName: process.env.SENTINEL_WORKSPACE_NAME || '',
         workspaceId: '',
-        enabled: false,
+        enabled: Boolean(process.env.SENTINEL_WORKSPACE_NAME),
         status: 'IDLE',
       }
     };

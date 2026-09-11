@@ -4,6 +4,18 @@ A unified security operations application to import, normalize, and analyze data
 
 ---
 
+## Automated Microsoft Entra ID Setup (Linux)
+
+To automatically create the Single-Tenant App Registration, Enterprise Application, assign required Graph permissions, grant admin consent, and generate your `.env`:
+
+```bash
+chmod +x setup-entra.sh
+./setup-entra.sh
+# or: npm run setup:entra
+```
+
+---
+
 ## Quick Start with Docker Compose
 
 Ensure Docker and Docker Compose are installed, then run:
