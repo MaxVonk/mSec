@@ -1,5 +1,748 @@
 [
   {
+    "id": "51feb2b0-38ab-43a9-a906-7779c2db3f29",
+    "timestamp": "2026-09-11T08:19:13.212Z",
+    "verdict": "PHISHING",
+    "riskScore": 100,
+    "confidence": 0.94,
+    "emailSummary": {
+      "from": "\"IT Support\" <admin@it-secure-dept.com>",
+      "to": "victim@company.com",
+      "subject": "URGENT: Verify your account immediately",
+      "date": "2026-09-04T08:00:00.000Z",
+      "replyTo": "attacker@hacker-mail.ru",
+      "returnPath": "attacker@hacker-mail.ru",
+      "bodyPreview": "Dear user,\n\nYour account has been suspended. Please verify your credentials immediately to\nrestore access.\n\nClick here to login [http://secure-login.account-verify.xyz/login]\n\nFailure to do so within 24 hours will result in permanent deletion.",
+      "urlCount": 2,
+      "attachmentCount": 0
+    },
+    "headerAnalysis": {
+      "spf": {
+        "name": "SPF",
+        "result": "fail",
+        "detail": "Sender Policy Framework gateway status: fail"
+      },
+      "dkim": {
+        "name": "DKIM",
+        "result": "fail",
+        "detail": "DomainKeys Identified Mail gateway status: fail"
+      },
+      "dmarc": {
+        "name": "DMARC",
+        "result": "fail",
+        "detail": "DMARC gateway status: fail"
+      },
+      "replyToMismatch": true,
+      "returnPathMismatch": true,
+      "receivedHops": 1,
+      "originIps": [],
+      "checks": [
+        {
+          "name": "SPF",
+          "result": "fail",
+          "detail": "Sender Policy Framework gateway status: fail"
+        },
+        {
+          "name": "DKIM",
+          "result": "fail",
+          "detail": "DomainKeys Identified Mail gateway status: fail"
+        },
+        {
+          "name": "DMARC",
+          "result": "fail",
+          "detail": "DMARC gateway status: fail"
+        }
+      ],
+      "dnsAuth": {}
+    },
+    "urlAnalysis": [
+      {
+        "url": "http://secure-login.account-verify.xyz/login]",
+        "domain": "secure-login.account-verify.xyz",
+        "domainAgeDays": 4,
+        "isMalicious": true,
+        "isDeceptive": false,
+        "reputationSources": [
+          {
+            "source": "URLHaus",
+            "result": "clean",
+            "detail": "No threat detected"
+          }
+        ]
+      },
+      {
+        "url": "http://secure-login.account-verify.xyz/login",
+        "domain": "secure-login.account-verify.xyz",
+        "domainAgeDays": 4,
+        "isMalicious": true,
+        "isDeceptive": false,
+        "reputationSources": [
+          {
+            "source": "URLHaus",
+            "result": "clean",
+            "detail": "No threat detected"
+          }
+        ]
+      }
+    ],
+    "attachmentAnalysis": [],
+    "aiClassification": null,
+    "riskBreakdown": {
+      "totalScore": 175,
+      "maxPossible": 395,
+      "items": [
+        {
+          "condition": "SPF Authentication Failure",
+          "points": 20,
+          "triggered": true,
+          "detail": "Sender Policy Framework gateway status: fail"
+        },
+        {
+          "condition": "DKIM Signature Failure",
+          "points": 15,
+          "triggered": true,
+          "detail": "DomainKeys Identified Mail gateway status: fail"
+        },
+        {
+          "condition": "DMARC Policy Failure",
+          "points": 20,
+          "triggered": true,
+          "detail": "DMARC gateway status: fail"
+        },
+        {
+          "condition": "Reply-To Header Mismatch",
+          "points": 15,
+          "triggered": true,
+          "detail": "Reply-To differs from sender domain: attacker@hacker-mail.ru"
+        },
+        {
+          "condition": "Return-Path Mismatch",
+          "points": 10,
+          "triggered": true,
+          "detail": "Return-Path differs from sender domain: attacker@hacker-mail.ru"
+        },
+        {
+          "condition": "Urgent or Coercive Language",
+          "points": 10,
+          "triggered": true,
+          "detail": "High urgency/deadline phrases found in subject or body"
+        },
+        {
+          "condition": "Credential Harvesting Language",
+          "points": 20,
+          "triggered": true,
+          "detail": "Phrases requesting credentials or account validation found"
+        },
+        {
+          "condition": "Newly Registered Domain (<30 days)",
+          "points": 15,
+          "triggered": true,
+          "detail": "secure-login.account-verify.xyz estimated age: 4 days"
+        },
+        {
+          "condition": "Known Malicious URL",
+          "points": 50,
+          "triggered": true,
+          "detail": "Threat flagged on: http://secure-login.account-verify.xyz/login]"
+        },
+        {
+          "condition": "Display URL Deception",
+          "points": 15,
+          "triggered": false,
+          "detail": "Anchor text aligns with link destinations"
+        },
+        {
+          "condition": "Homoglyph / Brand Typosquatting Deception",
+          "points": 25,
+          "triggered": false,
+          "detail": "No confusable characters or brand typosquats detected"
+        },
+        {
+          "condition": "Known Malicious Attachment",
+          "points": 50,
+          "triggered": false,
+          "detail": "No known malicious hashes"
+        },
+        {
+          "condition": "Dangerous File Extension",
+          "points": 15,
+          "triggered": false,
+          "detail": "Standard file formats only"
+        },
+        {
+          "condition": "Password-Protected Archive",
+          "points": 10,
+          "triggered": false,
+          "detail": "No encrypted archives"
+        },
+        {
+          "condition": "Microsoft Entra VIP / Brand Impersonation",
+          "points": 30,
+          "triggered": false,
+          "detail": "No internal executive impersonation detected"
+        },
+        {
+          "condition": "Microsoft Defender TI Malicious Domain",
+          "points": 50,
+          "triggered": false,
+          "detail": "Microsoft Defender TI verified clean / neutral"
+        },
+        {
+          "condition": "Exchange EOP Spam/Phish Verdict (SCL >= 5)",
+          "points": 25,
+          "triggered": false,
+          "detail": "No Exchange EOP SCL header present"
+        }
+      ],
+      "deterministicVerdict": "PHISHING"
+    },
+    "recommendedActions": [
+      "Delete email immediately",
+      "Do not click any embedded links or buttons",
+      "Do not open or download attachments",
+      "Reset password if credentials were submitted"
+    ],
+    "microsoftEnrichment": {}
+  },
+  {
+    "id": "test-rpt-enhancement-001",
+    "timestamp": "2026-09-11T08:19:12.596Z",
+    "verdict": "PHISHING",
+    "riskScore": 85,
+    "confidence": 0.95,
+    "emailSummary": {
+      "from": "security@micr0soft-update.com",
+      "to": "target.employee@company.com",
+      "subject": "Critical: Immediate Account Verification Required",
+      "date": "2026-09-11T08:19:12.596Z",
+      "replyTo": "phisher@evil-domain.com",
+      "returnPath": "bounce@evil-domain.com",
+      "bodyPreview": "Please verify your credentials immediately at the link below.",
+      "urlCount": 1,
+      "attachmentCount": 1
+    },
+    "headerAnalysis": {
+      "spf": {
+        "name": "SPF",
+        "result": "fail",
+        "detail": "SPF softfail"
+      },
+      "dkim": {
+        "name": "DKIM",
+        "result": "fail",
+        "detail": "No DKIM signature"
+      },
+      "dmarc": {
+        "name": "DMARC",
+        "result": "fail",
+        "detail": "DMARC failed"
+      },
+      "replyToMismatch": true,
+      "returnPathMismatch": true,
+      "receivedHops": 3,
+      "originIps": [
+        "198.51.100.42"
+      ]
+    },
+    "urlAnalysis": [
+      {
+        "url": "http://micr0soft-update.com/login",
+        "domain": "micr0soft-update.com",
+        "domainAgeDays": 2,
+        "isMalicious": true,
+        "isDeceptive": true,
+        "reputationSources": [
+          {
+            "source": "VirusTotal",
+            "result": "malicious"
+          }
+        ],
+        "homoglyph": {
+          "isSuspicious": true,
+          "impersonatedBrand": "Microsoft",
+          "matchedTarget": "microsoft.com",
+          "similarityScore": 0.85,
+          "explanation": "Detected typosquatting / leetspeak mimic of brand \"Microsoft\""
+        }
+      }
+    ],
+    "attachmentAnalysis": [
+      {
+        "filename": "invoice_malicious.exe",
+        "mimeType": "application/x-msdownload",
+        "size": 45000,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "md5": "d41d8cd98f00b204e9800998ecf8427e",
+        "isSuspiciousExtension": true,
+        "isPasswordProtected": false,
+        "isMalicious": true,
+        "reputationSources": [
+          {
+            "source": "VirusTotal",
+            "result": "malicious"
+          }
+        ]
+      }
+    ],
+    "aiClassification": {
+      "classification": "PHISHING",
+      "confidence": 0.95,
+      "keyFindings": [
+        "Brand impersonation",
+        "Urgent credential harvesting prompt"
+      ],
+      "indicators": [
+        "micr0soft-update.com",
+        "invoice_malicious.exe"
+      ],
+      "recommendedActions": [
+        "Block sender",
+        "Purge from all mailboxes",
+        "Revoke user credentials"
+      ],
+      "modelUsed": "Azure OpenAI GPT-4o"
+    },
+    "riskBreakdown": {
+      "totalScore": 85,
+      "maxPossible": 100,
+      "deterministicVerdict": "PHISHING",
+      "items": [
+        {
+          "condition": "SPF / DMARC Authentication Failures",
+          "points": 30,
+          "triggered": true
+        },
+        {
+          "condition": "Homoglyph / Brand Typosquatting Deception",
+          "points": 25,
+          "triggered": true
+        }
+      ]
+    },
+    "recommendedActions": [
+      "Purge message",
+      "Block sender in TABL",
+      "Revoke target user sessions"
+    ],
+    "remediationLogs": [
+      {
+        "action": "PURGE_TENANT",
+        "timestamp": "2026-09-11T08:19:12.618Z",
+        "status": "SIMULATED",
+        "target": "Critical: Immediate Account Verification Required",
+        "details": "Tenant Purge Simulation: Identified matching subject \"Critical: Immediate Account Verification Required\" in 3 tenant mailboxes. Successfully marked 3 messages for permanent deletion (Exchange Online Purge Queue).",
+        "operator": "SOC Lead Analyst"
+      },
+      {
+        "action": "BLOCK_SENDER",
+        "timestamp": "2026-09-11T08:19:12.624Z",
+        "status": "SIMULATED",
+        "target": "micr0soft-update.com",
+        "details": "Tenant Allow/Block List Simulation: Block policy created for domain \"micr0soft-update.com\". Inbound mail will be quarantined with SCL 9.",
+        "operator": "SOC Lead Analyst"
+      },
+      {
+        "action": "REVOKE_SESSION",
+        "timestamp": "2026-09-11T08:19:12.633Z",
+        "status": "SIMULATED",
+        "target": "target.employee@company.com",
+        "details": "Identity Containment Simulation: Invalidation signal transmitted for \"target.employee@company.com\". Active web, desktop, and mobile tokens terminated.",
+        "operator": "SOC Lead Analyst"
+      }
+    ]
+  },
+  {
+    "id": "test-rpt-enhancement-001",
+    "timestamp": "2026-09-11T08:19:12.596Z",
+    "verdict": "PHISHING",
+    "riskScore": 85,
+    "confidence": 0.95,
+    "emailSummary": {
+      "from": "security@micr0soft-update.com",
+      "to": "target.employee@company.com",
+      "subject": "Critical: Immediate Account Verification Required",
+      "date": "2026-09-11T08:19:12.596Z",
+      "replyTo": "phisher@evil-domain.com",
+      "returnPath": "bounce@evil-domain.com",
+      "bodyPreview": "Please verify your credentials immediately at the link below.",
+      "urlCount": 1,
+      "attachmentCount": 1
+    },
+    "headerAnalysis": {
+      "spf": {
+        "name": "SPF",
+        "result": "fail",
+        "detail": "SPF softfail"
+      },
+      "dkim": {
+        "name": "DKIM",
+        "result": "fail",
+        "detail": "No DKIM signature"
+      },
+      "dmarc": {
+        "name": "DMARC",
+        "result": "fail",
+        "detail": "DMARC failed"
+      },
+      "replyToMismatch": true,
+      "returnPathMismatch": true,
+      "receivedHops": 3,
+      "originIps": [
+        "198.51.100.42"
+      ]
+    },
+    "urlAnalysis": [
+      {
+        "url": "http://micr0soft-update.com/login",
+        "domain": "micr0soft-update.com",
+        "domainAgeDays": 2,
+        "isMalicious": true,
+        "isDeceptive": true,
+        "reputationSources": [
+          {
+            "source": "VirusTotal",
+            "result": "malicious"
+          }
+        ],
+        "homoglyph": {
+          "isSuspicious": true,
+          "impersonatedBrand": "Microsoft",
+          "matchedTarget": "microsoft.com",
+          "similarityScore": 0.85,
+          "explanation": "Detected typosquatting / leetspeak mimic of brand \"Microsoft\""
+        }
+      }
+    ],
+    "attachmentAnalysis": [
+      {
+        "filename": "invoice_malicious.exe",
+        "mimeType": "application/x-msdownload",
+        "size": 45000,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "md5": "d41d8cd98f00b204e9800998ecf8427e",
+        "isSuspiciousExtension": true,
+        "isPasswordProtected": false,
+        "isMalicious": true,
+        "reputationSources": [
+          {
+            "source": "VirusTotal",
+            "result": "malicious"
+          }
+        ]
+      }
+    ],
+    "aiClassification": {
+      "classification": "PHISHING",
+      "confidence": 0.95,
+      "keyFindings": [
+        "Brand impersonation",
+        "Urgent credential harvesting prompt"
+      ],
+      "indicators": [
+        "micr0soft-update.com",
+        "invoice_malicious.exe"
+      ],
+      "recommendedActions": [
+        "Block sender",
+        "Purge from all mailboxes",
+        "Revoke user credentials"
+      ],
+      "modelUsed": "Azure OpenAI GPT-4o"
+    },
+    "riskBreakdown": {
+      "totalScore": 85,
+      "maxPossible": 100,
+      "deterministicVerdict": "PHISHING",
+      "items": [
+        {
+          "condition": "SPF / DMARC Authentication Failures",
+          "points": 30,
+          "triggered": true
+        },
+        {
+          "condition": "Homoglyph / Brand Typosquatting Deception",
+          "points": 25,
+          "triggered": true
+        }
+      ]
+    },
+    "recommendedActions": [
+      "Purge message",
+      "Block sender in TABL",
+      "Revoke target user sessions"
+    ],
+    "remediationLogs": [
+      {
+        "action": "PURGE_TENANT",
+        "timestamp": "2026-09-11T08:19:12.618Z",
+        "status": "SIMULATED",
+        "target": "Critical: Immediate Account Verification Required",
+        "details": "Tenant Purge Simulation: Identified matching subject \"Critical: Immediate Account Verification Required\" in 3 tenant mailboxes. Successfully marked 3 messages for permanent deletion (Exchange Online Purge Queue).",
+        "operator": "SOC Lead Analyst"
+      },
+      {
+        "action": "BLOCK_SENDER",
+        "timestamp": "2026-09-11T08:19:12.624Z",
+        "status": "SIMULATED",
+        "target": "micr0soft-update.com",
+        "details": "Tenant Allow/Block List Simulation: Block policy created for domain \"micr0soft-update.com\". Inbound mail will be quarantined with SCL 9.",
+        "operator": "SOC Lead Analyst"
+      }
+    ]
+  },
+  {
+    "id": "test-rpt-enhancement-001",
+    "timestamp": "2026-09-11T08:19:12.596Z",
+    "verdict": "PHISHING",
+    "riskScore": 85,
+    "confidence": 0.95,
+    "emailSummary": {
+      "from": "security@micr0soft-update.com",
+      "to": "target.employee@company.com",
+      "subject": "Critical: Immediate Account Verification Required",
+      "date": "2026-09-11T08:19:12.596Z",
+      "replyTo": "phisher@evil-domain.com",
+      "returnPath": "bounce@evil-domain.com",
+      "bodyPreview": "Please verify your credentials immediately at the link below.",
+      "urlCount": 1,
+      "attachmentCount": 1
+    },
+    "headerAnalysis": {
+      "spf": {
+        "name": "SPF",
+        "result": "fail",
+        "detail": "SPF softfail"
+      },
+      "dkim": {
+        "name": "DKIM",
+        "result": "fail",
+        "detail": "No DKIM signature"
+      },
+      "dmarc": {
+        "name": "DMARC",
+        "result": "fail",
+        "detail": "DMARC failed"
+      },
+      "replyToMismatch": true,
+      "returnPathMismatch": true,
+      "receivedHops": 3,
+      "originIps": [
+        "198.51.100.42"
+      ]
+    },
+    "urlAnalysis": [
+      {
+        "url": "http://micr0soft-update.com/login",
+        "domain": "micr0soft-update.com",
+        "domainAgeDays": 2,
+        "isMalicious": true,
+        "isDeceptive": true,
+        "reputationSources": [
+          {
+            "source": "VirusTotal",
+            "result": "malicious"
+          }
+        ],
+        "homoglyph": {
+          "isSuspicious": true,
+          "impersonatedBrand": "Microsoft",
+          "matchedTarget": "microsoft.com",
+          "similarityScore": 0.85,
+          "explanation": "Detected typosquatting / leetspeak mimic of brand \"Microsoft\""
+        }
+      }
+    ],
+    "attachmentAnalysis": [
+      {
+        "filename": "invoice_malicious.exe",
+        "mimeType": "application/x-msdownload",
+        "size": 45000,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "md5": "d41d8cd98f00b204e9800998ecf8427e",
+        "isSuspiciousExtension": true,
+        "isPasswordProtected": false,
+        "isMalicious": true,
+        "reputationSources": [
+          {
+            "source": "VirusTotal",
+            "result": "malicious"
+          }
+        ]
+      }
+    ],
+    "aiClassification": {
+      "classification": "PHISHING",
+      "confidence": 0.95,
+      "keyFindings": [
+        "Brand impersonation",
+        "Urgent credential harvesting prompt"
+      ],
+      "indicators": [
+        "micr0soft-update.com",
+        "invoice_malicious.exe"
+      ],
+      "recommendedActions": [
+        "Block sender",
+        "Purge from all mailboxes",
+        "Revoke user credentials"
+      ],
+      "modelUsed": "Azure OpenAI GPT-4o"
+    },
+    "riskBreakdown": {
+      "totalScore": 85,
+      "maxPossible": 100,
+      "deterministicVerdict": "PHISHING",
+      "items": [
+        {
+          "condition": "SPF / DMARC Authentication Failures",
+          "points": 30,
+          "triggered": true
+        },
+        {
+          "condition": "Homoglyph / Brand Typosquatting Deception",
+          "points": 25,
+          "triggered": true
+        }
+      ]
+    },
+    "recommendedActions": [
+      "Purge message",
+      "Block sender in TABL",
+      "Revoke target user sessions"
+    ],
+    "remediationLogs": [
+      {
+        "action": "PURGE_TENANT",
+        "timestamp": "2026-09-11T08:19:12.618Z",
+        "status": "SIMULATED",
+        "target": "Critical: Immediate Account Verification Required",
+        "details": "Tenant Purge Simulation: Identified matching subject \"Critical: Immediate Account Verification Required\" in 3 tenant mailboxes. Successfully marked 3 messages for permanent deletion (Exchange Online Purge Queue).",
+        "operator": "SOC Lead Analyst"
+      }
+    ]
+  },
+  {
+    "id": "test-rpt-enhancement-001",
+    "timestamp": "2026-09-11T08:19:12.596Z",
+    "verdict": "PHISHING",
+    "riskScore": 85,
+    "confidence": 0.95,
+    "emailSummary": {
+      "from": "security@micr0soft-update.com",
+      "to": "target.employee@company.com",
+      "subject": "Critical: Immediate Account Verification Required",
+      "date": "2026-09-11T08:19:12.596Z",
+      "replyTo": "phisher@evil-domain.com",
+      "returnPath": "bounce@evil-domain.com",
+      "bodyPreview": "Please verify your credentials immediately at the link below.",
+      "urlCount": 1,
+      "attachmentCount": 1
+    },
+    "headerAnalysis": {
+      "spf": {
+        "name": "SPF",
+        "result": "fail",
+        "detail": "SPF softfail"
+      },
+      "dkim": {
+        "name": "DKIM",
+        "result": "fail",
+        "detail": "No DKIM signature"
+      },
+      "dmarc": {
+        "name": "DMARC",
+        "result": "fail",
+        "detail": "DMARC failed"
+      },
+      "replyToMismatch": true,
+      "returnPathMismatch": true,
+      "receivedHops": 3,
+      "originIps": [
+        "198.51.100.42"
+      ]
+    },
+    "urlAnalysis": [
+      {
+        "url": "http://micr0soft-update.com/login",
+        "domain": "micr0soft-update.com",
+        "domainAgeDays": 2,
+        "isMalicious": true,
+        "isDeceptive": true,
+        "reputationSources": [
+          {
+            "source": "VirusTotal",
+            "result": "malicious"
+          }
+        ],
+        "homoglyph": {
+          "isSuspicious": true,
+          "impersonatedBrand": "Microsoft",
+          "matchedTarget": "microsoft.com",
+          "similarityScore": 0.85,
+          "explanation": "Detected typosquatting / leetspeak mimic of brand \"Microsoft\""
+        }
+      }
+    ],
+    "attachmentAnalysis": [
+      {
+        "filename": "invoice_malicious.exe",
+        "mimeType": "application/x-msdownload",
+        "size": 45000,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "md5": "d41d8cd98f00b204e9800998ecf8427e",
+        "isSuspiciousExtension": true,
+        "isPasswordProtected": false,
+        "isMalicious": true,
+        "reputationSources": [
+          {
+            "source": "VirusTotal",
+            "result": "malicious"
+          }
+        ]
+      }
+    ],
+    "aiClassification": {
+      "classification": "PHISHING",
+      "confidence": 0.95,
+      "keyFindings": [
+        "Brand impersonation",
+        "Urgent credential harvesting prompt"
+      ],
+      "indicators": [
+        "micr0soft-update.com",
+        "invoice_malicious.exe"
+      ],
+      "recommendedActions": [
+        "Block sender",
+        "Purge from all mailboxes",
+        "Revoke user credentials"
+      ],
+      "modelUsed": "Azure OpenAI GPT-4o"
+    },
+    "riskBreakdown": {
+      "totalScore": 85,
+      "maxPossible": 100,
+      "deterministicVerdict": "PHISHING",
+      "items": [
+        {
+          "condition": "SPF / DMARC Authentication Failures",
+          "points": 30,
+          "triggered": true
+        },
+        {
+          "condition": "Homoglyph / Brand Typosquatting Deception",
+          "points": 25,
+          "triggered": true
+        }
+      ]
+    },
+    "recommendedActions": [
+      "Purge message",
+      "Block sender in TABL",
+      "Revoke target user sessions"
+    ]
+  },
+  {
     "id": "cf3221a5-e56a-4f9b-b610-f36d6ea1e48c",
     "timestamp": "2026-09-11T08:17:06.734Z",
     "verdict": "PHISHING",
