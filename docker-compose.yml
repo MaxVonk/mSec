@@ -6,8 +6,8 @@ services:
     container_name: msec-hub
     restart: unless-stopped
     ports:
-      # Maps port 3310 on all host interfaces (or override with MSEC_BIND_IP)
-      - "${MSEC_BIND_IP:-0.0.0.0}:3310:3310"
+      # Maps port 3310 to all network interfaces
+      - "3310:3310"
     env_file:
       - path: .env
         required: false
