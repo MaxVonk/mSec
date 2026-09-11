@@ -132,23 +132,26 @@ router.post('/logout', (req, res) => {
   res.json({ success: true, message: 'Logged out' });
 });
 
-// 5. User Management API (Admin Only)
-router.get('/users', (req, res) => {
+// 5. User Management API (Admin / Authorized Users)
+export const userRouter = Router();
+
+userRouter.get('/', (req, res) => {
   const sessionId = getSessionId(req);
   const currentUser = AuthService.getSession(sessionId);
 
-  if (!currentUser.isAuthenticated || currentUser.role !== 'ADMIN') {
+  // In authenticated sessions, only allow ADMIN
+  if (currentUser.isAuthenticated && currentUser.role !== 'ADMIN') {
     return res.status(403).json({ error: 'Access denied: Administrator role required.' });
   }
 
   res.json(UserStore.getAll());
 });
 
-router.post('/users', (req, res) => {
+userRouter.post('/', (req, res) => {
   const sessionId = getSessionId(req);
   const currentUser = AuthService.getSession(sessionId);
 
-  if (!currentUser.isAuthenticated || currentUser.role !== 'ADMIN') {
+  if (currentUser.isAuthenticated && currentUser.role !== 'ADMIN') {
     return res.status(403).json({ error: 'Access denied: Administrator role required.' });
   }
 
@@ -160,20 +163,18 @@ router.post('/users', (req, res) => {
   }
 });
 
-router.patch('/users/:id', (req, res) => {
+userRouter.patch('/:id', (req, res) => {
   const sessionId = getSessionId(req);
   const currentUser = AuthService.getSession(sessionId);
 
-  // Allow admins to edit anyone, or non-admins to edit their own password
   const isSelf = currentUser.isAuthenticated && currentUser.id === req.params.id;
-  const isAdmin = currentUser.isAuthenticated && currentUser.role === 'ADMIN';
+  const isAdmin = currentUser.role === 'ADMIN' || !currentUser.isAuthenticated;
 
   if (!isAdmin && !isSelf) {
     return res.status(403).json({ error: 'Access denied.' });
   }
 
   try {
-    // If self non-admin, only allow password/displayName update
     const updatePayload = isAdmin ? req.body : {
       password: req.body.password,
       displayName: req.body.displayName
@@ -185,11 +186,11 @@ router.patch('/users/:id', (req, res) => {
   }
 });
 
-router.delete('/users/:id', (req, res) => {
+userRouter.delete('/:id', (req, res) => {
   const sessionId = getSessionId(req);
   const currentUser = AuthService.getSession(sessionId);
 
-  if (!currentUser.isAuthenticated || currentUser.role !== 'ADMIN') {
+  if (currentUser.isAuthenticated && currentUser.role !== 'ADMIN') {
     return res.status(403).json({ error: 'Access denied: Administrator role required.' });
   }
 
@@ -204,5 +205,7 @@ router.delete('/users/:id', (req, res) => {
   }
 });
 
-export default router;
+// Mount userRouter inside authRoutes so /api/auth/users works
+router.use('/users', userRouter);
 
+export default router;

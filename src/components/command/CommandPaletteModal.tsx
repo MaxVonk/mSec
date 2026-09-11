@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Search, ShieldAlert, Crosshair, Monitor, FileText, Users, Volume2, VolumeX, Play, ArrowRight, CornerDownLeft, Sparkles } from 'lucide-react';
+import { Search, ShieldAlert, Crosshair, Monitor, FileText, Users, Volume2, VolumeX, Play, ArrowRight, CornerDownLeft } from 'lucide-react';
 import { UnifiedIncident, UserSessionProfile } from '../../types';
 import { audioService } from '../../utils/audioService';
 
@@ -25,7 +25,6 @@ interface CommandPaletteModalProps {
   onOpenUserManagement: () => void;
   onOpenPlaybooks: (incident?: UnifiedIncident) => void;
   onOpenConnectors: () => void;
-  onOpenCopilot: () => void;
 }
 
 export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
@@ -39,8 +38,7 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
   onOpenShiftHandover,
   onOpenUserManagement,
   onOpenPlaybooks,
-  onOpenConnectors,
-  onOpenCopilot
+  onOpenConnectors
 }) => {
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -77,15 +75,6 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
         badge: 'MITRE',
         icon: <Crosshair className="w-4 h-4 text-purple-400" />,
         action: onOpenMitre
-      },
-      {
-        id: 'nav-copilot',
-        category: 'NAVIGATION',
-        title: 'Ask mSec SecOps Copilot',
-        subtitle: 'AI assistant for KQL queries, incident triage, and attack analysis',
-        badge: 'AI',
-        icon: <Sparkles className="w-4 h-4 text-cyan-400" />,
-        action: onOpenCopilot
       },
       {
         id: 'nav-handover',
@@ -169,7 +158,7 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
         item.subtitle?.toLowerCase().includes(lower) ||
         item.badge?.toLowerCase().includes(lower)
     );
-  }, [query, incidents, currentUser, onOpenMitre, onOpenWarRoom, onOpenShiftHandover, onOpenUserManagement, onOpenPlaybooks, onOpenConnectors, onOpenCopilot, onSelectIncident]);
+  }, [query, incidents, currentUser, onOpenMitre, onOpenWarRoom, onOpenShiftHandover, onOpenUserManagement, onOpenPlaybooks, onOpenConnectors, onSelectIncident]);
 
   useEffect(() => {
     setSelectedIndex(0);

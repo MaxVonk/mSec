@@ -49,12 +49,17 @@ export const UserManagementModal: React.FC<UserManagementModalProps> = ({
     setLoading(true);
     try {
       const res = await fetch('/api/users');
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || 'Failed to fetch users');
+      const text = await res.text();
+      let data: any;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        throw new Error(`Server returned unexpected non-JSON response (${res.status}). Ensure the backend server is running.`);
       }
-      const data = await res.json();
-      setUsers(data);
+      if (!res.ok) {
+        throw new Error(data?.error || `Failed to fetch users (HTTP ${res.status})`);
+      }
+      setUsers(Array.isArray(data) ? data : []);
     } catch (err: any) {
       setStatusMessage({ type: 'error', text: err.message });
     } finally {

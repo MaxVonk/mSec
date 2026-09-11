@@ -19,13 +19,12 @@ import { MitreMatrixModal } from './components/mitre/MitreMatrixModal';
 import { PlaybookRunnerModal } from './components/soar/PlaybookRunnerModal';
 import { WarRoomModal } from './components/warroom/WarRoomModal';
 import { CommandPaletteModal } from './components/command/CommandPaletteModal';
-import { SecOpsCopilotDrawer } from './components/copilot/SecOpsCopilotDrawer';
 import { Sidebar, MainNavView } from './components/navigation/Sidebar';
 import { 
   Users, 
   Settings, 
   Activity, 
-  Shield,
+  Shield, 
   TrendingUp
 } from 'lucide-react';
 
@@ -54,7 +53,6 @@ export const App: React.FC = () => {
   const [isPlaybooksOpen, setIsPlaybooksOpen] = useState(false);
   const [playbookIncident, setPlaybookIncident] = useState<UnifiedIncident | null>(null);
   const [isWarRoomOpen, setIsWarRoomOpen] = useState(false);
-  const [isCopilotOpen, setIsCopilotOpen] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
 
   // Global Ctrl + K / Cmd + K keyboard shortcut
@@ -272,7 +270,6 @@ export const App: React.FC = () => {
         incidentCount={incidents.length}
         currentUser={currentUser}
         onOpenWarRoom={() => setIsWarRoomOpen(true)}
-        onOpenCopilot={() => setIsCopilotOpen(true)}
         onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
         onRefresh={() => { fetchIncidents(); fetchStats(); }}
         isRefreshing={isRefreshing}
@@ -395,10 +392,6 @@ export const App: React.FC = () => {
           setPlaybookIncident(inc);
           setActiveView('playbooks');
         }}
-        onOpenCopilot={(inc) => {
-          setSelectedIncident(inc);
-          setIsCopilotOpen(true);
-        }}
       />
 
       {/* Popups triggered contextually when not on the dedicated page */}
@@ -478,14 +471,6 @@ export const App: React.FC = () => {
           setActiveView('playbooks');
         }}
         onOpenConnectors={() => setActiveView('settings')}
-        onOpenCopilot={() => setIsCopilotOpen(true)}
-      />
-
-      {/* AI SecOps Copilot Slide-over Drawer */}
-      <SecOpsCopilotDrawer
-        isOpen={isCopilotOpen}
-        onClose={() => setIsCopilotOpen(false)}
-        incident={selectedIncident}
       />
     </div>
   );

@@ -16,7 +16,6 @@ import {
   RefreshCw,
   Database,
   Monitor,
-  Sparkles,
   ChevronRight,
   ChevronLeft,
   Shield,
@@ -43,7 +42,6 @@ interface SidebarProps {
   incidentCount: number;
   currentUser: UserSessionProfile | null;
   onOpenWarRoom: () => void;
-  onOpenCopilot: () => void;
   onOpenCommandPalette: () => void;
   onRefresh: () => void;
   isRefreshing: boolean;
@@ -57,7 +55,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
   incidentCount,
   currentUser,
   onOpenWarRoom,
-  onOpenCopilot,
   onOpenCommandPalette,
   onRefresh,
   isRefreshing,
@@ -134,7 +131,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </button>
 
         {/* Quick Tactical Controls */}
-        <div className={`grid gap-1.5 ${isCollapsed ? 'grid-cols-2' : 'grid-cols-5'}`}>
+        <div className={`grid gap-1.5 ${isCollapsed ? 'grid-cols-2' : 'grid-cols-4'}`}>
           <button
             onClick={onRefresh}
             disabled={isRefreshing}
@@ -170,14 +167,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
             className="p-2 flex items-center justify-center rounded-lg bg-emerald-950/50 hover:bg-emerald-900/60 border border-emerald-800/70 text-emerald-400 transition-colors cursor-pointer"
           >
             <Monitor className="w-3.5 h-3.5" />
-          </button>
-
-          <button
-            onClick={onOpenCopilot}
-            title="Open mSec AI SecOps Copilot"
-            className="p-2 flex items-center justify-center rounded-lg bg-cyan-950/50 hover:bg-cyan-900/60 border border-cyan-800/70 text-cyan-400 transition-colors cursor-pointer"
-          >
-            <Sparkles className="w-3.5 h-3.5 animate-pulse" />
           </button>
         </div>
       </div>

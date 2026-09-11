@@ -17,8 +17,7 @@ import { WebhookNotifierService } from './services/webhookNotifier';
 import { ThreatIntelService } from './services/threatIntelService';
 import { SocReportService } from './services/socReportService';
 
-import authRoutes from './routes/authRoutes';
-import copilotRoutes from './routes/copilotRoutes';
+import authRoutes, { userRouter } from './routes/authRoutes';
 
 MailboxPollerService.init().catch(err => console.error('[MailboxPoller] Init error:', err));
 IngestionSchedulerService.init().catch(err => console.error('[Scheduler] Init error:', err));
@@ -37,11 +36,11 @@ app.use(express.json({ limit: '25mb' }));
 // Authentication routes (Microsoft Entra SSO & Local Auth)
 app.use('/api/auth', authRoutes);
 
+// User management routes
+app.use('/api/users', userRouter);
+
 // PhishPilot email threat analysis routes
 app.use('/api/phishpilot', phishpilotRoutes);
-
-// AI SecOps Copilot routes
-app.use('/api/copilot', copilotRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
