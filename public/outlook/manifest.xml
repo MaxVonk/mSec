@@ -13,9 +13,8 @@
   <Description DefaultValue="1-Click AI-Powered Phishing Threat Analysis and Reporting for Microsoft Outlook." />
   <IconUrl DefaultValue="https://localhost:3310/outlook/shield-icon.png" />
   <HighResolutionIconUrl DefaultValue="https://localhost:3310/outlook/shield-icon.png" />
-  <SupportUrl DefaultValue="http://localhost:3310" />
+  <SupportUrl DefaultValue="https://localhost:3310" />
   <AppDomains>
-    <AppDomain>http://localhost:3310</AppDomain>
     <AppDomain>https://localhost:3310</AppDomain>
   </AppDomains>
 
@@ -32,7 +31,7 @@
   <FormSettings>
     <Form xsi:type="ItemRead">
       <DesktopSettings>
-        <SourceLocation DefaultValue="http://localhost:3310/outlook/taskpane.html" />
+        <SourceLocation DefaultValue="https://localhost:3310/outlook/taskpane.html" />
         <RequestedHeight>450</RequestedHeight>
       </DesktopSettings>
     </Form>

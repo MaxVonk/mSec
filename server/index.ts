@@ -256,6 +256,24 @@ app.post('/api/demo/clear', (req, res) => {
   res.json({ success: true, message: 'All incidents cleared' });
 });
 
+// Dynamic manifest generator for Office Outlook Add-in
+app.get(['/outlook/manifest.xml', '/api/phishpilot/manifest.xml'], (req, res) => {
+  const host = (req.query.host as string) || req.headers['x-forwarded-host'] || req.headers.host || 'localhost:3310';
+  const protocol = 'https'; // Microsoft Centralized Deployment strictly mandates HTTPS
+  const baseUrl = `${protocol}://${host}`;
+
+  const manifestPath = path.resolve(process.cwd(), 'public/outlook/manifest.xml');
+  if (!fs.existsSync(manifestPath)) {
+    return res.status(404).send('manifest.xml not found');
+  }
+  let content = fs.readFileSync(manifestPath, 'utf-8');
+  content = content.replace(/https:\/\/localhost:3310/g, baseUrl);
+
+  res.setHeader('Content-Type', 'application/xml');
+  res.setHeader('Content-Disposition', 'attachment; filename="phishpilot-outlook-manifest.xml"');
+  res.send(content);
+});
+
 // Serve frontend build in production
 const distPath = path.resolve(process.cwd(), 'dist');
 if (fs.existsSync(distPath)) {
