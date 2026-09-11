@@ -9,68 +9,80 @@
   <script type="text/javascript" src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
   <style>
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
       margin: 0;
       padding: 16px;
-      background: #090d16;
-      color: #f1f5f9;
+      background: #ffffff;
+      color: #323130;
       font-size: 13px;
+      line-height: 1.4;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background: #201f1e; color: #f3f2f1; }
+      .header { border-bottom-color: #3b3a39 !important; }
+      .email-card { background: #292827 !important; border-color: #3b3a39 !important; }
+      #emailFrom { color: #80c6ff !important; }
+      .subtitle { color: #a19f9d !important; }
+      .verdict-desc { color: #d2d0ce !important; }
     }
     .header {
       display: flex;
       align-items: center;
-      gap: 8px;
-      border-bottom: 1px solid #1e293b;
+      gap: 10px;
+      border-bottom: 1px solid #edebe9;
       padding-bottom: 12px;
       margin-bottom: 16px;
     }
     .logo {
-      font-weight: 900;
-      font-size: 16px;
-      color: #38bdf8;
+      font-weight: 600;
+      font-size: 15px;
+      color: #0078d4;
+      letter-spacing: -0.2px;
     }
     .subtitle {
       font-size: 11px;
-      color: #64748b;
+      color: #605e5c;
     }
     .email-card {
-      background: #0f172a;
-      border: 1px solid #1e293b;
-      border-radius: 8px;
+      background: #f3f2f1;
+      border: 1px solid #edebe9;
+      border-radius: 4px;
       padding: 12px;
       margin-bottom: 16px;
     }
     .btn {
       width: 100%;
-      background: #0284c7;
-      color: white;
+      background: #0078d4;
+      color: #ffffff;
       border: none;
-      padding: 10px;
-      border-radius: 6px;
-      font-weight: bold;
+      padding: 8px 16px;
+      border-radius: 4px;
+      font-weight: 600;
+      font-size: 13px;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 6px;
-      transition: background 0.2s;
+      transition: background 0.15s ease;
     }
-    .btn:hover { background: #0369a1; }
+    .btn:hover { background: #106ebe; }
+    .btn:active { background: #005a9e; }
     .btn:disabled { opacity: 0.5; cursor: not-allowed; }
     .verdict-card {
       margin-top: 16px;
-      padding: 16px;
-      border-radius: 8px;
+      padding: 14px;
+      border-radius: 4px;
       border: 1px solid transparent;
       display: none;
     }
-    .verdict-phish { background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.4); color: #f87171; }
-    .verdict-safe { background: rgba(16, 185, 129, 0.1); border-color: rgba(16, 185, 129, 0.4); color: #34d399; }
-    .verdict-sus { background: rgba(245, 158, 11, 0.1); border-color: rgba(245, 158, 11, 0.4); color: #fbbf24; }
-    .verdict-title { font-size: 16px; font-weight: bold; margin-bottom: 4px; }
-    .verdict-desc { font-size: 12px; color: #cbd5e1; line-height: 1.4; }
+    .verdict-phish { background: #fde7e9; border-color: #a80000; color: #a80000; }
+    .verdict-safe { background: #dff6dd; border-color: #107c10; color: #107c10; }
+    .verdict-sus { background: #fff4ce; border-color: #797673; color: #797673; }
+    .verdict-title { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+    .verdict-desc { font-size: 12px; color: #323130; line-height: 1.4; }
     .spinner {
-      border: 2px solid rgba(255,255,255,0.2);
+      border: 2px solid rgba(255,255,255,0.3);
       border-top-color: white;
       border-radius: 50%;
       width: 14px;
@@ -82,22 +94,22 @@
 </head>
 <body>
   <div class="header">
-    <img src="/outlook/shield-icon.png" alt="PhishPilot" style="width: 34px; height: 34px; border-radius: 8px; box-shadow: 0 0 12px rgba(56,189,248,0.5); object-fit: cover;" />
+    <img src="/outlook/shield-icon.png" alt="PhishPilot" style="width: 30px; height: 30px; border-radius: 4px; object-fit: contain;" />
     <div>
       <div class="logo">PhishPilot</div>
-      <div class="subtitle">AI Security Threat Reporter</div>
+      <div class="subtitle">Security Reporter</div>
     </div>
   </div>
 
   <div class="email-card">
-    <div style="color: #64748b; font-size: 11px; margin-bottom: 2px;">Subject:</div>
-    <div id="emailSubject" style="font-weight: bold; margin-bottom: 8px;">Loading message...</div>
-    <div style="color: #64748b; font-size: 11px; margin-bottom: 2px;">Sender:</div>
-    <div id="emailFrom" style="font-family: monospace; color: #93c5fd; font-size: 11px;"></div>
+    <div style="color: #605e5c; font-size: 11px; margin-bottom: 2px;">Subject:</div>
+    <div id="emailSubject" style="font-weight: 600; margin-bottom: 8px;">Loading message...</div>
+    <div style="color: #605e5c; font-size: 11px; margin-bottom: 2px;">Sender:</div>
+    <div id="emailFrom" style="font-family: monospace; color: #0078d4; font-size: 11px;"></div>
   </div>
 
   <button id="analyzeBtn" class="btn" onclick="analyzeEmail()">
-    <span>Scan & Report Threat</span>
+    <span>Scan & Report</span>
   </button>
 
   <div id="verdictCard" class="verdict-card">
