@@ -27,10 +27,12 @@ import {
   MessageSquare,
   Lightbulb,
   UserCheck,
-  Layers
+  Layers,
+  Download
 } from 'lucide-react';
 import { InvestigationGraph } from './graph/InvestigationGraph';
 import { buildIncidentGraph } from '../utils/graphBuilder';
+import { ThreatIntelBadge } from './common/ThreatIntelBadge';
 
 interface IncidentDetailModalProps {
   incident: UnifiedIncident | null;
@@ -68,6 +70,26 @@ export const IncidentDetailModal: React.FC<IncidentDetailModalProps> = ({
       await onExecuteAction(incident.id, actionId);
     } finally {
       setExecutingActionId(null);
+    }
+  };
+
+  const handleDownloadIncidentReport = async () => {
+    try {
+      const res = await fetch(`/api/reports/incident/${incident.id}/markdown`);
+      if (res.ok) {
+        const md = await res.text();
+        const blob = new Blob([md], { type: 'text/markdown' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Incident-${incident.incidentNumber || incident.id}-Report.md`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+    } catch (err) {
+      console.error('Failed to export incident report:', err);
     }
   };
 
@@ -145,6 +167,15 @@ export const IncidentDetailModal: React.FC<IncidentDetailModalProps> = ({
                 <span>Defender Portal</span>
               </a>
             )}
+
+            <button
+              onClick={handleDownloadIncidentReport}
+              title="Download full incident forensic post-mortem report (.md)"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 rounded-lg text-xs font-semibold transition-colors cursor-pointer"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>Export Report</span>
+            </button>
 
             <select
               value={incident.status}
@@ -600,9 +631,12 @@ export const IncidentDetailModal: React.FC<IncidentDetailModalProps> = ({
                               </div>
                             )}
                             {ent.details.lastExternalIpAddress && (
-                              <div className="flex justify-between text-slate-400">
+                              <div className="flex justify-between items-center text-slate-400">
                                 <span>External IP:</span>
-                                <span className="text-slate-200 font-mono">{ent.details.lastExternalIpAddress}</span>
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-slate-200 font-mono">{ent.details.lastExternalIpAddress}</span>
+                                  <ThreatIntelBadge indicator={ent.details.lastExternalIpAddress} type="IP" />
+                                </div>
                               </div>
                             )}
                             {ent.details.mdeDeviceId && (
@@ -674,9 +708,14 @@ export const IncidentDetailModal: React.FC<IncidentDetailModalProps> = ({
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center justify-between gap-2">
                           <span className="text-xs font-semibold text-slate-200 truncate">{ent.value}</span>
-                          <span className="text-[10px] px-1.5 py-0.2 rounded bg-slate-800 text-slate-400 font-mono">
-                            {ent.type}
-                          </span>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            {(ent.type === 'IP' || ent.type === 'FILE' || ent.type === 'URL') && (
+                              <ThreatIntelBadge indicator={ent.value} type={ent.type === 'FILE' ? 'FILE_HASH' : (ent.type as any)} />
+                            )}
+                            <span className="text-[10px] px-1.5 py-0.2 rounded bg-slate-800 text-slate-400 font-mono">
+                              {ent.type}
+                            </span>
+                          </div>
                         </div>
                         {ent.role && (
                           <p className="text-xs text-slate-400 mt-0.5">{ent.role}</p>

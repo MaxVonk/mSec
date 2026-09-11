@@ -12,6 +12,7 @@ import { DataImportModal } from './components/DataImportModal';
 import { EntityExplorer } from './components/EntityExplorer';
 import { PhishPilotDashboard } from './components/phishpilot/PhishPilotDashboard';
 import { SocTrendCharts } from './components/analytics/SocTrendCharts';
+import { ShiftHandoverModal } from './components/reporting/ShiftHandoverModal';
 import { 
   Users, 
   Settings, 
@@ -35,6 +36,7 @@ export const App: React.FC = () => {
   // Modals
   const [selectedIncident, setSelectedIncident] = useState<UnifiedIncident | null>(null);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [isShiftHandoverOpen, setIsShiftHandoverOpen] = useState(false);
 
   const fetchIncidents = async () => {
     setIsRefreshing(true);
@@ -189,6 +191,7 @@ export const App: React.FC = () => {
         onOpenImport={() => setIsImportModalOpen(true)}
         onResetDemo={handleResetDemo}
         onRefresh={() => { fetchIncidents(); fetchStats(); }}
+        onOpenShiftHandover={() => setIsShiftHandoverOpen(true)}
         isRefreshing={isRefreshing}
         totalIncidents={stats?.totalIncidents || 0}
       />
@@ -318,6 +321,10 @@ export const App: React.FC = () => {
           fetchStats();
         }}
       />
+
+      {isShiftHandoverOpen && (
+        <ShiftHandoverModal onClose={() => setIsShiftHandoverOpen(false)} />
+      )}
     </div>
   );
 };

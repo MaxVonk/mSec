@@ -14,9 +14,12 @@ import {
   Code,
   Copy,
   Check,
-  Terminal
+  Terminal,
+  Bell,
+  Send,
+  Zap
 } from 'lucide-react';
-import { ConnectorConfig } from '../types';
+import { ConnectorConfig, IngestionSchedulerConfig, WebhookConfig } from '../types';
 
 interface DataImportModalProps {
   isOpen: boolean;
@@ -29,7 +32,7 @@ export const DataImportModal: React.FC<DataImportModalProps> = ({
   onClose,
   onImportSuccess
 }) => {
-  const [activeTab, setActiveTab] = useState<'file' | 'graph' | 'sentinel' | 'raw'>('file');
+  const [activeTab, setActiveTab] = useState<'file' | 'graph' | 'sentinel' | 'raw' | 'automation'>('file');
   const [dragActive, setDragActive] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -59,6 +62,28 @@ export const DataImportModal: React.FC<DataImportModalProps> = ({
   const [syncingSentinel, setSyncingSentinel] = useState(false);
   const [copiedAzCmd, setCopiedAzCmd] = useState(false);
 
+  // Scheduler state
+  const [schedulerConfig, setSchedulerConfig] = useState<IngestionSchedulerConfig>({
+    sentinelEnabled: false,
+    sentinelIntervalMinutes: 5,
+    graphEnabled: false,
+    graphIntervalMinutes: 5,
+    status: 'IDLE',
+    totalAutoIngested: 0
+  });
+
+  // Webhook state
+  const [webhookConfig, setWebhookConfig] = useState<WebhookConfig>({
+    teamsWebhookUrl: '',
+    slackWebhookUrl: '',
+    customWebhookUrl: '',
+    enabled: false,
+    minSeverity: 'HIGH',
+    notifyOnPhishing: true,
+    notifyOnContainmentAction: true
+  });
+  const [testingWebhook, setTestingWebhook] = useState<'teams' | 'slack' | null>(null);
+
   React.useEffect(() => {
     if (isOpen) {
       fetch('/api/connectors')
@@ -83,8 +108,73 @@ export const DataImportModal: React.FC<DataImportModalProps> = ({
           }
         })
         .catch(() => {});
+
+      fetch('/api/scheduler/config')
+        .then(res => res.json())
+        .then(data => { if (data) setSchedulerConfig(data); })
+        .catch(() => {});
+
+      fetch('/api/webhooks/config')
+        .then(res => res.json())
+        .then(data => { if (data) setWebhookConfig(data); })
+        .catch(() => {});
     }
   }, [isOpen]);
+
+  const handleSaveScheduler = async () => {
+    try {
+      const res = await fetch('/api/scheduler/config', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(schedulerConfig)
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setSchedulerConfig(data);
+        setStatusMessage({ type: 'success', text: 'Automated ingestion schedule saved successfully!' });
+      }
+    } catch (e: any) {
+      setStatusMessage({ type: 'error', text: `Failed to save scheduler: ${e.message}` });
+    }
+  };
+
+  const handleSaveWebhooks = async () => {
+    try {
+      const res = await fetch('/api/webhooks/config', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(webhookConfig)
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setWebhookConfig(data);
+        setStatusMessage({ type: 'success', text: 'Alert webhook integration settings saved!' });
+      }
+    } catch (e: any) {
+      setStatusMessage({ type: 'error', text: `Failed to save webhooks: ${e.message}` });
+    }
+  };
+
+  const handleTestWebhook = async (target: 'teams' | 'slack') => {
+    setTestingWebhook(target);
+    try {
+      const res = await fetch('/api/webhooks/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ target })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setStatusMessage({ type: 'success', text: data.message });
+      } else {
+        setStatusMessage({ type: 'error', text: data.message });
+      }
+    } catch (e: any) {
+      setStatusMessage({ type: 'error', text: `Webhook test failed: ${e.message}` });
+    } finally {
+      setTestingWebhook(null);
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -380,6 +470,16 @@ export const DataImportModal: React.FC<DataImportModalProps> = ({
           >
             <Code className="w-4 h-4" />
             <span>Raw JSON Paste</span>
+          </button>
+
+          <button
+            onClick={() => { setActiveTab('automation'); setStatusMessage(null); }}
+            className={`flex items-center gap-2 py-3 px-3 text-xs font-semibold border-b-2 transition-colors cursor-pointer ${
+              activeTab === 'automation' ? 'border-cyan-500 text-cyan-400' : 'border-transparent text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <Zap className="w-4 h-4 text-amber-400" />
+            <span>Automated Poller & Webhooks</span>
           </button>
         </div>
 
@@ -685,6 +785,231 @@ export const DataImportModal: React.FC<DataImportModalProps> = ({
                 >
                   {isUploading ? 'Ingesting...' : 'Ingest JSON Payload'}
                 </button>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 5: AUTOMATION & WEBHOOKS */}
+          {activeTab === 'automation' && (
+            <div className="space-y-6">
+              {/* Automated Ingestion Poller */}
+              <div className="p-4 bg-slate-950/60 border border-slate-800/80 rounded-xl space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Zap className="w-4 h-4 text-amber-400" />
+                    <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider">Automated Background Ingestion Engine</h3>
+                  </div>
+                  <span className={`px-2 py-0.5 rounded text-[10px] font-semibold border ${
+                    schedulerConfig.status === 'RUNNING'
+                      ? 'bg-emerald-950/40 text-emerald-400 border-emerald-800/60'
+                      : schedulerConfig.status === 'ERROR'
+                      ? 'bg-rose-950/40 text-rose-400 border-rose-800/60'
+                      : 'bg-slate-800 text-slate-400 border-slate-700'
+                  }`}>
+                    {schedulerConfig.status} (Total Ingested: {schedulerConfig.totalAutoIngested || 0})
+                  </span>
+                </div>
+
+                <p className="text-xs text-slate-400">
+                  Configure automated cron polling to fetch newly generated alerts and incidents directly from Microsoft Sentinel and M365 Defender.
+                </p>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                  {/* Sentinel Poller */}
+                  <div className="p-3 bg-slate-900/80 border border-slate-800 rounded-lg space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Cloud className="w-3.5 h-3.5 text-cyan-400" />
+                        <span className="text-xs font-semibold text-slate-200">Microsoft Sentinel</span>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={schedulerConfig.sentinelEnabled}
+                          onChange={(e) => setSchedulerConfig(prev => ({ ...prev, sentinelEnabled: e.target.checked }))}
+                          className="sr-only peer"
+                        />
+                        <div className="w-8 h-4 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-cyan-500"></div>
+                      </label>
+                    </div>
+
+                    <div className="flex items-center gap-2 text-xs">
+                      <span className="text-slate-400">Poll Every:</span>
+                      <input
+                        type="number"
+                        min={1}
+                        max={60}
+                        value={schedulerConfig.sentinelIntervalMinutes}
+                        onChange={(e) => setSchedulerConfig(prev => ({ ...prev, sentinelIntervalMinutes: Math.max(1, parseInt(e.target.value) || 5) }))}
+                        className="w-16 px-2 py-1 bg-slate-950 border border-slate-700 rounded text-center text-xs font-mono text-cyan-300 focus:outline-none focus:border-cyan-500"
+                      />
+                      <span className="text-slate-400">min</span>
+                    </div>
+
+                    <p className="text-[11px] text-slate-400">
+                      {sentinelConfig.workspaceName ? `Using workspace "${sentinelConfig.workspaceName}"` : 'Configure Sentinel credentials in the Sentinel tab.'}
+                    </p>
+                  </div>
+
+                  {/* Defender Poller */}
+                  <div className="p-3 bg-slate-900/80 border border-slate-800 rounded-lg space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Shield className="w-3.5 h-3.5 text-indigo-400" />
+                        <span className="text-xs font-semibold text-slate-200">M365 Defender (Graph)</span>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={schedulerConfig.graphEnabled}
+                          onChange={(e) => setSchedulerConfig(prev => ({ ...prev, graphEnabled: e.target.checked }))}
+                          className="sr-only peer"
+                        />
+                        <div className="w-8 h-4 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-cyan-500"></div>
+                      </label>
+                    </div>
+
+                    <div className="flex items-center gap-2 text-xs">
+                      <span className="text-slate-400">Poll Every:</span>
+                      <input
+                        type="number"
+                        min={1}
+                        max={60}
+                        value={schedulerConfig.graphIntervalMinutes}
+                        onChange={(e) => setSchedulerConfig(prev => ({ ...prev, graphIntervalMinutes: Math.max(1, parseInt(e.target.value) || 5) }))}
+                        className="w-16 px-2 py-1 bg-slate-950 border border-slate-700 rounded text-center text-xs font-mono text-cyan-300 focus:outline-none focus:border-cyan-500"
+                      />
+                      <span className="text-slate-400">min</span>
+                    </div>
+
+                    <p className="text-[11px] text-slate-400">
+                      {graphConfig.tenantId ? `Using Tenant "${graphConfig.tenantId.substring(0, 8)}..."` : 'Configure Defender credentials in the Defender tab.'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex justify-end pt-1">
+                  <button
+                    onClick={handleSaveScheduler}
+                    className="px-4 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold rounded-lg transition-colors cursor-pointer"
+                  >
+                    Save Scheduler Settings
+                  </button>
+                </div>
+              </div>
+
+              {/* Webhook Notifications */}
+              <div className="p-4 bg-slate-950/60 border border-slate-800/80 rounded-xl space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Bell className="w-4 h-4 text-cyan-400" />
+                    <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider">Alert & Incident Webhook Dispatcher</h3>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={webhookConfig.enabled}
+                      onChange={(e) => setWebhookConfig(prev => ({ ...prev, enabled: e.target.checked }))}
+                      className="sr-only peer"
+                    />
+                    <div className="w-8 h-4 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-cyan-500"></div>
+                  </label>
+                </div>
+
+                <p className="text-xs text-slate-400">
+                  Broadcast high-priority incidents, phishing analysis verdicts, and containment actions automatically into Microsoft Teams or Slack channels.
+                </p>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-300 mb-1">Minimum Alert Severity</label>
+                    <select
+                      value={webhookConfig.minSeverity}
+                      onChange={(e) => setWebhookConfig(prev => ({ ...prev, minSeverity: e.target.value as any }))}
+                      className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-cyan-500"
+                    >
+                      <option value="INFORMATIONAL">INFORMATIONAL & Higher</option>
+                      <option value="LOW">LOW & Higher</option>
+                      <option value="MEDIUM">MEDIUM & Higher</option>
+                      <option value="HIGH">HIGH & CRITICAL only</option>
+                      <option value="CRITICAL">CRITICAL only</option>
+                    </select>
+                  </div>
+
+                  <div className="flex flex-col justify-center space-y-1.5 pt-2">
+                    <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={webhookConfig.notifyOnPhishing}
+                        onChange={(e) => setWebhookConfig(prev => ({ ...prev, notifyOnPhishing: e.target.checked }))}
+                        className="rounded border-slate-700 text-cyan-500 focus:ring-0"
+                      />
+                      <span>Notify on PhishPilot confirmed malicious</span>
+                    </label>
+                    <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={webhookConfig.notifyOnContainmentAction}
+                        onChange={(e) => setWebhookConfig(prev => ({ ...prev, notifyOnContainmentAction: e.target.checked }))}
+                        className="rounded border-slate-700 text-cyan-500 focus:ring-0"
+                      />
+                      <span>Notify on device isolation / user disable</span>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Teams Webhook */}
+                <div className="space-y-1.5 pt-1">
+                  <label className="block text-xs font-semibold text-slate-300">Microsoft Teams Incoming Webhook URL</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="password"
+                      value={webhookConfig.teamsWebhookUrl || ''}
+                      onChange={(e) => setWebhookConfig(prev => ({ ...prev, teamsWebhookUrl: e.target.value }))}
+                      placeholder="https://outlook.office.com/webhook/..."
+                      className="flex-1 px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs font-mono text-cyan-300 focus:outline-none focus:border-cyan-500"
+                    />
+                    <button
+                      onClick={() => handleTestWebhook('teams')}
+                      disabled={!webhookConfig.teamsWebhookUrl || testingWebhook === 'teams'}
+                      className="flex items-center gap-1 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-lg transition-colors cursor-pointer disabled:opacity-50"
+                    >
+                      <Send className="w-3 h-3" />
+                      <span>{testingWebhook === 'teams' ? 'Testing...' : 'Test Teams'}</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Slack Webhook */}
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-semibold text-slate-300">Slack Incoming Webhook URL</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="password"
+                      value={webhookConfig.slackWebhookUrl || ''}
+                      onChange={(e) => setWebhookConfig(prev => ({ ...prev, slackWebhookUrl: e.target.value }))}
+                      placeholder="https://hooks.slack.com/services/..."
+                      className="flex-1 px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs font-mono text-cyan-300 focus:outline-none focus:border-cyan-500"
+                    />
+                    <button
+                      onClick={() => handleTestWebhook('slack')}
+                      disabled={!webhookConfig.slackWebhookUrl || testingWebhook === 'slack'}
+                      className="flex items-center gap-1 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-lg transition-colors cursor-pointer disabled:opacity-50"
+                    >
+                      <Send className="w-3 h-3" />
+                      <span>{testingWebhook === 'slack' ? 'Testing...' : 'Test Slack'}</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex justify-end pt-1">
+                  <button
+                    onClick={handleSaveWebhooks}
+                    className="px-4 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold rounded-lg transition-colors cursor-pointer"
+                  >
+                    Save Webhook Settings
+                  </button>
+                </div>
               </div>
             </div>
           )}

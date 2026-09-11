@@ -186,3 +186,82 @@ export interface GraphData {
   edges: GraphEdge[];
 }
 
+export interface IngestionSchedulerConfig {
+  sentinelEnabled: boolean;
+  sentinelIntervalMinutes: number;
+  graphEnabled: boolean;
+  graphIntervalMinutes: number;
+  lastSentinelSync?: string;
+  lastGraphSync?: string;
+  status: 'IDLE' | 'RUNNING' | 'SYNCING' | 'SUCCESS' | 'ERROR';
+  lastError?: string;
+  totalAutoIngested: number;
+}
+
+export interface WebhookConfig {
+  teamsWebhookUrl?: string;
+  slackWebhookUrl?: string;
+  customWebhookUrl?: string;
+  enabled: boolean;
+  minSeverity: IncidentSeverity;
+  notifyOnPhishing: boolean;
+  notifyOnContainmentAction: boolean;
+}
+
+export interface ThreatIntelItem {
+  indicator: string;
+  type: 'IP' | 'DOMAIN' | 'URL' | 'FILE_HASH';
+  reputation: 'MALICIOUS' | 'SUSPICIOUS' | 'CLEAN' | 'UNKNOWN';
+  riskScore: number; // 0 to 100
+  source: string;
+  details: {
+    country?: string;
+    isp?: string;
+    totalReports?: number;
+    detectionEngines?: { malicious: number; total: number };
+    tags?: string[];
+    lastReported?: string;
+  };
+  cachedAt: string;
+}
+
+export interface ThreatIntelConfig {
+  abuseIpDbApiKey?: string;
+  virusTotalApiKey?: string;
+  alienVaultApiKey?: string;
+  autoEnrichIncoming: boolean;
+}
+
+export interface ShiftHandoverReport {
+  shiftId: string;
+  generatedAt: string;
+  timeframeHours: number;
+  analystName?: string;
+  notes?: string;
+  metrics: {
+    totalIncidents: number;
+    criticalIncidents: number;
+    highIncidents: number;
+    resolvedIncidents: number;
+    containmentExecuted: number;
+    containmentPending: number;
+  };
+  keyIncidents: {
+    id: string;
+    incidentNumber?: string | number;
+    title: string;
+    severity: IncidentSeverity;
+    provider: ProviderSource;
+    status: IncidentStatus;
+    affectedUsers: string[];
+    attackScenario?: string;
+  }[];
+  topTargetedUsers: { user: string; incidentCount: number }[];
+  topAttackerIps: { ip: string; count: number }[];
+  pendingActions: {
+    incidentId: string;
+    incidentTitle: string;
+    action: ContainmentAction;
+  }[];
+}
+

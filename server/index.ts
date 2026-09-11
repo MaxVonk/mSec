@@ -12,10 +12,17 @@ import { GraphConnector } from './services/graphConnector';
 import { SentinelConnector } from './services/sentinelConnector';
 import phishpilotRoutes from './routes/phishpilotRoutes';
 import { MailboxPollerService } from './services/phishpilot/mailboxPoller';
+import { IngestionSchedulerService } from './services/ingestionScheduler';
+import { WebhookNotifierService } from './services/webhookNotifier';
+import { ThreatIntelService } from './services/threatIntelService';
+import { SocReportService } from './services/socReportService';
 
 import authRoutes from './routes/authRoutes';
 
 MailboxPollerService.init().catch(err => console.error('[MailboxPoller] Init error:', err));
+IngestionSchedulerService.init().catch(err => console.error('[Scheduler] Init error:', err));
+WebhookNotifierService.init().catch(err => console.error('[WebhookNotifier] Init error:', err));
+ThreatIntelService.init().catch(err => console.error('[ThreatIntel] Init error:', err));
 
 const app = express();
 const port = process.env.PORT || 3310;
@@ -260,6 +267,88 @@ app.post('/api/demo/reset', (req, res) => {
 app.post('/api/demo/clear', (req, res) => {
   store.clear();
   res.json({ success: true, message: 'All incidents cleared' });
+});
+
+// Ingestion Scheduler API
+app.get('/api/scheduler/config', (req, res) => {
+  res.json(IngestionSchedulerService.getConfig());
+});
+
+app.patch('/api/scheduler/config', async (req, res) => {
+  try {
+    const updated = await IngestionSchedulerService.updateConfig(req.body);
+    res.json(updated);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/scheduler/sync/sentinel', async (req, res) => {
+  const result = await IngestionSchedulerService.syncSentinel();
+  res.json(result);
+});
+
+app.post('/api/scheduler/sync/graph', async (req, res) => {
+  const result = await IngestionSchedulerService.syncGraph();
+  res.json(result);
+});
+
+// Webhook Notifications API
+app.get('/api/webhooks/config', (req, res) => {
+  res.json(WebhookNotifierService.getConfig());
+});
+
+app.patch('/api/webhooks/config', async (req, res) => {
+  try {
+    const updated = await WebhookNotifierService.updateConfig(req.body);
+    res.json(updated);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/webhooks/test', async (req, res) => {
+  const target = req.body?.target || 'teams';
+  const result = await WebhookNotifierService.testWebhook(target);
+  res.json(result);
+});
+
+// Threat Intelligence API
+app.get('/api/threat-intel/lookup', async (req, res) => {
+  const indicator = req.query.indicator as string;
+  const type = req.query.type as string;
+  if (!indicator) {
+    return res.status(400).json({ error: 'Indicator parameter is required.' });
+  }
+  const result = await ThreatIntelService.lookup(indicator, type);
+  res.json(result);
+});
+
+app.post('/api/threat-intel/batch', async (req, res) => {
+  const indicators = req.body?.indicators;
+  if (!Array.isArray(indicators)) {
+    return res.status(400).json({ error: 'Provide indicators array.' });
+  }
+  const results = await ThreatIntelService.lookupBatch(indicators);
+  res.json(results);
+});
+
+// Shift Handover & Forensic Reports API
+app.get('/api/reports/shift-handover', (req, res) => {
+  const hours = Number(req.query.hours) || 12;
+  const analyst = req.query.analyst as string;
+  const notes = req.query.notes as string;
+  const result = SocReportService.generateShiftHandover(hours, analyst, notes);
+  res.json(result);
+});
+
+app.get('/api/reports/incident/:id/markdown', (req, res) => {
+  const incident = store.getById(req.params.id);
+  if (!incident) {
+    return res.status(404).json({ error: 'Incident not found' });
+  }
+  const md = SocReportService.generateIncidentMarkdown(incident);
+  res.type('text/markdown').send(md);
 });
 
 // Dynamic manifest generator for Office Outlook Add-in

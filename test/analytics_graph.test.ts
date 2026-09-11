@@ -150,3 +150,4 @@ describe('SOC Analytics Trends & Graph Visualizer Tests', () => {
     assert.strictEqual(entityNode.label, 'shared.victim@company.com');
   });
 });
+

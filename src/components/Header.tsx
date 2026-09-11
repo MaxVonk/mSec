@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, Upload, RefreshCw, Database, Radio, LogIn, LogOut, UserCheck } from 'lucide-react';
+import { Shield, Upload, RefreshCw, Database, Radio, LogIn, LogOut, UserCheck, FileText } from 'lucide-react';
 import { UserSessionProfile } from '../phishpilotTypes';
 
 interface HeaderProps {
   onOpenImport: () => void;
   onResetDemo: () => void;
   onRefresh: () => void;
+  onOpenShiftHandover?: () => void;
   isRefreshing: boolean;
   totalIncidents: number;
 }
@@ -14,6 +15,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenImport,
   onResetDemo,
   onRefresh,
+  onOpenShiftHandover,
   isRefreshing,
   totalIncidents
 }) => {
@@ -85,6 +87,17 @@ export const Header: React.FC<HeaderProps> = ({
             <Database className="w-3.5 h-3.5 text-cyan-400" />
             <span>Reset Demo</span>
           </button>
+
+          {onOpenShiftHandover && (
+            <button
+              onClick={onOpenShiftHandover}
+              title="Open Executive Shift Handover Briefing"
+              className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-purple-300 bg-purple-950/60 hover:bg-purple-900/60 border border-purple-800/80 rounded-lg transition-colors cursor-pointer"
+            >
+              <FileText className="w-3.5 h-3.5" />
+              <span>Shift Handover</span>
+            </button>
+          )}
 
           <button
             onClick={onRefresh}

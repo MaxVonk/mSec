@@ -19,6 +19,7 @@ import {
   Filter
 } from 'lucide-react';
 import { GraphData, GraphNode, GraphEdge, EntityType, IncidentSeverity } from '../../types';
+import { ThreatIntelBadge } from '../common/ThreatIntelBadge';
 
 interface InvestigationGraphProps {
   data: GraphData;
@@ -603,6 +604,13 @@ export const InvestigationGraph: React.FC<InvestigationGraphProps> = ({
                 </span>
               </div>
 
+              {(selectedNode.type === 'ip' || selectedNode.type === 'file' || selectedNode.type === 'url') && (
+                <div>
+                  <span className="text-[10px] text-slate-500 uppercase block mb-1">Threat Intelligence</span>
+                  <ThreatIntelBadge indicator={selectedNode.label} type={selectedNode.type === 'file' ? 'FILE_HASH' : (selectedNode.type.toUpperCase() as any)} />
+                </div>
+              )}
+
               {/* Action Buttons */}
               <div className="pt-2 border-t border-slate-800 flex flex-col gap-1.5">
                 <button
@@ -672,3 +680,4 @@ export const InvestigationGraph: React.FC<InvestigationGraphProps> = ({
     </div>
   );
 };
+

@@ -442,3 +442,4 @@ export const SocTrendCharts: React.FC<SocTrendChartsProps> = ({ onSelectTactic }
     </div>
   );
 };
+
