@@ -309,7 +309,8 @@ app.patch('/api/webhooks/config', async (req, res) => {
 
 app.post('/api/webhooks/test', async (req, res) => {
   const target = req.body?.target || 'teams';
-  const result = await WebhookNotifierService.testWebhook(target);
+  const url = req.body?.url;
+  const result = await WebhookNotifierService.testWebhook(target, url);
   res.json(result);
 });
 

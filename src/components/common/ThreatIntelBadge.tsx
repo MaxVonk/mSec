@@ -152,3 +152,4 @@ export const ThreatIntelBadge: React.FC<ThreatIntelBadgeProps> = ({
     </div>
   );
 };
+

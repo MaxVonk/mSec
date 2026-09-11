@@ -363,3 +363,4 @@ export const ShiftHandoverModal: React.FC<ShiftHandoverModalProps> = ({ onClose 
     </div>
   );
 };
+

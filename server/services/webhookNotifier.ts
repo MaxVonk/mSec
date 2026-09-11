@@ -185,11 +185,11 @@ export class WebhookNotifierService {
   /**
    * Sends simulated test card to verify webhook URL configuration
    */
-  public static async testWebhook(target: 'teams' | 'slack' | 'custom'): Promise<{ success: boolean; message: string }> {
+  public static async testWebhook(target: 'teams' | 'slack' | 'custom', overrideUrl?: string): Promise<{ success: boolean; message: string }> {
     try {
-      const url = target === 'teams' ? this.config.teamsWebhookUrl 
+      const url = overrideUrl || (target === 'teams' ? this.config.teamsWebhookUrl 
         : target === 'slack' ? this.config.slackWebhookUrl 
-        : this.config.customWebhookUrl;
+        : this.config.customWebhookUrl);
 
       if (!url) {
         return { success: false, message: `No URL configured for ${target} webhook.` };
@@ -231,3 +231,4 @@ export class WebhookNotifierService {
     }
   }
 }
+

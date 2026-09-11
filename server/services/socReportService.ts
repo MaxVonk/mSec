@@ -221,3 +221,4 @@ export class SocReportService {
     return lines.join('\n');
   }
 }
+

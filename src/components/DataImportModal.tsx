@@ -158,10 +158,11 @@ export const DataImportModal: React.FC<DataImportModalProps> = ({
   const handleTestWebhook = async (target: 'teams' | 'slack') => {
     setTestingWebhook(target);
     try {
+      const url = target === 'teams' ? webhookConfig.teamsWebhookUrl : webhookConfig.slackWebhookUrl;
       const res = await fetch('/api/webhooks/test', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ target })
+        body: JSON.stringify({ target, url })
       });
       const data = await res.json();
       if (data.success) {
