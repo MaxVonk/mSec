@@ -17,15 +17,17 @@ import {
 import { PublicUser, UserRole } from '../../types';
 
 interface UserManagementModalProps {
-  isOpen: boolean;
-  onClose: () => void;
+  isOpen?: boolean;
+  onClose?: () => void;
   currentUserId?: string;
+  inline?: boolean;
 }
 
 export const UserManagementModal: React.FC<UserManagementModalProps> = ({
-  isOpen,
+  isOpen = true,
   onClose,
-  currentUserId
+  currentUserId,
+  inline = false
 }) => {
   const [users, setUsers] = useState<PublicUser[]>([]);
   const [loading, setLoading] = useState(false);
@@ -61,13 +63,13 @@ export const UserManagementModal: React.FC<UserManagementModalProps> = ({
   };
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen || inline) {
       fetchUsers();
       setStatusMessage(null);
     }
-  }, [isOpen]);
+  }, [isOpen, inline]);
 
-  if (!isOpen) return null;
+  if (!inline && !isOpen) return null;
 
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -209,42 +211,43 @@ export const UserManagementModal: React.FC<UserManagementModalProps> = ({
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-150">
-      <div className="bg-slate-900 border border-slate-700/80 rounded-2xl w-full max-w-4xl flex flex-col shadow-2xl overflow-hidden max-h-[85vh]">
-        {/* Header */}
-        <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/60">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-purple-500/10 text-purple-400 rounded-xl border border-purple-500/20">
-              <Users className="w-5 h-5" />
-            </div>
-            <div>
-              <h2 className="text-base font-bold text-white flex items-center gap-2">
-                <span>User & Access Control</span>
-                <span className="px-2 py-0.5 bg-slate-800 text-slate-400 border border-slate-700 rounded text-[10px] font-mono font-normal">
-                  {users.length} registered
-                </span>
-              </h2>
-              <p className="text-xs text-slate-400">Manage analyst accounts, passwords, and role-based permissions</p>
-            </div>
+  const card = (
+    <div className={`bg-slate-900 border border-slate-700/80 rounded-2xl w-full ${inline ? 'max-w-none' : 'max-w-4xl max-h-[85vh]'} flex flex-col shadow-2xl overflow-hidden`}>
+      {/* Header */}
+      <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/60">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-purple-500/10 text-purple-400 rounded-xl border border-purple-500/20">
+            <Users className="w-5 h-5" />
           </div>
+          <div>
+            <h2 className="text-base font-bold text-white flex items-center gap-2">
+              <span>Tenant Members & RBAC</span>
+              <span className="px-2 py-0.5 bg-slate-800 text-slate-400 border border-slate-700 rounded text-[10px] font-mono font-normal">
+                {users.length} registered
+              </span>
+            </h2>
+            <p className="text-xs text-slate-400">Manage security team accounts, passwords, and role-based access permissions</p>
+          </div>
+        </div>
 
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setShowAddModal(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold rounded-lg shadow-md shadow-cyan-900/30 transition-colors cursor-pointer"
-            >
-              <UserPlus className="w-4 h-4" />
-              <span>Add User</span>
-            </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold rounded-lg shadow-md shadow-cyan-900/30 transition-colors cursor-pointer"
+          >
+            <UserPlus className="w-4 h-4" />
+            <span>Add User</span>
+          </button>
+          {!inline && onClose && (
             <button
               onClick={onClose}
               className="p-1.5 text-slate-400 hover:text-slate-100 hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
-          </div>
+          )}
         </div>
+      </div>
 
         {/* Status Alert Banner */}
         {statusMessage && (
@@ -526,6 +529,15 @@ export const UserManagementModal: React.FC<UserManagementModalProps> = ({
           </div>
         )}
       </div>
+  );
+
+  if (inline) {
+    return card;
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-150">
+      {card}
     </div>
   );
 };

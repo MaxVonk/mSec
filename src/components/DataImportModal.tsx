@@ -22,15 +22,17 @@ import {
 import { ConnectorConfig, IngestionSchedulerConfig, WebhookConfig } from '../types';
 
 interface DataImportModalProps {
-  isOpen: boolean;
-  onClose: () => void;
+  isOpen?: boolean;
+  onClose?: () => void;
   onImportSuccess: () => void;
+  inline?: boolean;
 }
 
 export const DataImportModal: React.FC<DataImportModalProps> = ({
-  isOpen,
+  isOpen = true,
   onClose,
-  onImportSuccess
+  onImportSuccess,
+  inline = false
 }) => {
   const [activeTab, setActiveTab] = useState<'file' | 'graph' | 'sentinel' | 'raw' | 'automation'>('file');
   const [dragActive, setDragActive] = useState(false);
@@ -85,7 +87,7 @@ export const DataImportModal: React.FC<DataImportModalProps> = ({
   const [testingWebhook, setTestingWebhook] = useState<'teams' | 'slack' | null>(null);
 
   React.useEffect(() => {
-    if (isOpen) {
+    if (isOpen || inline) {
       fetch('/api/connectors')
         .then(res => res.json())
         .then((data: any) => {
@@ -408,31 +410,36 @@ export const DataImportModal: React.FC<DataImportModalProps> = ({
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-150">
-      <div className="bg-slate-900 border border-slate-700/80 rounded-2xl w-full max-w-2xl flex flex-col shadow-2xl overflow-hidden">
-        {/* Modal Header */}
-        <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/50">
-          <div className="flex items-center gap-2.5">
-            <div className="p-2 bg-cyan-500/10 text-cyan-400 rounded-lg">
-              <Upload className="w-5 h-5" />
-            </div>
-            <div>
-              <h2 className="text-base font-bold text-white">Import Security Data</h2>
-              <p className="text-xs text-slate-400">Ingest from files, Microsoft Graph, or Microsoft Sentinel</p>
-            </div>
-          </div>
+  if (!inline && !isOpen) return null;
 
+  const card = (
+    <div className={`bg-slate-900 border border-slate-700/80 rounded-2xl w-full ${inline ? 'max-w-none shadow-lg' : 'max-w-2xl shadow-2xl'} flex flex-col overflow-hidden`}>
+      {/* Modal / Page Header */}
+      <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/50">
+        <div className="flex items-center gap-2.5">
+          <div className="p-2 bg-cyan-500/10 text-cyan-400 rounded-lg">
+            <Upload className="w-5 h-5" />
+          </div>
+          <div>
+            <h2 className="text-base font-bold text-white">{inline ? 'Settings & Security Connectors' : 'Import Security Data'}</h2>
+            <p className="text-xs text-slate-400">
+              {inline ? 'Configure Microsoft Graph, Sentinel, automated ingestion schedulers, and incident webhooks' : 'Ingest from files, Microsoft Graph, or Microsoft Sentinel'}
+            </p>
+          </div>
+        </div>
+
+        {!inline && onClose && (
           <button
             onClick={onClose}
             className="p-1.5 text-slate-400 hover:text-slate-100 hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
-        </div>
+        )}
+      </div>
 
-        {/* Tab Selector */}
-        <div className="flex border-b border-slate-800 px-6 bg-slate-950/20">
+      {/* Tab Selector */}
+      <div className="flex border-b border-slate-800 px-6 bg-slate-950/20">
           <button
             onClick={() => { setActiveTab('file'); setStatusMessage(null); }}
             className={`flex items-center gap-2 py-3 px-3 text-xs font-semibold border-b-2 transition-colors cursor-pointer ${
@@ -1016,6 +1023,15 @@ export const DataImportModal: React.FC<DataImportModalProps> = ({
           )}
         </div>
       </div>
+  );
+
+  if (inline) {
+    return card;
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-150">
+      {card}
     </div>
   );
 };

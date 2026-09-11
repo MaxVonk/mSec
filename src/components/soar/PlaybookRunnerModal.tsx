@@ -6,17 +6,19 @@ import { UnifiedIncident } from '../../types';
 import { audioService } from '../../utils/audioService';
 
 interface PlaybookRunnerModalProps {
-  isOpen: boolean;
-  onClose: () => void;
+  isOpen?: boolean;
+  onClose?: () => void;
   incident?: UnifiedIncident | null;
   initialPlaybookId?: string;
+  inline?: boolean;
 }
 
 export const PlaybookRunnerModal: React.FC<PlaybookRunnerModalProps> = ({
-  isOpen,
+  isOpen = true,
   onClose,
   incident,
-  initialPlaybookId
+  initialPlaybookId,
+  inline = false
 }) => {
   const [selectedPlaybook, setSelectedPlaybook] = useState<PlaybookDefinition>(() => {
     if (initialPlaybookId) {
@@ -34,7 +36,7 @@ export const PlaybookRunnerModal: React.FC<PlaybookRunnerModalProps> = ({
 
   // Auto-select most relevant playbook if opened with an incident
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen || inline) {
       let bestPlaybook = PREBUILT_PLAYBOOKS[0];
       if (initialPlaybookId) {
         const found = PREBUILT_PLAYBOOKS.find(p => p.id === initialPlaybookId);
@@ -147,38 +149,39 @@ export const PlaybookRunnerModal: React.FC<PlaybookRunnerModalProps> = ({
     audioService.playSuccessFanfare();
   };
 
-  if (!isOpen) return null;
+  if (!inline && !isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn">
-      <div className="relative w-full max-w-4xl bg-slate-900/95 border border-cyan-500/30 rounded-2xl shadow-[0_0_50px_rgba(6,182,212,0.15)] flex flex-col max-h-[90vh] overflow-hidden text-slate-100">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-950/60">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400">
-              <ShieldCheck className="w-5 h-5 animate-pulse" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-lg font-bold tracking-wide text-white">SOAR Automated Playbook Runner</h2>
-                <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
-                  {selectedPlaybook.category}
-                </span>
-              </div>
-              <p className="text-xs text-slate-400">
-                Execute automated containment runbooks with real-time API dispatch and audit logging
-              </p>
-            </div>
+  const card = (
+    <div className={`relative w-full ${inline ? 'max-w-none' : 'max-w-4xl max-h-[90vh]'} bg-slate-900/95 border border-cyan-500/30 rounded-2xl shadow-[0_0_50px_rgba(6,182,212,0.15)] flex flex-col overflow-hidden text-slate-100`}>
+      {/* Header */}
+      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-950/60">
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400">
+            <ShieldCheck className="w-5 h-5 animate-pulse" />
           </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg font-bold tracking-wide text-white">SOAR Automated Playbook Runner</h2>
+              <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                {selectedPlaybook.category}
+              </span>
+            </div>
+            <p className="text-xs text-slate-400">
+              Execute automated containment runbooks with real-time API dispatch and audit logging
+            </p>
+          </div>
+        </div>
+        {!inline && onClose && (
           <button
             onClick={onClose}
             className="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800/80 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
-        </div>
+        )}
+      </div>
 
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+      <div className="flex-1 overflow-y-auto p-6 space-y-6">
           {/* Target Incident Context Banner */}
           {incident && (
             <div className="p-4 rounded-xl bg-slate-950/80 border border-slate-800 flex items-center justify-between">
@@ -400,6 +403,15 @@ export const PlaybookRunnerModal: React.FC<PlaybookRunnerModalProps> = ({
           </div>
         </div>
       </div>
+  );
+
+  if (inline) {
+    return card;
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn">
+      {card}
     </div>
   );
 };

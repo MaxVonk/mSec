@@ -5,7 +5,6 @@ import {
   IncidentStatus,
   UserSessionProfile 
 } from './types';
-import { Header } from './components/Header';
 import { StatsCards } from './components/StatsCards';
 import { IncidentList } from './components/IncidentList';
 import { IncidentDetailModal } from './components/IncidentDetailModal';
@@ -273,40 +272,19 @@ export const App: React.FC = () => {
         incidentCount={incidents.length}
         currentUser={currentUser}
         onOpenWarRoom={() => setIsWarRoomOpen(true)}
-        onOpenMitre={() => setIsMitreOpen(true)}
         onOpenCopilot={() => setIsCopilotOpen(true)}
-        onOpenShiftHandover={() => setIsShiftHandoverOpen(true)}
-        onOpenPlaybooks={() => {
-          setPlaybookIncident(null);
-          setIsPlaybooksOpen(true);
-        }}
-        onOpenUserManagement={() => setIsUserManagementOpen(true)}
-        onOpenConnectors={() => setIsImportModalOpen(true)}
+        onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
+        onRefresh={() => { fetchIncidents(); fetchStats(); }}
+        isRefreshing={isRefreshing}
+        onResetDemo={handleResetDemo}
         onLogout={handleLogout}
       />
 
       {/* Main Content Column */}
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-y-auto">
-        {/* Header */}
-        <Header
-          onOpenImport={() => setIsImportModalOpen(true)}
-          onResetDemo={handleResetDemo}
-          onRefresh={() => { fetchIncidents(); fetchStats(); }}
-          onOpenShiftHandover={() => setIsShiftHandoverOpen(true)}
-          onOpenUserManagement={() => setIsUserManagementOpen(true)}
-          onOpenWarRoom={() => setIsWarRoomOpen(true)}
-          onOpenMitre={() => setIsMitreOpen(true)}
-          onOpenCopilot={() => setIsCopilotOpen(true)}
-          onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
-          currentUser={currentUser}
-          onLogout={handleLogout}
-          isRefreshing={isRefreshing}
-          totalIncidents={stats?.totalIncidents || incidents.length}
-        />
-
         {/* Main Viewport Container */}
         <main className="max-w-7xl mx-auto px-6 py-6 flex-1 w-full space-y-6">
-          {/* Metric Cards shown on Dashboard and Analytics */}
+          {/* Metric Cards shown on Dashboard, Incidents, and Analytics */}
           {(activeView === 'dashboard' || activeView === 'incidents' || activeView === 'analytics') && (
             <StatsCards 
               stats={stats} 
@@ -314,7 +292,7 @@ export const App: React.FC = () => {
             />
           )}
 
-          {/* Content Views */}
+          {/* View: Dashboard / Incidents */}
           {(activeView === 'dashboard' || activeView === 'incidents') && (
             <IncidentList
               incidents={incidents}
@@ -334,6 +312,7 @@ export const App: React.FC = () => {
             />
           )}
 
+          {/* View: Threat Insights / Analytics */}
           {activeView === 'analytics' && (
             <SocTrendCharts
               onSelectTactic={(tactic) => {
@@ -343,20 +322,69 @@ export const App: React.FC = () => {
             />
           )}
 
+          {/* View: Threat Notices / PhishPilot */}
           {activeView === 'phishpilot' && (
             <PhishPilotDashboard />
           )}
 
+          {/* View: Assets & Entities */}
           {activeView === 'entities' && (
             <EntityExplorer
               incidents={incidents}
               onSelectIncidentById={handleSelectIncidentById}
             />
           )}
+
+          {/* View: Ransomware Insights / MITRE ATT&CK Matrix (Full Page) */}
+          {activeView === 'mitre' && (
+            <MitreMatrixModal
+              inline={true}
+              incidents={incidents}
+              onSelectIncident={inc => setSelectedIncident(inc)}
+              onRunPlaybook={inc => {
+                setPlaybookIncident(inc || null);
+                setActiveView('playbooks');
+              }}
+            />
+          )}
+
+          {/* View: Automations & Playbooks (Full Page) */}
+          {activeView === 'playbooks' && (
+            <PlaybookRunnerModal
+              inline={true}
+              incident={playbookIncident || selectedIncident}
+            />
+          )}
+
+          {/* View: Operational Reports (Full Page) */}
+          {activeView === 'reports' && (
+            <ShiftHandoverModal
+              inline={true}
+            />
+          )}
+
+          {/* View: Settings & Connectors (Full Page) */}
+          {activeView === 'settings' && (
+            <DataImportModal
+              inline={true}
+              onImportSuccess={() => {
+                fetchIncidents();
+                fetchStats();
+              }}
+            />
+          )}
+
+          {/* View: Tenant Members (Full Page - Admin Only) */}
+          {activeView === 'users' && currentUser?.role === 'ADMIN' && (
+            <UserManagementModal
+              inline={true}
+              currentUserId={currentUser?.id}
+            />
+          )}
         </main>
       </div>
 
-      {/* Modals */}
+      {/* Incident Detail Drawer */}
       <IncidentDetailModal
         incident={selectedIncident}
         onClose={() => setSelectedIncident(null)}
@@ -365,7 +393,7 @@ export const App: React.FC = () => {
         onDelete={handleDeleteIncident}
         onOpenPlaybook={(inc) => {
           setPlaybookIncident(inc);
-          setIsPlaybooksOpen(true);
+          setActiveView('playbooks');
         }}
         onOpenCopilot={(inc) => {
           setSelectedIncident(inc);
@@ -373,46 +401,53 @@ export const App: React.FC = () => {
         }}
       />
 
-      <DataImportModal
-        isOpen={isImportModalOpen}
-        onClose={() => setIsImportModalOpen(false)}
-        onImportSuccess={() => {
-          fetchIncidents();
-          fetchStats();
-        }}
-      />
+      {/* Popups triggered contextually when not on the dedicated page */}
+      {isImportModalOpen && activeView !== 'settings' && (
+        <DataImportModal
+          isOpen={isImportModalOpen}
+          onClose={() => setIsImportModalOpen(false)}
+          onImportSuccess={() => {
+            fetchIncidents();
+            fetchStats();
+          }}
+        />
+      )}
 
-      {isShiftHandoverOpen && (
+      {isShiftHandoverOpen && activeView !== 'reports' && (
         <ShiftHandoverModal onClose={() => setIsShiftHandoverOpen(false)} />
       )}
 
-      <UserManagementModal
-        isOpen={isUserManagementOpen}
-        onClose={() => setIsUserManagementOpen(false)}
-        currentUserId={currentUser?.id}
-      />
+      {isUserManagementOpen && activeView !== 'users' && (
+        <UserManagementModal
+          isOpen={isUserManagementOpen}
+          onClose={() => setIsUserManagementOpen(false)}
+          currentUserId={currentUser?.id}
+        />
+      )}
 
-      {/* MITRE ATT&CK Enterprise Matrix */}
-      <MitreMatrixModal
-        isOpen={isMitreOpen}
-        onClose={() => setIsMitreOpen(false)}
-        incidents={incidents}
-        onSelectIncident={inc => setSelectedIncident(inc)}
-        onRunPlaybook={inc => {
-          setPlaybookIncident(inc || null);
-          setIsPlaybooksOpen(true);
-        }}
-      />
+      {isMitreOpen && activeView !== 'mitre' && (
+        <MitreMatrixModal
+          isOpen={isMitreOpen}
+          onClose={() => setIsMitreOpen(false)}
+          incidents={incidents}
+          onSelectIncident={inc => setSelectedIncident(inc)}
+          onRunPlaybook={inc => {
+            setPlaybookIncident(inc || null);
+            setActiveView('playbooks');
+          }}
+        />
+      )}
 
-      {/* SOAR Automated Playbook Runner */}
-      <PlaybookRunnerModal
-        isOpen={isPlaybooksOpen}
-        onClose={() => {
-          setIsPlaybooksOpen(false);
-          setPlaybookIncident(null);
-        }}
-        incident={playbookIncident || selectedIncident}
-      />
+      {isPlaybooksOpen && activeView !== 'playbooks' && (
+        <PlaybookRunnerModal
+          isOpen={isPlaybooksOpen}
+          onClose={() => {
+            setIsPlaybooksOpen(false);
+            setPlaybookIncident(null);
+          }}
+          incident={playbookIncident || selectedIncident}
+        />
+      )}
 
       {/* Fullscreen SOC War Room HUD */}
       <WarRoomModal
@@ -422,9 +457,9 @@ export const App: React.FC = () => {
         onSelectIncident={inc => setSelectedIncident(inc)}
         onRunPlaybook={inc => {
           setPlaybookIncident(inc || null);
-          setIsPlaybooksOpen(true);
+          setActiveView('playbooks');
         }}
-        onOpenShiftHandover={() => setIsShiftHandoverOpen(true)}
+        onOpenShiftHandover={() => setActiveView('reports')}
       />
 
       {/* Global Command Palette (Ctrl+K) */}
@@ -434,15 +469,15 @@ export const App: React.FC = () => {
         incidents={incidents}
         currentUser={currentUser || undefined}
         onSelectIncident={inc => setSelectedIncident(inc)}
-        onOpenMitre={() => setIsMitreOpen(true)}
+        onOpenMitre={() => setActiveView('mitre')}
         onOpenWarRoom={() => setIsWarRoomOpen(true)}
-        onOpenShiftHandover={() => setIsShiftHandoverOpen(true)}
-        onOpenUserManagement={() => setIsUserManagementOpen(true)}
+        onOpenShiftHandover={() => setActiveView('reports')}
+        onOpenUserManagement={() => setActiveView('users')}
         onOpenPlaybooks={inc => {
           setPlaybookIncident(inc || null);
-          setIsPlaybooksOpen(true);
+          setActiveView('playbooks');
         }}
-        onOpenConnectors={() => setIsImportModalOpen(true)}
+        onOpenConnectors={() => setActiveView('settings')}
         onOpenCopilot={() => setIsCopilotOpen(true)}
       />
 

@@ -17,10 +17,11 @@ import {
 import { ShiftHandoverReport } from '../../types';
 
 interface ShiftHandoverModalProps {
-  onClose: () => void;
+  onClose?: () => void;
+  inline?: boolean;
 }
 
-export const ShiftHandoverModal: React.FC<ShiftHandoverModalProps> = ({ onClose }) => {
+export const ShiftHandoverModal: React.FC<ShiftHandoverModalProps> = ({ onClose, inline = false }) => {
   const [timeframe, setTimeframe] = useState<number>(12);
   const [analystName, setAnalystName] = useState('SOC Analyst');
   const [notes, setNotes] = useState('');
@@ -73,61 +74,62 @@ export const ShiftHandoverModal: React.FC<ShiftHandoverModalProps> = ({ onClose 
 
   const rep = reportData?.report;
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-150">
-      <div className="bg-slate-900 border border-slate-700/80 rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden print:bg-white print:text-black print:border-none print:shadow-none print:max-w-none print:max-h-none print:static">
-        {/* Header */}
-        <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/50 print:hidden">
-          <div className="flex items-center gap-2.5">
-            <div className="p-2 bg-gradient-to-br from-cyan-500/20 to-blue-500/10 text-cyan-400 rounded-lg border border-cyan-500/20">
-              <FileText className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="text-sm font-bold text-slate-100 flex items-center gap-2">
-                Executive SOC Shift Handover Briefing
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-400 border border-cyan-800 font-mono">
-                  Operational Report
-                </span>
-              </h3>
-              <p className="text-xs text-slate-400">
-                Summarizes shift triage activity, containment status, and action items for oncoming analysts
-              </p>
-            </div>
+  const card = (
+    <div className={`bg-slate-900 border border-slate-700/80 rounded-2xl w-full ${inline ? 'max-w-none' : 'max-w-4xl max-h-[90vh]'} flex flex-col shadow-2xl overflow-hidden print:bg-white print:text-black print:border-none print:shadow-none print:max-w-none print:max-h-none print:static`}>
+      {/* Header */}
+      <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/50 print:hidden">
+        <div className="flex items-center gap-2.5">
+          <div className="p-2 bg-gradient-to-br from-cyan-500/20 to-blue-500/10 text-cyan-400 rounded-lg border border-cyan-500/20">
+            <FileText className="w-5 h-5" />
           </div>
+          <div>
+            <h3 className="text-sm font-bold text-slate-100 flex items-center gap-2">
+              Executive SOC Shift Handover Briefing
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-400 border border-cyan-800 font-mono">
+                Operational Report
+              </span>
+            </h3>
+            <p className="text-xs text-slate-400">
+              Summarizes shift triage activity, containment status, and action items for oncoming analysts
+            </p>
+          </div>
+        </div>
 
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handleCopy}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition-colors cursor-pointer"
-            >
-              {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-              <span>{copied ? 'Copied' : 'Copy MD'}</span>
-            </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleCopy}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition-colors cursor-pointer"
+          >
+            {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+            <span>{copied ? 'Copied' : 'Copy MD'}</span>
+          </button>
 
-            <button
-              onClick={handleDownload}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition-colors cursor-pointer"
-            >
-              <Download className="w-3.5 h-3.5" />
-              <span>Download .md</span>
-            </button>
+          <button
+            onClick={handleDownload}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition-colors cursor-pointer"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span>Download .md</span>
+          </button>
 
-            <button
-              onClick={handlePrint}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-950 hover:bg-cyan-900 border border-cyan-800 text-cyan-300 text-xs font-semibold transition-colors cursor-pointer"
-            >
-              <Printer className="w-3.5 h-3.5" />
-              <span>Print / PDF</span>
-            </button>
+          <button
+            onClick={handlePrint}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-950 hover:bg-cyan-900 border border-cyan-800 text-cyan-300 text-xs font-semibold transition-colors cursor-pointer"
+          >
+            <Printer className="w-3.5 h-3.5" />
+            <span>Print / PDF</span>
+          </button>
 
+          {!inline && onClose && (
             <button
               onClick={onClose}
               className="p-1.5 text-slate-400 hover:text-slate-100 hover:bg-slate-800 rounded-lg transition-colors cursor-pointer ml-2"
             >
               <X className="w-5 h-5" />
             </button>
-          </div>
+          )}
         </div>
+      </div>
 
         {/* Filter / Input Options Bar */}
         <div className="px-6 py-3 bg-slate-950/70 border-b border-slate-800 flex flex-wrap items-center justify-between gap-4 text-xs print:hidden">
@@ -360,6 +362,15 @@ export const ShiftHandoverModal: React.FC<ShiftHandoverModalProps> = ({ onClose 
           ) : null}
         </div>
       </div>
+  );
+
+  if (inline) {
+    return card;
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-150">
+      {card}
     </div>
   );
 };

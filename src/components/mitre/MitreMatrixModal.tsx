@@ -4,11 +4,12 @@ import { UnifiedIncident } from '../../types';
 import { audioService } from '../../utils/audioService';
 
 interface MitreMatrixModalProps {
-  isOpen: boolean;
-  onClose: () => void;
+  isOpen?: boolean;
+  onClose?: () => void;
   incidents: UnifiedIncident[];
   onSelectIncident?: (incident: UnifiedIncident) => void;
   onRunPlaybook?: (incident?: UnifiedIncident) => void;
+  inline?: boolean;
 }
 
 interface MitreTechnique {
@@ -139,11 +140,12 @@ const TACTICS: TacticDefinition[] = [
 ];
 
 export const MitreMatrixModal: React.FC<MitreMatrixModalProps> = ({
-  isOpen,
+  isOpen = true,
   onClose,
   incidents,
   onSelectIncident,
-  onRunPlaybook
+  onRunPlaybook,
+  inline = false
 }) => {
   const [selectedTechnique, setSelectedTechnique] = useState<MitreTechnique | null>(null);
 
@@ -184,38 +186,39 @@ export const MitreMatrixModal: React.FC<MitreMatrixModalProps> = ({
     return map;
   }, [incidents]);
 
-  if (!isOpen) return null;
+  if (!inline && !isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fadeIn">
-      <div className="relative w-full max-w-7xl bg-slate-900/95 border border-purple-500/30 rounded-2xl shadow-[0_0_50px_rgba(168,85,247,0.15)] flex flex-col max-h-[92vh] overflow-hidden text-slate-100">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-950/60">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-purple-500/10 border border-purple-500/30 text-purple-400">
-              <Crosshair className="w-5 h-5 animate-pulse" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-lg font-bold tracking-wide text-white">MITRE ATT&CK® Enterprise Heatmap</h2>
-                <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30">
-                  {techniqueMatches.size} Active Techniques Detected
-                </span>
-              </div>
-              <p className="text-xs text-slate-400">
-                Interactive matrix mapping active incidents across 12 enterprise attack tactics
-              </p>
-            </div>
+  const card = (
+    <div className={`relative w-full ${inline ? 'max-w-none' : 'max-w-7xl max-h-[92vh]'} bg-slate-900/95 border border-purple-500/30 rounded-2xl shadow-[0_0_50px_rgba(168,85,247,0.15)] flex flex-col overflow-hidden text-slate-100`}>
+      {/* Header */}
+      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-950/60">
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 rounded-xl bg-purple-500/10 border border-purple-500/30 text-purple-400">
+            <Crosshair className="w-5 h-5 animate-pulse" />
           </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg font-bold tracking-wide text-white">MITRE ATT&CK® Enterprise Heatmap</h2>
+              <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                {techniqueMatches.size} Active Techniques Detected
+              </span>
+            </div>
+            <p className="text-xs text-slate-400">
+              Interactive matrix mapping active incidents across 12 enterprise attack tactics
+            </p>
+          </div>
+        </div>
+        {!inline && onClose && (
           <button
             onClick={onClose}
             className="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800/80 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
-        </div>
+        )}
+      </div>
 
-        {/* Matrix Viewport */}
+      {/* Matrix Viewport */}
         <div className="flex-1 overflow-x-auto overflow-y-auto p-6">
           <div className="grid grid-flow-col auto-cols-[200px] gap-3 min-w-max pb-4">
             {TACTICS.map(tactic => {
@@ -345,7 +348,7 @@ export const MitreMatrixModal: React.FC<MitreMatrixModalProps> = ({
                             <button
                               onClick={() => {
                                 onRunPlaybook(inc);
-                                onClose();
+                                onClose?.();
                               }}
                               className="px-2.5 py-1 text-xs font-semibold bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg flex items-center gap-1 transition-colors"
                             >
@@ -356,7 +359,7 @@ export const MitreMatrixModal: React.FC<MitreMatrixModalProps> = ({
                             <button
                               onClick={() => {
                                 onSelectIncident(inc);
-                                onClose();
+                                onClose?.();
                               }}
                               className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
                               title="Inspect Incident"
@@ -402,6 +405,15 @@ export const MitreMatrixModal: React.FC<MitreMatrixModalProps> = ({
           </a>
         </div>
       </div>
+  );
+
+  if (inline) {
+    return card;
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fadeIn">
+      {card}
     </div>
   );
 };
