@@ -36,6 +36,141 @@ export class DataNormalizer {
   }
 
   /**
+   * Helper to parse granular evidence items (process, device, user, ip, file, mailbox, url)
+   */
+  private static extractEvidenceEntities(
+    evidenceList: any[],
+    addEntity: (type: SecurityEntity['type'], value: string, role?: string, details?: any) => void
+  ) {
+    if (!Array.isArray(evidenceList)) return;
+
+    for (const ev of evidenceList) {
+      if (!ev) continue;
+      const evType = String(ev['@odata.type'] || '').toLowerCase();
+
+      // 1. Process Evidence
+      if (evType.includes('processevidence') || ev.processCommandLine || ev.parentProcessCommandLine || (ev.processId !== undefined && ev.imageFile)) {
+        const cmdLine = ev.processCommandLine || (ev.imageFile?.fileName ? `${ev.imageFile.filePath || ''}/${ev.imageFile.fileName}` : 'Unknown process');
+        addEntity('PROCESS', cmdLine, 'Suspicious Process Execution', {
+          commandLine: ev.processCommandLine,
+          fileName: ev.imageFile?.fileName,
+          filePath: ev.imageFile?.filePath,
+          sha256: ev.imageFile?.sha256,
+          sha1: ev.imageFile?.sha1,
+          md5: ev.imageFile?.md5,
+          processId: ev.processId,
+          parentProcessId: ev.parentProcessId,
+          parentProcessCommandLine: ev.parentProcessCommandLine,
+          detectionStatus: ev.detectionStatus,
+          integrityLevel: ev.integrityLevel
+        });
+
+        // Also add SHA256 if present as a FILE entity
+        if (ev.imageFile?.sha256 || ev.imageFile?.fileName) {
+          addEntity('FILE', ev.imageFile?.sha256 || ev.imageFile?.fileName, 'Executed Binary Image', {
+            fileName: ev.imageFile?.fileName,
+            filePath: ev.imageFile?.filePath,
+            sha256: ev.imageFile?.sha256,
+            sha1: ev.imageFile?.sha1
+          });
+        }
+      }
+
+      // 2. User Evidence
+      if (evType.includes('userevidence') || ev.userAccount) {
+        const acc = ev.userAccount || {};
+        const upn = acc.userPrincipalName || (acc.accountName ? (acc.domainName ? `${acc.accountName}@${acc.domainName}` : acc.accountName) : null) || ev.upn || ev.accountName;
+        if (upn) {
+          addEntity('USER', upn, 'Compromised / Impacted Account', {
+            accountName: acc.accountName,
+            domainName: acc.domainName,
+            userSid: acc.userSid,
+            userPrincipalName: acc.userPrincipalName
+          });
+        }
+      }
+
+      // 3. Device / Host Evidence
+      if (evType.includes('deviceevidence') || ev.deviceDnsName || ev.deviceName || ev.mdeDeviceId) {
+        const hostName = ev.deviceDnsName || ev.deviceName || ev.mdeDeviceId;
+        if (hostName) {
+          addEntity('HOST', hostName, 'Impacted Endpoint', {
+            deviceDnsName: ev.deviceDnsName,
+            deviceName: ev.deviceName,
+            mdeDeviceId: ev.mdeDeviceId,
+            osPlatform: ev.osPlatform,
+            version: ev.version,
+            osBuild: ev.osBuild,
+            riskScore: ev.riskScore,
+            healthStatus: ev.healthStatus,
+            lastIpAddress: ev.lastIpAddress,
+            lastExternalIpAddress: ev.lastExternalIpAddress,
+            ipInterfaces: ev.ipInterfaces,
+            rbacGroupName: ev.rbacGroupName
+          });
+        }
+
+        // Add internal IP if present
+        if (ev.lastIpAddress) {
+          addEntity('IP', ev.lastIpAddress, 'Endpoint Internal IP', {
+            host: hostName,
+            type: 'internal'
+          });
+        }
+        // Add external IP if present
+        if (ev.lastExternalIpAddress) {
+          addEntity('IP', ev.lastExternalIpAddress, 'Endpoint Public Egress IP', {
+            host: hostName,
+            type: 'external'
+          });
+        }
+        // Add IP interfaces
+        if (Array.isArray(ev.ipInterfaces)) {
+          for (const ip of ev.ipInterfaces) {
+            if (typeof ip === 'string' && ip && ip !== '127.0.0.1' && ip !== '::1') {
+              addEntity('IP', ip, 'Endpoint Network Interface', { host: hostName });
+            }
+          }
+        }
+      }
+
+      // 4. IP Evidence
+      if (evType.includes('ipevidence') || ev.ipAddress) {
+        if (ev.ipAddress) {
+          addEntity('IP', ev.ipAddress, 'Network Indicator', ev);
+        }
+      }
+
+      // 5. File Evidence
+      if (evType.includes('fileevidence') || (ev.fileName && !evType.includes('process'))) {
+        const fileVal = ev.fileName || ev.fileDetails?.fileName || ev.sha256;
+        if (fileVal) {
+          addEntity('FILE', fileVal, 'Malicious Artifact', {
+            fileName: ev.fileName || ev.fileDetails?.fileName,
+            filePath: ev.filePath || ev.fileDetails?.filePath,
+            sha256: ev.sha256 || ev.fileDetails?.sha256,
+            sha1: ev.sha1 || ev.fileDetails?.sha1
+          });
+        }
+      }
+
+      // 6. Mailbox Evidence
+      if (evType.includes('mailboxevidence') || ev.primaryAddress) {
+        if (ev.primaryAddress || ev.upn) {
+          addEntity('MAILBOX', ev.primaryAddress || ev.upn, 'Target Mailbox', ev);
+        }
+      }
+
+      // 7. URL Evidence
+      if (evType.includes('urlevidence') || ev.url) {
+        if (ev.url) {
+          addEntity('URL', ev.url, 'Malicious / Suspicious URL', ev);
+        }
+      }
+    }
+  }
+
+  /**
    * Normalizes Microsoft Graph Security Incidents (api: /v1.0/security/incidents)
    */
   public static normalizeGraphIncident(raw: any): UnifiedIncident {
@@ -69,20 +204,22 @@ export class DataNormalizer {
 
     // Extract entities from M365 incident evidence
     if (Array.isArray(raw.evidence)) {
-      for (const ev of raw.evidence) {
-        const evType = ev['@odata.type'] || '';
-        if (evType.includes('userEvidence') || ev.userAccount) {
-          const upn = ev.userAccount?.userPrincipalName || ev.upn || ev.accountName;
-          addEntity('USER', upn, 'Compromised / Impacted Account', ev);
-        } else if (evType.includes('deviceEvidence') || ev.deviceDnsName || ev.deviceName) {
-          const dev = ev.deviceDnsName || ev.deviceName || ev.mdeDeviceId;
-          addEntity('HOST', dev, 'Impacted Endpoint', ev);
-        } else if (evType.includes('ipEvidence') || ev.ipAddress) {
-          addEntity('IP', ev.ipAddress, 'Network Indicator', ev);
-        } else if (evType.includes('fileEvidence') || ev.fileName || ev.sha256) {
-          addEntity('FILE', ev.fileName || ev.sha256, 'Malicious Artifact', ev);
-        } else if (evType.includes('mailboxEvidence') || ev.primaryAddress) {
-          addEntity('MAILBOX', ev.primaryAddress, 'Target Mailbox', ev);
+      this.extractEvidenceEntities(raw.evidence, addEntity);
+    }
+
+    // Alerts parsing
+    const alerts: UnifiedAlert[] = [];
+    if (Array.isArray(raw.alerts)) {
+      for (const a of raw.alerts) {
+        alerts.push(this.normalizeGraphAlert(a));
+      }
+    }
+
+    // ALSO aggregate entities from child alerts!
+    for (const alt of alerts) {
+      if (alt.entities && Array.isArray(alt.entities)) {
+        for (const ent of alt.entities) {
+          addEntity(ent.type, ent.value, ent.role, ent.details);
         }
       }
     }
@@ -116,20 +253,63 @@ export class DataNormalizer {
       }
     }
 
-    // Alerts parsing
-    const alerts: UnifiedAlert[] = [];
-    if (Array.isArray(raw.alerts)) {
-      for (const a of raw.alerts) {
-        alerts.push(this.normalizeGraphAlert(a));
-      }
-    }
-
     // Infer provider
     let provider: ProviderSource = 'M365_DEFENDER';
     const alertProviders = alerts.map(a => a.provider);
     if (alertProviders.some(p => p === 'DEFENDER_ENDPOINT')) provider = 'DEFENDER_ENDPOINT';
     else if (alertProviders.some(p => p === 'DEFENDER_OFFICE365')) provider = 'DEFENDER_OFFICE365';
     else if (alertProviders.some(p => p === 'DEFENDER_IDENTITY')) provider = 'DEFENDER_IDENTITY';
+
+    // Classification and Determination:
+    // If raw is unknown or empty, look in alerts
+    let classification = raw.classification;
+    if (!classification || classification === 'unknown') {
+      const altWithClass = alerts.find(a => a.classification && a.classification !== 'unknown');
+      if (altWithClass) classification = altWithClass.classification;
+    }
+    if (!classification) classification = 'unknown';
+
+    let determination = raw.determination;
+    if (!determination || determination === 'unknown') {
+      const altWithDet = alerts.find(a => a.determination && a.determination !== 'unknown');
+      if (altWithDet) determination = altWithDet.determination;
+    }
+
+    // Comments aggregation:
+    const comments: { comment: string; createdByDisplayName?: string; createdDateTime?: string }[] = [];
+    if (raw.resolvingComment) {
+      comments.push({
+        comment: typeof raw.resolvingComment === 'string' ? raw.resolvingComment : JSON.stringify(raw.resolvingComment),
+        createdByDisplayName: 'Incident Resolution Note',
+        createdDateTime: raw.lastUpdateDateTime
+      });
+    }
+    if (Array.isArray(raw.comments)) {
+      for (const c of raw.comments) {
+        comments.push({
+          comment: typeof c === 'string' ? c : (c.comment || c.message || JSON.stringify(c)),
+          createdByDisplayName: c.createdByDisplayName || c.author || 'Analyst',
+          createdDateTime: c.createdDateTime || c.createdTime
+        });
+      }
+    }
+    // Also include alert comments
+    for (const alt of alerts) {
+      if (alt.comments && alt.comments.length > 0) {
+        for (const c of alt.comments) {
+          comments.push({
+            comment: c.comment,
+            createdByDisplayName: c.createdByDisplayName ? `${c.createdByDisplayName} (${alt.title})` : `Alert: ${alt.title}`,
+            createdDateTime: c.createdDateTime
+          });
+        }
+      }
+    }
+
+    const assignedTo = raw.assignedTo || alerts.find(a => a.assignedTo)?.assignedTo;
+    const incidentWebUrl = raw.incidentWebUrl;
+    const priorityScore = typeof raw.priorityScore === 'number' ? raw.priorityScore : undefined;
+    const resolvingComment = typeof raw.resolvingComment === 'string' ? raw.resolvingComment : (raw.resolvingComment ? JSON.stringify(raw.resolvingComment) : undefined);
 
     return {
       id,
@@ -139,7 +319,13 @@ export class DataNormalizer {
       provider,
       severity,
       status,
-      classification: raw.classification || 'TruePositive',
+      classification,
+      determination,
+      assignedTo,
+      incidentWebUrl,
+      priorityScore,
+      resolvingComment,
+      comments: comments.length > 0 ? comments : undefined,
       createdTime,
       lastUpdatedTime,
       entities,
@@ -167,21 +353,25 @@ export class DataNormalizer {
     else if (serviceSource.includes('cloudapp')) provider = 'DEFENDER_CLOUD_APPS';
 
     const entities: SecurityEntity[] = [];
+    const entityMap = new Set<string>();
+    const addEntity = (type: SecurityEntity['type'], value: string, role?: string, details?: any) => {
+      if (!value || typeof value !== 'string') return;
+      const cleanVal = value.trim();
+      const key = `${type}:${cleanVal}`;
+      if (!entityMap.has(key)) {
+        entityMap.add(key);
+        entities.push({
+          id: `ev-${entities.length + 1}`,
+          type,
+          value: cleanVal,
+          role,
+          details
+        });
+      }
+    };
+
     if (Array.isArray(raw.evidence)) {
-      raw.evidence.forEach((ev: any, idx: number) => {
-        if (ev.userAccount?.userPrincipalName) {
-          entities.push({ id: `ev-${idx}`, type: 'USER', value: ev.userAccount.userPrincipalName });
-        }
-        if (ev.deviceDnsName || ev.deviceName) {
-          entities.push({ id: `ev-${idx}`, type: 'HOST', value: ev.deviceDnsName || ev.deviceName });
-        }
-        if (ev.ipAddress) {
-          entities.push({ id: `ev-${idx}`, type: 'IP', value: ev.ipAddress });
-        }
-        if (ev.fileName) {
-          entities.push({ id: `ev-${idx}`, type: 'FILE', value: ev.fileName });
-        }
-      });
+      this.extractEvidenceEntities(raw.evidence, addEntity);
     }
 
     const mitreTechniques: MitreAttackInfo[] = [];
@@ -195,6 +385,16 @@ export class DataNormalizer {
       });
     }
 
+    // Extract comments
+    let comments: { comment: string; createdByDisplayName?: string; createdDateTime?: string }[] | undefined;
+    if (Array.isArray(raw.comments) && raw.comments.length > 0) {
+      comments = raw.comments.map((c: any) => ({
+        comment: typeof c === 'string' ? c : (c.comment || c.message || JSON.stringify(c)),
+        createdByDisplayName: c.createdByDisplayName || c.author || c.createdByUser,
+        createdDateTime: c.createdDateTime || c.createdTime
+      }));
+    }
+
     return {
       id,
       title,
@@ -204,6 +404,12 @@ export class DataNormalizer {
       createdTime,
       mitreTechniques,
       entities,
+      classification: raw.classification,
+      determination: raw.determination,
+      assignedTo: raw.assignedTo,
+      alertWebUrl: raw.alertWebUrl,
+      recommendedActions: raw.recommendedActions,
+      comments,
       rawData: raw
     };
   }
@@ -344,7 +550,7 @@ export class DataNormalizer {
       }
 
       // Check for M365 Graph Security Incident
-      if (item.alertsCount !== undefined || item.incidentId !== undefined || (item.displayName && item.evidence)) {
+      if (item.alertsCount !== undefined || item.incidentId !== undefined || item.incidentWebUrl !== undefined || (item.displayName && (item.evidence || item.alerts))) {
         results.push(this.normalizeGraphIncident(item));
         continue;
       }

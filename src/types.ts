@@ -13,7 +13,7 @@ export type ProviderSource =
   | 'PURVIEW_COMPLIANCE' 
   | 'GENERIC_IMPORT';
 
-export type EntityType = 'USER' | 'HOST' | 'IP' | 'FILE' | 'MAILBOX' | 'CLOUD_RESOURCE' | 'URL';
+export type EntityType = 'USER' | 'HOST' | 'IP' | 'FILE' | 'MAILBOX' | 'CLOUD_RESOURCE' | 'URL' | 'PROCESS';
 
 export interface SecurityEntity {
   id: string;
@@ -39,6 +39,12 @@ export interface UnifiedAlert {
   createdTime: string;
   mitreTechniques: MitreAttackInfo[];
   entities: SecurityEntity[];
+  classification?: string;
+  determination?: string;
+  assignedTo?: string;
+  alertWebUrl?: string;
+  recommendedActions?: string;
+  comments?: { comment: string; createdByDisplayName?: string; createdDateTime?: string }[];
   rawData?: any;
 }
 
@@ -72,6 +78,12 @@ export interface UnifiedIncident {
   severity: IncidentSeverity;
   status: IncidentStatus;
   classification?: string;
+  determination?: string;
+  assignedTo?: string;
+  incidentWebUrl?: string;
+  priorityScore?: number;
+  resolvingComment?: string;
+  comments?: { comment: string; createdByDisplayName?: string; createdDateTime?: string }[];
   createdTime: string;
   lastUpdatedTime: string;
   entities: SecurityEntity[];

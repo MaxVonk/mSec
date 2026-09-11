@@ -22,7 +22,11 @@ import {
   Lock,
   Compass,
   FileSpreadsheet,
-  Trash2
+  Trash2,
+  ExternalLink,
+  MessageSquare,
+  Lightbulb,
+  UserCheck
 } from 'lucide-react';
 
 interface IncidentDetailModalProps {
@@ -40,18 +44,19 @@ export const IncidentDetailModal: React.FC<IncidentDetailModalProps> = ({
   onUpdateStatus,
   onDelete
 }) => {
-  const [activeTab, setActiveTab] = useState<'threat' | 'timeline' | 'entities' | 'raw'>('threat');
-  const [copied, setCopied] = useState(false);
+  const [activeTab, setActiveTab] = useState<'threat' | 'timeline' | 'entities' | 'comments' | 'raw'>('threat');
+  const [copiedId, setCopiedId] = useState<string | null>(null);
   const [executingActionId, setExecutingActionId] = useState<string | null>(null);
 
   if (!incident) return null;
 
   const assessment = incident.threatAssessment;
+  const commentsCount = (incident.comments?.length || 0) + (incident.resolvingComment ? 1 : 0);
 
-  const handleCopyPayload = () => {
-    navigator.clipboard.writeText(JSON.stringify(incident.rawPayload, null, 2));
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const handleCopy = (id: string, text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
   };
 
   const handleActionClick = async (actionId: string) => {
@@ -63,13 +68,28 @@ export const IncidentDetailModal: React.FC<IncidentDetailModalProps> = ({
     }
   };
 
+  const getBadgeClass = (val?: string) => {
+    if (!val) return 'bg-slate-800 text-slate-300 border-slate-700';
+    const s = val.toLowerCase();
+    if (s.includes('false') || s.includes('notmalicious') || s.includes('clean') || s.includes('benign')) {
+      return 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30';
+    }
+    if (s.includes('true') || s.includes('malicious') || s.includes('compromised')) {
+      return 'bg-red-500/15 text-red-300 border-red-500/30';
+    }
+    if (s.includes('suspicious') || s.includes('hacktool') || s.includes('investigat')) {
+      return 'bg-amber-500/15 text-amber-300 border-amber-500/30';
+    }
+    return 'bg-slate-800 text-slate-300 border-slate-700';
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-150">
       <div className="bg-slate-900 border border-slate-700/80 rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
         {/* Modal Header */}
         <div className="px-6 py-4 border-b border-slate-800 flex items-start justify-between gap-4 bg-slate-950/50">
-          <div>
-            <div className="flex flex-wrap items-center gap-2 mb-1.5">
+          <div className="space-y-1.5 min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
               <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
                 incident.severity === 'CRITICAL' ? 'bg-red-500/20 text-red-400 border border-red-500/30' :
                 incident.severity === 'HIGH' ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30' :
@@ -83,13 +103,46 @@ export const IncidentDetailModal: React.FC<IncidentDetailModalProps> = ({
               <span className="text-xs text-slate-400 font-mono">
                 #{incident.incidentNumber || incident.id}
               </span>
+
+              {incident.classification && (
+                <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold border ${getBadgeClass(incident.classification)}`}>
+                  {incident.classification}
+                </span>
+              )}
+
+              {incident.determination && (
+                <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold border ${getBadgeClass(incident.determination)}`}>
+                  {incident.determination}
+                </span>
+              )}
+
+              {incident.assignedTo && (
+                <span className="flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-slate-800 text-slate-300 border border-slate-700">
+                  <UserCheck className="w-3 h-3 text-cyan-400" />
+                  <span>{incident.assignedTo}</span>
+                </span>
+              )}
             </div>
+
             <h2 className="text-lg font-bold text-white leading-snug">
               {incident.title}
             </h2>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
+            {incident.incidentWebUrl && (
+              <a
+                href={incident.incidentWebUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-700/60 text-cyan-300 rounded-lg text-xs font-semibold transition-colors cursor-pointer shadow-sm"
+                title="Open incident in Microsoft Defender Portal"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                <span>Defender Portal</span>
+              </a>
+            )}
+
             <select
               value={incident.status}
               onChange={(e) => onUpdateStatus(incident.id, e.target.value as IncidentStatus)}
@@ -118,17 +171,17 @@ export const IncidentDetailModal: React.FC<IncidentDetailModalProps> = ({
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex border-b border-slate-800 px-6 bg-slate-950/20">
+        <div className="flex border-b border-slate-800 px-6 bg-slate-950/20 overflow-x-auto">
           <button
             onClick={() => setActiveTab('threat')}
-            className={`flex items-center gap-2 py-3 px-4 text-xs font-semibold border-b-2 transition-colors cursor-pointer ${
+            className={`flex items-center gap-2 py-3 px-4 text-xs font-semibold border-b-2 transition-colors cursor-pointer shrink-0 ${
               activeTab === 'threat'
                 ? 'border-cyan-500 text-cyan-400'
                 : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
             <ShieldAlert className="w-4 h-4" />
-            <span>Threat Oversight & Containment</span>
+            <span>Threat Oversight</span>
             {assessment && (
               <span className="px-1.5 py-0.2 rounded bg-cyan-950 text-cyan-400 text-[10px] font-mono">
                 {assessment.containmentActions.length}
@@ -138,7 +191,7 @@ export const IncidentDetailModal: React.FC<IncidentDetailModalProps> = ({
 
           <button
             onClick={() => setActiveTab('timeline')}
-            className={`flex items-center gap-2 py-3 px-4 text-xs font-semibold border-b-2 transition-colors cursor-pointer ${
+            className={`flex items-center gap-2 py-3 px-4 text-xs font-semibold border-b-2 transition-colors cursor-pointer shrink-0 ${
               activeTab === 'timeline'
                 ? 'border-cyan-500 text-cyan-400'
                 : 'border-transparent text-slate-400 hover:text-slate-200'
@@ -150,19 +203,31 @@ export const IncidentDetailModal: React.FC<IncidentDetailModalProps> = ({
 
           <button
             onClick={() => setActiveTab('entities')}
-            className={`flex items-center gap-2 py-3 px-4 text-xs font-semibold border-b-2 transition-colors cursor-pointer ${
+            className={`flex items-center gap-2 py-3 px-4 text-xs font-semibold border-b-2 transition-colors cursor-pointer shrink-0 ${
               activeTab === 'entities'
                 ? 'border-cyan-500 text-cyan-400'
                 : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
             <User className="w-4 h-4" />
-            <span>Entities ({incident.entities.length})</span>
+            <span>Entities & Evidence ({incident.entities.length})</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('comments')}
+            className={`flex items-center gap-2 py-3 px-4 text-xs font-semibold border-b-2 transition-colors cursor-pointer shrink-0 ${
+              activeTab === 'comments'
+                ? 'border-cyan-500 text-cyan-400'
+                : 'border-transparent text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <MessageSquare className="w-4 h-4" />
+            <span>Analyst Notes ({commentsCount})</span>
           </button>
 
           <button
             onClick={() => setActiveTab('raw')}
-            className={`flex items-center gap-2 py-3 px-4 text-xs font-semibold border-b-2 transition-colors cursor-pointer ${
+            className={`flex items-center gap-2 py-3 px-4 text-xs font-semibold border-b-2 transition-colors cursor-pointer shrink-0 ${
               activeTab === 'raw'
                 ? 'border-cyan-500 text-cyan-400'
                 : 'border-transparent text-slate-400 hover:text-slate-200'
@@ -338,20 +403,61 @@ export const IncidentDetailModal: React.FC<IncidentDetailModalProps> = ({
                   {incident.alerts.map((alt) => (
                     <div key={alt.id} className="relative">
                       <div className="absolute -left-[31px] top-1 w-3.5 h-3.5 rounded-full bg-cyan-500 ring-4 ring-slate-900" />
-                      <div className="bg-slate-950 border border-slate-800 rounded-xl p-4">
-                        <div className="flex items-center justify-between gap-2 mb-1">
-                          <span className="text-xs font-bold text-slate-200">{alt.title}</span>
-                          <span className="text-[11px] text-slate-400">{new Date(alt.createdTime).toLocaleTimeString()}</span>
-                        </div>
-                        <p className="text-xs text-slate-400 mb-2">{alt.description}</p>
-                        <div className="flex flex-wrap gap-2 text-[11px] font-mono">
-                          <span className="px-2 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-300">
-                            {alt.provider}
+                      <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <span className="text-xs font-bold text-slate-200">{alt.title}</span>
+                            <div className="flex flex-wrap items-center gap-2 mt-1">
+                              <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-slate-900 border border-slate-800 text-slate-300">
+                                {alt.provider}
+                              </span>
+                              <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-slate-900 border border-slate-800 text-amber-400">
+                                {alt.severity}
+                              </span>
+                              {alt.classification && (
+                                <span className={`px-2 py-0.5 rounded text-[10px] font-mono border ${getBadgeClass(alt.classification)}`}>
+                                  {alt.classification}
+                                </span>
+                              )}
+                              {alt.determination && (
+                                <span className={`px-2 py-0.5 rounded text-[10px] font-mono border ${getBadgeClass(alt.determination)}`}>
+                                  {alt.determination}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <span className="text-[11px] text-slate-400 shrink-0 font-mono">
+                            {new Date(alt.createdTime).toLocaleString()}
                           </span>
-                          <span className="px-2 py-0.5 rounded bg-slate-900 border border-slate-800 text-amber-400">
-                            {alt.severity}
-                          </span>
                         </div>
+
+                        <p className="text-xs text-slate-400 leading-relaxed">{alt.description}</p>
+
+                        {/* Recommended Actions */}
+                        {alt.recommendedActions && (
+                          <div className="p-3 rounded-lg bg-slate-900/90 border border-slate-800/80 flex items-start gap-2.5">
+                            <Lightbulb className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                            <div>
+                              <span className="text-[11px] font-bold text-slate-300 block">Defender Recommended Actions</span>
+                              <p className="text-xs text-slate-400 leading-relaxed mt-0.5">{alt.recommendedActions}</p>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* External Alert Link */}
+                        {alt.alertWebUrl && (
+                          <div className="pt-2 border-t border-slate-800/60 flex justify-end">
+                            <a
+                              href={alt.alertWebUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5 text-xs text-cyan-400 hover:text-cyan-300 font-medium transition-colors"
+                            >
+                              <span>Open Alert in Microsoft Defender</span>
+                              <ExternalLink className="w-3.5 h-3.5" />
+                            </a>
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -360,50 +466,264 @@ export const IncidentDetailModal: React.FC<IncidentDetailModalProps> = ({
             </div>
           )}
 
-          {/* TAB 3: ENTITIES */}
+          {/* TAB 3: ENTITIES & EVIDENCE */}
           {activeTab === 'entities' && (
             <div className="space-y-4">
+              <div className="text-xs text-slate-400">
+                Security entities extracted from Defender XDR alerts, host telemetry, command lines, and network indicators
+              </div>
+
               <div className="grid md:grid-cols-2 gap-3">
-                {incident.entities.map((ent) => (
-                  <div
-                    key={ent.id}
-                    className="bg-slate-950 border border-slate-800 rounded-xl p-3.5 flex items-start gap-3"
-                  >
-                    <div className="p-2 rounded-lg bg-slate-900 text-cyan-400 shrink-0">
-                      {ent.type === 'USER' && <User className="w-4 h-4" />}
-                      {ent.type === 'HOST' && <Laptop className="w-4 h-4" />}
-                      {ent.type === 'IP' && <Globe className="w-4 h-4" />}
-                      {ent.type === 'FILE' && <FileCode className="w-4 h-4" />}
-                      {ent.type === 'CLOUD_RESOURCE' && <Lock className="w-4 h-4" />}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-semibold text-slate-200 truncate">{ent.value}</span>
-                        <span className="text-[10px] px-1.5 py-0.2 rounded bg-slate-800 text-slate-400 font-mono">
-                          {ent.type}
-                        </span>
+                {incident.entities.map((ent) => {
+                  // 1. PROCESS ENTITY
+                  if (ent.type === 'PROCESS') {
+                    return (
+                      <div key={ent.id} className="md:col-span-2 bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div className="p-1.5 rounded-lg bg-amber-950/40 text-amber-400 border border-amber-800/40">
+                              <Terminal className="w-4 h-4" />
+                            </div>
+                            <div>
+                              <span className="text-xs font-bold text-slate-200">Process Execution</span>
+                              {ent.role && <span className="ml-2 text-[10px] text-amber-400/80 font-mono">({ent.role})</span>}
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => handleCopy(ent.id, ent.details?.commandLine || ent.value)}
+                            className="flex items-center gap-1 px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-[11px] font-mono transition-colors cursor-pointer"
+                          >
+                            {copiedId === ent.id ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                            <span>{copiedId === ent.id ? 'Copied' : 'Copy Command'}</span>
+                          </button>
+                        </div>
+
+                        <div className="p-3 bg-black/60 border border-slate-800/80 rounded-lg font-mono text-xs text-amber-300/90 whitespace-pre-wrap break-all select-all">
+                          {ent.details?.commandLine || ent.value}
+                        </div>
+
+                        {ent.details && (
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 border-t border-slate-800/60 text-[11px]">
+                            {ent.details.processId !== undefined && (
+                              <div className="bg-slate-900/60 p-2 rounded border border-slate-800/40">
+                                <span className="text-slate-500 block text-[10px] uppercase font-semibold">Process ID (PID)</span>
+                                <span className="text-slate-300 font-mono">{ent.details.processId}</span>
+                              </div>
+                            )}
+                            {ent.details.parentProcessId !== undefined && (
+                              <div className="bg-slate-900/60 p-2 rounded border border-slate-800/40">
+                                <span className="text-slate-500 block text-[10px] uppercase font-semibold">Parent PID (PPID)</span>
+                                <span className="text-slate-300 font-mono">{ent.details.parentProcessId}</span>
+                              </div>
+                            )}
+                            {ent.details.filePath && (
+                              <div className="bg-slate-900/60 p-2 rounded border border-slate-800/40 sm:col-span-2">
+                                <span className="text-slate-500 block text-[10px] uppercase font-semibold">Binary Path</span>
+                                <span className="text-slate-300 font-mono truncate block" title={ent.details.filePath}>{ent.details.filePath}</span>
+                              </div>
+                            )}
+                            {ent.details.sha256 && (
+                              <div className="bg-slate-900/60 p-2 rounded border border-slate-800/40 sm:col-span-4 flex items-center justify-between gap-2">
+                                <div className="min-w-0">
+                                  <span className="text-slate-500 block text-[10px] uppercase font-semibold">SHA-256 Checksum</span>
+                                  <span className="text-slate-400 font-mono text-[10px] truncate block">{ent.details.sha256}</span>
+                                </div>
+                                <button
+                                  onClick={() => handleCopy(`sha-${ent.id}`, ent.details?.sha256 || '')}
+                                  className="p-1 text-slate-400 hover:text-slate-200 cursor-pointer"
+                                  title="Copy SHA-256"
+                                >
+                                  {copiedId === `sha-${ent.id}` ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
-                      {ent.role && (
-                        <p className="text-xs text-slate-400 mt-0.5">{ent.role}</p>
-                      )}
+                    );
+                  }
+
+                  // 2. HOST / ENDPOINT ENTITY
+                  if (ent.type === 'HOST') {
+                    return (
+                      <div key={ent.id} className="bg-slate-950 border border-slate-800 rounded-xl p-3.5 space-y-2">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="p-2 rounded-lg bg-slate-900 text-cyan-400 shrink-0">
+                              <Laptop className="w-4 h-4" />
+                            </div>
+                            <div className="min-w-0">
+                              <span className="text-xs font-bold text-slate-100 truncate block">{ent.value}</span>
+                              <span className="text-[10px] text-slate-400 font-mono">HOST / ENDPOINT</span>
+                            </div>
+                          </div>
+                          {ent.details?.osPlatform && (
+                            <span className="px-2 py-0.5 rounded bg-blue-950/60 border border-blue-800/50 text-blue-300 text-[11px] font-medium shrink-0">
+                              {ent.details.osPlatform} {ent.details.version || ''}
+                            </span>
+                          )}
+                        </div>
+
+                        {ent.details && (
+                          <div className="text-[11px] space-y-1 pt-2 border-t border-slate-800/50">
+                            {ent.details.lastIpAddress && (
+                              <div className="flex justify-between text-slate-400">
+                                <span>Internal IP:</span>
+                                <span className="text-slate-200 font-mono">{ent.details.lastIpAddress}</span>
+                              </div>
+                            )}
+                            {ent.details.lastExternalIpAddress && (
+                              <div className="flex justify-between text-slate-400">
+                                <span>External IP:</span>
+                                <span className="text-slate-200 font-mono">{ent.details.lastExternalIpAddress}</span>
+                              </div>
+                            )}
+                            {ent.details.mdeDeviceId && (
+                              <div className="flex justify-between text-slate-400">
+                                <span>MDE Device ID:</span>
+                                <span className="text-slate-400 font-mono text-[10px] truncate max-w-[160px]" title={ent.details.mdeDeviceId}>{ent.details.mdeDeviceId}</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  }
+
+                  // 3. USER ACCOUNT ENTITY
+                  if (ent.type === 'USER') {
+                    return (
+                      <div key={ent.id} className="bg-slate-950 border border-slate-800 rounded-xl p-3.5 space-y-2">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="p-2 rounded-lg bg-slate-900 text-purple-400 shrink-0">
+                              <User className="w-4 h-4" />
+                            </div>
+                            <div className="min-w-0">
+                              <span className="text-xs font-bold text-slate-100 truncate block">{ent.value}</span>
+                              <span className="text-[10px] text-slate-400 font-mono">USER ACCOUNT</span>
+                            </div>
+                          </div>
+                          {ent.role && (
+                            <span className="px-2 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-400 text-[10px] shrink-0">
+                              {ent.role}
+                            </span>
+                          )}
+                        </div>
+
+                        {ent.details && (ent.details.accountName || ent.details.domainName) && (
+                          <div className="text-[11px] space-y-1 pt-2 border-t border-slate-800/50">
+                            {ent.details.accountName && (
+                              <div className="flex justify-between text-slate-400">
+                                <span>Account:</span>
+                                <span className="text-slate-200 font-mono">{ent.details.accountName}</span>
+                              </div>
+                            )}
+                            {ent.details.domainName && (
+                              <div className="flex justify-between text-slate-400">
+                                <span>Domain / Host:</span>
+                                <span className="text-slate-200 font-mono">{ent.details.domainName}</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  }
+
+                  // 4. IP / FILE / URL / MAILBOX / CLOUD RESOURCE ENTITIES
+                  return (
+                    <div
+                      key={ent.id}
+                      className="bg-slate-950 border border-slate-800 rounded-xl p-3.5 flex items-start gap-3"
+                    >
+                      <div className="p-2 rounded-lg bg-slate-900 text-cyan-400 shrink-0">
+                        {ent.type === 'IP' && <Globe className="w-4 h-4" />}
+                        {ent.type === 'FILE' && <FileCode className="w-4 h-4" />}
+                        {ent.type === 'CLOUD_RESOURCE' && <Lock className="w-4 h-4" />}
+                        {ent.type === 'MAILBOX' && <User className="w-4 h-4" />}
+                        {ent.type === 'URL' && <Globe className="w-4 h-4" />}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-xs font-semibold text-slate-200 truncate">{ent.value}</span>
+                          <span className="text-[10px] px-1.5 py-0.2 rounded bg-slate-800 text-slate-400 font-mono">
+                            {ent.type}
+                          </span>
+                        </div>
+                        {ent.role && (
+                          <p className="text-xs text-slate-400 mt-0.5">{ent.role}</p>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => handleCopy(ent.id, ent.value)}
+                        className="p-1 text-slate-500 hover:text-slate-300 cursor-pointer"
+                        title="Copy Value"
+                      >
+                        {copiedId === ent.id ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                      </button>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
 
-          {/* TAB 4: RAW PAYLOAD */}
+          {/* TAB 4: ANALYST COMMENTS & SOC NOTES */}
+          {activeTab === 'comments' && (
+            <div className="space-y-4">
+              {incident.resolvingComment && (
+                <div className="p-4 rounded-xl bg-slate-950 border border-emerald-800/50 shadow-sm space-y-2">
+                  <div className="flex items-center gap-2 text-emerald-400">
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span className="text-xs font-bold uppercase tracking-wider">Incident Resolution Note</span>
+                  </div>
+                  <p className="text-xs text-slate-200 leading-relaxed font-mono whitespace-pre-wrap bg-slate-900/60 p-3 rounded-lg border border-slate-800">
+                    {incident.resolvingComment}
+                  </p>
+                </div>
+              )}
+
+              {(!incident.comments || incident.comments.length === 0) && !incident.resolvingComment ? (
+                <div className="p-8 text-center bg-slate-950 border border-slate-800 rounded-xl text-slate-400 text-xs">
+                  No SOC analyst comments or resolution notes recorded for this incident.
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {incident.comments?.map((com, idx) => (
+                    <div key={idx} className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-cyan-300 flex items-center gap-1.5">
+                          <UserCheck className="w-3.5 h-3.5 text-cyan-400" />
+                          <span>{com.createdByDisplayName || 'SOC Analyst'}</span>
+                        </span>
+                        {com.createdDateTime && (
+                          <span className="text-[11px] text-slate-500 font-mono">
+                            {new Date(com.createdDateTime).toLocaleString()}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-slate-300 leading-relaxed whitespace-pre-wrap font-sans bg-slate-900/40 p-3 rounded-lg border border-slate-800/60">
+                        {com.comment}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* TAB 5: RAW PAYLOAD */}
           {activeTab === 'raw' && (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-xs text-slate-400">Original API / JSON Payload</span>
                 <button
-                  onClick={handleCopyPayload}
+                  onClick={() => handleCopy('raw-json', JSON.stringify(incident.rawPayload || incident, null, 2))}
                   className="flex items-center gap-1.5 px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-md text-xs transition-colors cursor-pointer"
                 >
-                  {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                  <span>{copied ? 'Copied' : 'Copy JSON'}</span>
+                  {copiedId === 'raw-json' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                  <span>{copiedId === 'raw-json' ? 'Copied' : 'Copy JSON'}</span>
                 </button>
               </div>
 
