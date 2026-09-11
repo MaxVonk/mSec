@@ -38,7 +38,7 @@ export class AuthService {
       }
     }
 
-    const redirectUri = `${origin.replace(/\/+$/, '')}/api/auth/callback`;
+    const redirectUri = process.env.AUTH_REDIRECT_URI || `${origin.replace(/\/+$/, '')}/api/auth/callback`;
     const scopes = ['openid', 'profile', 'email', 'User.Read', 'offline_access'];
 
     const params = new URLSearchParams({
@@ -71,7 +71,7 @@ export class AuthService {
     const clientId = graphConfig.clientId || process.env.GRAPH_CLIENT_ID || '';
     const clientSecret = graphConfig.clientSecret || process.env.GRAPH_CLIENT_SECRET || '';
 
-    const redirectUri = `${origin.replace(/\/+$/, '')}/api/auth/callback`;
+    const redirectUri = process.env.AUTH_REDIRECT_URI || `${origin.replace(/\/+$/, '')}/api/auth/callback`;
 
     const bodyParams = new URLSearchParams({
       client_id: clientId,
@@ -148,56 +148,11 @@ export class AuthService {
       displayName: userRecord.displayName,
       email: userRecord.email,
       role: userRecord.role,
-      mustChangePassword: userRecord.mustChangePassword ?? false,
       isAuthenticated: true
     };
 
     this.sessions.set(sessionId, profile);
     return { sessionId, user: profile };
-  }
-
-  /**
-   * Allows user to change their password and clears mustChangePassword flag
-   */
-  public static changePassword(userId: string, currentPassword: string, newPassword: string): UserSessionProfile {
-    const userRecord = UserStore.getById(userId);
-    if (!userRecord) {
-      throw new Error('User not found.');
-    }
-
-    if (!UserStore.verifyPassword(currentPassword, userRecord)) {
-      throw new Error('Current password is incorrect.');
-    }
-
-    if (!newPassword || newPassword.length < 8) {
-      throw new Error('New password must be at least 8 characters long.');
-    }
-
-    if (newPassword === currentPassword) {
-      throw new Error('New password must be different from the current password.');
-    }
-
-    const updated = UserStore.update(userId, {
-      password: newPassword,
-      mustChangePassword: false
-    });
-
-    // Update active sessions in memory
-    for (const [sId, sess] of this.sessions.entries()) {
-      if (sess.id === userId) {
-        sess.mustChangePassword = false;
-      }
-    }
-
-    return {
-      id: updated.id,
-      username: updated.username,
-      displayName: updated.displayName,
-      email: updated.email,
-      role: updated.role,
-      mustChangePassword: false,
-      isAuthenticated: true
-    };
   }
 
   public static getSession(sessionId?: string): UserSessionProfile {

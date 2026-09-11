@@ -17,7 +17,6 @@ describe('Authentication & User Management Suite Tests', () => {
       assert.ok(admin, 'Admin account must exist');
       assert.strictEqual(admin.role, 'ADMIN');
       assert.strictEqual(admin.isActive, true);
-      assert.strictEqual(admin.mustChangePassword, true, 'Default admin must require password change on first login');
       assert.ok(admin.passwordHash, 'Admin must have a password hash');
       assert.ok(admin.salt, 'Admin must have a unique cryptographic salt');
 
@@ -152,42 +151,6 @@ describe('Authentication & User Management Suite Tests', () => {
       AuthService.destroySession(sessionId);
       assert.strictEqual(AuthService.getSession(sessionId).isAuthenticated, false);
     });
-
-    it('should require default admin password change on first login and update password', () => {
-      const loginRes = AuthService.loginWithPassword('admin', 'Admin123!');
-      assert.strictEqual(loginRes.user.mustChangePassword, true, 'First login must flag mustChangePassword');
-
-      // Rejects invalid current password
-      assert.throws(() => {
-        AuthService.changePassword(loginRes.user.id, 'WrongPass!', 'NewSecurePass2026!');
-      }, /Current password is incorrect/);
-
-      // Rejects identical new password
-      assert.throws(() => {
-        AuthService.changePassword(loginRes.user.id, 'Admin123!', 'Admin123!');
-      }, /must be different/);
-
-      // Rejects short new password
-      assert.throws(() => {
-        AuthService.changePassword(loginRes.user.id, 'Admin123!', 'short');
-      }, /at least 8 characters/);
-
-      // Successfully changes password
-      const updatedUser = AuthService.changePassword(loginRes.user.id, 'Admin123!', 'CyberDefender2026!');
-      assert.strictEqual(updatedUser.mustChangePassword, false);
-
-      // Session in memory updated
-      const currentSession = AuthService.getSession(loginRes.sessionId);
-      assert.strictEqual(currentSession.mustChangePassword, false);
-
-      // Old password no longer works
-      assert.throws(() => {
-        AuthService.loginWithPassword('admin', 'Admin123!');
-      }, /Invalid username or password/);
-
-      // New password works and mustChangePassword is now false
-      const newLogin = AuthService.loginWithPassword('admin', 'CyberDefender2026!');
-      assert.strictEqual(newLogin.user.mustChangePassword, false);
-    });
   });
 });
+

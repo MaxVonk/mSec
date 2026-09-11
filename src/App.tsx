@@ -16,7 +16,6 @@ import { SocTrendCharts } from './components/analytics/SocTrendCharts';
 import { ShiftHandoverModal } from './components/reporting/ShiftHandoverModal';
 import { LoginPage } from './components/auth/LoginPage';
 import { UserManagementModal } from './components/auth/UserManagementModal';
-import { ForcePasswordChangeModal } from './components/auth/ForcePasswordChangeModal';
 import { 
   Users, 
   Settings, 
@@ -237,20 +236,6 @@ export const App: React.FC = () => {
           fetchIncidents();
           fetchStats();
         }} 
-      />
-    );
-  }
-
-  if (currentUser?.mustChangePassword) {
-    return (
-      <ForcePasswordChangeModal
-        user={currentUser}
-        onPasswordChanged={(updatedUser) => {
-          setCurrentUser(updatedUser);
-          fetchIncidents();
-          fetchStats();
-        }}
-        onLogout={handleLogout}
       />
     );
   }
