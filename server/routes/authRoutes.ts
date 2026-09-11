@@ -39,6 +39,28 @@ router.post('/login', (req, res) => {
   }
 });
 
+// Change Password (required on first login or user self-service)
+router.post('/change-password', (req, res) => {
+  const sessionId = getSessionId(req);
+  const currentUser = AuthService.getSession(sessionId);
+
+  if (!currentUser.isAuthenticated) {
+    return res.status(401).json({ error: 'Authentication required.' });
+  }
+
+  const { currentPassword, newPassword } = req.body;
+  if (!currentPassword || !newPassword) {
+    return res.status(400).json({ error: 'Current password and new password are required.' });
+  }
+
+  try {
+    const updatedUser = AuthService.changePassword(currentUser.id, currentPassword, newPassword);
+    res.json({ success: true, user: updatedUser });
+  } catch (err: any) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
 // 2. Microsoft SSO Login
 router.get('/microsoft', (req, res) => {
   try {

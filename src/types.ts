@@ -277,6 +277,7 @@ export interface UserSessionProfile {
   avatarUrl?: string;
   isAuthenticated: boolean;
   tenantId?: string;
+  mustChangePassword?: boolean;
 }
 
 export interface PublicUser {
@@ -286,6 +287,7 @@ export interface PublicUser {
   email: string;
   role: UserRole;
   isActive: boolean;
+  mustChangePassword?: boolean;
   createdAt: string;
   lastLogin?: string;
 }
