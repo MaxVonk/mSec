@@ -170,8 +170,20 @@ export const App: React.FC = () => {
   };
 
   const handleResetDemo = async () => {
+    if (stats?.demoMode === false) {
+      alert('Demo mode is disabled in production environment.');
+      return;
+    }
+    if (!window.confirm('Reset dataset to demo sample incidents? Any live data will be replaced with demo incidents.')) {
+      return;
+    }
     try {
-      await fetch('/api/demo/reset', { method: 'POST' });
+      const res = await fetch('/api/demo/reset', { method: 'POST' });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        alert(errData.error || 'Failed to reset demo dataset');
+        return;
+      }
       await fetchIncidents();
       await fetchStats();
     } catch (err) {
@@ -275,6 +287,7 @@ export const App: React.FC = () => {
         isRefreshing={isRefreshing}
         onResetDemo={handleResetDemo}
         onLogout={handleLogout}
+        demoMode={stats?.demoMode}
       />
 
       {/* Main Content Column */}

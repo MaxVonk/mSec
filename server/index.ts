@@ -16,6 +16,7 @@ import { IngestionSchedulerService } from './services/ingestionScheduler';
 import { WebhookNotifierService } from './services/webhookNotifier';
 import { ThreatIntelService } from './services/threatIntelService';
 import { SocReportService } from './services/socReportService';
+import { ConfigService } from './services/configService';
 
 import authRoutes, { userRouter } from './routes/authRoutes';
 
@@ -42,15 +43,25 @@ app.use('/api/users', userRouter);
 // PhishPilot email threat analysis routes
 app.use('/api/phishpilot', phishpilotRoutes);
 
+export const isDemoMode = (): boolean => ConfigService.isDemoMode();
+
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// System configuration
+app.get('/api/config', (req, res) => {
+  res.json(ConfigService.getSystemConfig());
+});
+
 // Stats
 app.get('/api/stats', (req, res) => {
   const stats = store.getStats();
-  res.json(stats);
+  res.json({
+    ...stats,
+    demoMode: ConfigService.isDemoMode()
+  });
 });
 
 // Entities list
@@ -262,12 +273,18 @@ app.post('/api/connectors/sentinel/sync', async (req, res) => {
 
 // Reset to demo data
 app.post('/api/demo/reset', (req, res) => {
+  if (!isDemoMode()) {
+    return res.status(403).json({ error: 'Demo mode is disabled in production environment.' });
+  }
   store.resetToDemo();
   res.json({ success: true, message: 'Demo incidents reset successfully' });
 });
 
 // Clear all incidents
 app.post('/api/demo/clear', (req, res) => {
+  if (!isDemoMode()) {
+    return res.status(403).json({ error: 'Demo mode is disabled in production environment.' });
+  }
   store.clear();
   res.json({ success: true, message: 'All incidents cleared' });
 });

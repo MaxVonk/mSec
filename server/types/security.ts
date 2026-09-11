@@ -128,6 +128,7 @@ export interface IngestionStats {
     ips: number;
     files: number;
   };
+  demoMode?: boolean;
 }
 
 export interface TimelinePoint {

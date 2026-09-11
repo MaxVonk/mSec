@@ -47,6 +47,7 @@ interface SidebarProps {
   isRefreshing: boolean;
   onResetDemo: () => void;
   onLogout: () => void;
+  demoMode?: boolean;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -59,7 +60,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onRefresh,
   isRefreshing,
   onResetDemo,
-  onLogout
+  onLogout,
+  demoMode
 }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMuted, setIsMuted] = useState(audioService.isMuted());
@@ -131,7 +133,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </button>
 
         {/* Quick Tactical Controls */}
-        <div className={`grid gap-1.5 ${isCollapsed ? 'grid-cols-2' : 'grid-cols-4'}`}>
+        <div className={`grid gap-1.5 ${isCollapsed ? 'grid-cols-2' : (demoMode !== false ? 'grid-cols-4' : 'grid-cols-3')}`}>
           <button
             onClick={onRefresh}
             disabled={isRefreshing}
@@ -153,13 +155,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
             {isMuted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
           </button>
 
-          <button
-            onClick={onResetDemo}
-            title="Reset Demo Dataset (M365 & Sentinel)"
-            className="p-2 flex items-center justify-center rounded-lg bg-slate-800/80 hover:bg-slate-700 border border-slate-750 text-slate-300 hover:text-cyan-400 transition-colors cursor-pointer"
-          >
-            <Database className="w-3.5 h-3.5" />
-          </button>
+          {demoMode !== false && (
+            <button
+              onClick={onResetDemo}
+              title="Reset Demo Dataset (M365 & Sentinel)"
+              className="p-2 flex items-center justify-center rounded-lg bg-slate-800/80 hover:bg-slate-700 border border-slate-750 text-slate-300 hover:text-cyan-400 transition-colors cursor-pointer"
+            >
+              <Database className="w-3.5 h-3.5" />
+            </button>
+          )}
 
           <button
             onClick={onOpenWarRoom}

@@ -5,6 +5,7 @@ import { IngestionSchedulerService } from '../server/services/ingestionScheduler
 import { WebhookNotifierService } from '../server/services/webhookNotifier.js';
 import { ThreatIntelService } from '../server/services/threatIntelService.js';
 import { SocReportService } from '../server/services/socReportService.js';
+import { ConfigService } from '../server/services/configService.js';
 import { UnifiedIncident } from '../server/types/security.js';
 
 describe('Advanced SOC Operations Suite Tests', () => {
@@ -164,5 +165,58 @@ describe('Advanced SOC Operations Suite Tests', () => {
       assert.ok(dossier.includes('## 1. Executive Summary & Attack Scenario'));
       assert.ok(dossier.includes('## 2. Correlated Entities & Evidence'));
     });
+  });
+
+  describe('ConfigService & Production Demo Mode Switch', () => {
+    const originalDemoMode = process.env.DEMO_MODE;
+    const originalNodeEnv = process.env.NODE_ENV;
+
+    it('should allow demo mode when DEMO_MODE="true"', () => {
+      process.env.DEMO_MODE = 'true';
+      assert.strictEqual(ConfigService.isDemoMode(), true);
+    });
+
+    it('should allow demo mode when DEMO_MODE="1"', () => {
+      process.env.DEMO_MODE = '1';
+      assert.strictEqual(ConfigService.isDemoMode(), true);
+    });
+
+    it('should strictly disable demo mode in production when DEMO_MODE="false"', () => {
+      process.env.DEMO_MODE = 'false';
+      process.env.NODE_ENV = 'production';
+      assert.strictEqual(ConfigService.isDemoMode(), false);
+      const config = ConfigService.getSystemConfig();
+      assert.strictEqual(config.demoMode, false);
+      assert.strictEqual(config.nodeEnv, 'production');
+    });
+
+    it('should disable demo mode when DEMO_MODE="0"', () => {
+      process.env.DEMO_MODE = '0';
+      assert.strictEqual(ConfigService.isDemoMode(), false);
+    });
+
+    it('should default to disabled when DEMO_MODE is unset in production', () => {
+      delete process.env.DEMO_MODE;
+      process.env.NODE_ENV = 'production';
+      assert.strictEqual(ConfigService.isDemoMode(), false);
+    });
+
+    it('should default to enabled when DEMO_MODE is unset in development', () => {
+      delete process.env.DEMO_MODE;
+      process.env.NODE_ENV = 'development';
+      assert.strictEqual(ConfigService.isDemoMode(), true);
+    });
+
+    // Cleanup environment variables after test
+    if (originalDemoMode !== undefined) {
+      process.env.DEMO_MODE = originalDemoMode;
+    } else {
+      delete process.env.DEMO_MODE;
+    }
+    if (originalNodeEnv !== undefined) {
+      process.env.NODE_ENV = originalNodeEnv;
+    } else {
+      delete process.env.NODE_ENV;
+    }
   });
 });
