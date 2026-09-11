@@ -11,7 +11,10 @@ import {
   Key, 
   Shield, 
   FileSpreadsheet, 
-  Code
+  Code,
+  Copy,
+  Check,
+  Terminal
 } from 'lucide-react';
 import { ConnectorConfig } from '../types';
 
@@ -54,6 +57,7 @@ export const DataImportModal: React.FC<DataImportModalProps> = ({
   });
   const [testingSentinel, setTestingSentinel] = useState(false);
   const [syncingSentinel, setSyncingSentinel] = useState(false);
+  const [copiedAzCmd, setCopiedAzCmd] = useState(false);
 
   React.useEffect(() => {
     if (isOpen) {
@@ -607,6 +611,36 @@ export const DataImportModal: React.FC<DataImportModalProps> = ({
                     onChange={(e) => setSentinelConfig({ ...sentinelConfig, clientSecret: e.target.value })}
                     className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-100 font-mono focus:border-cyan-500 focus:outline-none"
                   />
+                </div>
+              </div>
+
+              {/* Azure RBAC Setup Helper */}
+              <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-slate-300">
+                    <Terminal className="w-4 h-4 text-cyan-400" />
+                    <span className="text-xs font-bold uppercase tracking-wider">Azure RBAC Role Assignment Command</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const scope = `/subscriptions/${sentinelConfig.subscriptionId || '<subscription-id>'}/resourceGroups/${sentinelConfig.resourceGroup || '<resource-group>'}/providers/Microsoft.OperationalInsights/workspaces/${sentinelConfig.workspaceName || '<workspace-name>'}`;
+                      const cmd = `az role assignment create --assignee "${sentinelConfig.clientId || '<client-id>'}" --role "Microsoft Sentinel Reader" --scope "${scope}"`;
+                      navigator.clipboard.writeText(cmd);
+                      setCopiedAzCmd(true);
+                      setTimeout(() => setCopiedAzCmd(false), 2000);
+                    }}
+                    className="flex items-center gap-1.5 px-2.5 py-1 bg-slate-800 hover:bg-slate-750 text-slate-200 rounded text-xs font-mono transition-colors cursor-pointer border border-slate-700"
+                  >
+                    {copiedAzCmd ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-cyan-400" />}
+                    <span>{copiedAzCmd ? 'Copied' : 'Copy Az CLI Command'}</span>
+                  </button>
+                </div>
+                <p className="text-[11px] text-slate-400 leading-relaxed">
+                  If getting <span className="text-red-400 font-mono">403 Forbidden</span>: Azure Sentinel uses ARM RBAC on the workspace, not Entra App permissions. Run this in Azure Cloud Shell or assign <strong className="text-slate-200">Microsoft Sentinel Reader</strong> in Azure Portal under your Log Analytics Workspace &gt; Access Control (IAM).
+                </p>
+                <div className="p-2.5 bg-black/60 border border-slate-800/80 rounded-lg font-mono text-[11px] text-cyan-300 select-all break-all whitespace-pre-wrap">
+                  az role assignment create --assignee &quot;{sentinelConfig.clientId || '<client-id>'}&quot; --role &quot;Microsoft Sentinel Reader&quot; --scope &quot;/subscriptions/{sentinelConfig.subscriptionId || '<subscription-id>'}/resourceGroups/{sentinelConfig.resourceGroup || '<resource-group>'}/providers/Microsoft.OperationalInsights/workspaces/{sentinelConfig.workspaceName || '<workspace-name>'}&quot;
                 </div>
               </div>
 

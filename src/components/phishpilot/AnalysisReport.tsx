@@ -4,7 +4,7 @@ import {
   AlertTriangle, CheckCircle, Link as LinkIcon, 
   Paperclip, FileText, ChevronDown, ChevronUp, Copy, BrainCircuit,
   Download, RefreshCw, Ban, UserX, Trash2, ArrowUpRight,
-  Shield, Check, ExternalLink, Printer
+  Shield, Check, ExternalLink, Printer, ArrowLeft
 } from 'lucide-react';
 import { PhishPilotReport, PhishPilotVerdict } from '../../phishpilotTypes';
 
@@ -151,22 +151,22 @@ export const AnalysisReport: React.FC<Props> = ({ report: initialReport, onClose
       <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-6xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
         
         {/* Header */}
-        <div className="flex items-start justify-between p-6 border-b border-slate-800 bg-slate-900/50">
-          <div className="flex items-center gap-4">
-            <div className={`p-3 rounded-xl border ${getVerdictColors(report.verdict)}`}>
+        <div className="flex items-start justify-between p-6 border-b border-slate-800 bg-slate-900/50 shrink-0">
+          <div className="flex items-center gap-4 min-w-0 flex-1 pr-4">
+            <div className={`p-3 rounded-xl border shrink-0 ${getVerdictColors(report.verdict)}`}>
               <VerdictIcon className="w-8 h-8" />
             </div>
-            <div>
-              <h2 className="text-xl font-bold text-slate-100 mb-1">{report.emailSummary.subject || '(No Subject)'}</h2>
+            <div className="min-w-0">
+              <h2 className="text-xl font-bold text-slate-100 mb-1 truncate">{report.emailSummary.subject || '(No Subject)'}</h2>
               <div className="flex items-center gap-4 text-sm text-slate-400 flex-wrap">
-                <span>From: <strong className="text-slate-200">{report.emailSummary.from}</strong></span>
-                <span>To: <strong className="text-slate-200">{report.emailSummary.to}</strong></span>
-                <span>Date: {new Date(report.timestamp).toLocaleString()}</span>
+                <span className="truncate">From: <strong className="text-slate-200">{report.emailSummary.from}</strong></span>
+                <span className="truncate">To: <strong className="text-slate-200">{report.emailSummary.to}</strong></span>
+                <span className="whitespace-nowrap">Date: {new Date(report.timestamp).toLocaleString()}</span>
               </div>
             </div>
           </div>
           
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 shrink-0">
             {/* Export Menu */}
             <div className="relative">
               <button
@@ -212,7 +212,7 @@ export const AnalysisReport: React.FC<Props> = ({ report: initialReport, onClose
 
             <button 
               onClick={onClose}
-              className="p-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-lg transition-colors ml-2"
+              className="p-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-lg transition-colors ml-2 cursor-pointer"
             >
               <X className="w-6 h-6" />
             </button>
@@ -221,7 +221,7 @@ export const AnalysisReport: React.FC<Props> = ({ report: initialReport, onClose
 
         {/* Action / Feedback Banner */}
         {feedbackMsg && (
-          <div className={`px-6 py-2.5 text-xs flex items-center justify-between border-b ${
+          <div className={`px-6 py-2.5 text-xs flex items-center justify-between border-b shrink-0 ${
             feedbackMsg.type === 'success' 
               ? 'bg-emerald-950/40 text-emerald-300 border-emerald-800/60' 
               : 'bg-red-950/40 text-red-300 border-red-800/60'
@@ -236,39 +236,41 @@ export const AnalysisReport: React.FC<Props> = ({ report: initialReport, onClose
           </div>
         )}
 
-        {/* Tabs */}
-        <div className="flex px-6 border-b border-slate-800 bg-slate-900/50 gap-6 overflow-x-auto">
+        {/* Tabs Navigation Bar (Locked with shrink-0, sticky) */}
+        <div className="flex px-6 py-2.5 border-b border-slate-800 bg-slate-900/90 gap-2 overflow-x-auto shrink-0 sticky top-0 z-20">
           {(['overview', 'remediation', 'auth', 'urls', 'attachments', 'microsoft', 'raw'] as const).map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`py-4 text-sm font-bold border-b-2 transition-colors relative whitespace-nowrap ${
-                activeTab === tab ? 'border-cyan-500 text-cyan-400' : 'border-transparent text-slate-400 hover:text-slate-200'
+              className={`py-2 px-3.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${
+                activeTab === tab 
+                  ? 'bg-cyan-950 text-cyan-300 border border-cyan-500/60 shadow-sm shadow-cyan-950/50' 
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/80 border border-transparent'
               }`}
             >
-              <span className="capitalize">{tab === 'microsoft' ? 'Microsoft Cloud' : tab}</span>
+              <span className="capitalize">{tab === 'microsoft' ? 'Microsoft Cloud' : tab === 'auth' ? 'Email Auth' : tab}</span>
               {tab === 'remediation' && (report.remediationLogs?.length || 0) > 0 && (
-                <span className="ml-2 bg-cyan-900 text-cyan-300 px-1.5 py-0.5 rounded-full text-xs">
+                <span className="ml-1 bg-cyan-900 text-cyan-300 px-1.5 py-0.2 rounded-full text-[10px] font-mono">
                   {report.remediationLogs?.length}
                 </span>
               )}
               {tab === 'urls' && report.urlAnalysis.length > 0 && (
-                <span className="ml-2 bg-slate-800 text-slate-300 px-1.5 py-0.5 rounded-full text-xs">
+                <span className="ml-1 bg-slate-800 text-slate-300 px-1.5 py-0.2 rounded-full text-[10px] font-mono">
                   {report.urlAnalysis.length}
                 </span>
               )}
               {tab === 'urls' && homoglyphCount > 0 && (
-                <span className="ml-1 bg-amber-500/30 text-amber-400 px-1.5 py-0.5 rounded-full text-[10px] font-bold">
+                <span className="ml-1 bg-amber-500/30 text-amber-400 px-1.5 py-0.2 rounded-full text-[10px] font-bold">
                   {homoglyphCount} SPOOF
                 </span>
               )}
               {tab === 'attachments' && report.attachmentAnalysis.length > 0 && (
-                <span className="ml-2 bg-slate-800 text-slate-300 px-1.5 py-0.5 rounded-full text-xs">
+                <span className="ml-1 bg-slate-800 text-slate-300 px-1.5 py-0.2 rounded-full text-[10px] font-mono">
                   {report.attachmentAnalysis.length}
                 </span>
               )}
               {tab === 'microsoft' && report.microsoftEnrichment?.senderEntraStatus?.impersonationDetected && (
-                <span className="ml-2 bg-red-500/30 text-red-400 px-1.5 py-0.5 rounded-full text-[10px] font-bold">
+                <span className="ml-1 bg-red-500/30 text-red-400 px-1.5 py-0.2 rounded-full text-[10px] font-bold">
                   ALERT
                 </span>
               )}
@@ -278,6 +280,25 @@ export const AnalysisReport: React.FC<Props> = ({ report: initialReport, onClose
 
         {/* Content Area */}
         <div className="flex-1 overflow-y-auto p-6 bg-slate-950/50">
+          
+          {/* Sticky Breadcrumb / Back to Overview Bar when inside sub-tabs */}
+          {activeTab !== 'overview' && (
+            <div className="mb-4 flex items-center justify-between p-2.5 rounded-xl bg-slate-900/90 border border-slate-800 backdrop-blur-sm sticky -top-2 z-10 shadow-sm">
+              <button
+                onClick={() => setActiveTab('overview')}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-cyan-400 hover:text-cyan-300 rounded-lg text-xs font-semibold transition-colors cursor-pointer border border-slate-700/80 shadow-sm"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                <span>← Back to Overview</span>
+              </button>
+              <div className="flex items-center gap-2 text-xs text-slate-400 pr-2">
+                <span>Tab:</span>
+                <span className="text-slate-200 font-bold uppercase tracking-wider">
+                  {activeTab === 'microsoft' ? 'Microsoft Cloud Enrichment' : activeTab === 'auth' ? 'Email Authentication' : activeTab}
+                </span>
+              </div>
+            </div>
+          )}
           
           {/* OVERVIEW TAB */}
           {activeTab === 'overview' && (
