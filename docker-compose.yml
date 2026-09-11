@@ -6,11 +6,11 @@ services:
     container_name: msec-hub
     restart: unless-stopped
     ports:
-      # Maps port 3310. Defaults to 127.0.0.1 for local/office network isolation.
-      # Set MSEC_BIND_IP in .env (e.g. 192.168.1.50 or 0.0.0.0) to allow other office computers to connect.
-      - "${MSEC_BIND_IP:-127.0.0.1}:3310:3310"
+      # Maps port 3310 on all host interfaces (or override with MSEC_BIND_IP)
+      - "${MSEC_BIND_IP:-0.0.0.0}:3310:3310"
     env_file:
-      - .env
+      - path: .env
+        required: false
     environment:
       - PORT=3310
       - NODE_ENV=production
