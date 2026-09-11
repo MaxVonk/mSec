@@ -44,7 +44,17 @@ router.post('/change-password', (req, res) => {
   const sessionId = getSessionId(req);
   const currentUser = AuthService.getSession(sessionId);
 
-  if (!currentUser.isAuthenticated) {
+  let targetUserId = currentUser.isAuthenticated ? currentUser.id : undefined;
+
+  // Fallback: If session cookie was not attached but valid username + currentPassword is provided
+  if (!targetUserId && req.body.username) {
+    const userRecord = UserStore.getByUsername(req.body.username);
+    if (userRecord && UserStore.verifyPassword(req.body.currentPassword, userRecord)) {
+      targetUserId = userRecord.id;
+    }
+  }
+
+  if (!targetUserId) {
     return res.status(401).json({ error: 'Authentication required.' });
   }
 
@@ -54,7 +64,7 @@ router.post('/change-password', (req, res) => {
   }
 
   try {
-    const updatedUser = AuthService.changePassword(currentUser.id, currentPassword, newPassword);
+    const updatedUser = AuthService.changePassword(targetUserId, currentPassword, newPassword);
     res.json({ success: true, user: updatedUser });
   } catch (err: any) {
     res.status(400).json({ error: err.message });

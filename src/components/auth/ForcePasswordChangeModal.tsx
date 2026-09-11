@@ -178,3 +178,4 @@ export const ForcePasswordChangeModal: React.FC<ForcePasswordChangeModalProps> =
     </div>
   );
 };
+

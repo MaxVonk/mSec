@@ -186,12 +186,17 @@ export interface MailboxPollerConfig {
   totalImportedCount: number;
 }
 
+export type UserRole = 'ADMIN' | 'ANALYST' | 'READONLY';
+
 export interface UserSessionProfile {
   id: string;
+  username?: string;
   displayName: string;
   email: string;
+  role: UserRole;
   jobTitle?: string;
   avatarUrl?: string;
   isAuthenticated: boolean;
   tenantId?: string;
+  mustChangePassword?: boolean;
 }
