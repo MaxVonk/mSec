@@ -11,18 +11,20 @@ import { IncidentDetailModal } from './components/IncidentDetailModal';
 import { DataImportModal } from './components/DataImportModal';
 import { EntityExplorer } from './components/EntityExplorer';
 import { PhishPilotDashboard } from './components/phishpilot/PhishPilotDashboard';
+import { SocTrendCharts } from './components/analytics/SocTrendCharts';
 import { 
   Users, 
   Settings, 
   Activity, 
   Shield,
+  TrendingUp
 } from 'lucide-react';
 
 export const App: React.FC = () => {
   const [incidents, setIncidents] = useState<UnifiedIncident[]>([]);
   const [stats, setStats] = useState<IngestionStats | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [activeView, setActiveView] = useState<'incidents' | 'phishpilot' | 'entities' | 'connectors'>('incidents');
+  const [activeView, setActiveView] = useState<'incidents' | 'analytics' | 'phishpilot' | 'entities' | 'connectors'>('incidents');
 
   // Filtering states
   const [selectedSeverity, setSelectedSeverity] = useState<string>('ALL');
@@ -194,7 +196,10 @@ export const App: React.FC = () => {
       {/* Main Container */}
       <main className="max-w-7xl mx-auto px-6 py-8 flex-1 w-full space-y-6">
         {/* Metric Cards */}
-        <StatsCards stats={stats} />
+        <StatsCards 
+          stats={stats} 
+          onViewAnalytics={() => setActiveView('analytics')} 
+        />
 
         {/* View Switcher Tabs */}
         <div className="flex items-center gap-2 border-b border-slate-800 pb-2">
@@ -208,6 +213,18 @@ export const App: React.FC = () => {
           >
             <Activity className="w-4 h-4" />
             <span>Incidents & Alerts ({incidents.length})</span>
+          </button>
+
+          <button
+            onClick={() => setActiveView('analytics')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
+              activeView === 'analytics'
+                ? 'bg-cyan-950 text-cyan-400 border border-cyan-800 shadow-sm'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <TrendingUp className="w-4 h-4" />
+            <span>SOC Analytics & Trends</span>
           </button>
 
           <button
@@ -260,6 +277,15 @@ export const App: React.FC = () => {
             onDeleteIncident={handleDeleteIncident}
             onBulkDelete={handleBulkDelete}
             onClearAll={handleClearAll}
+          />
+        )}
+
+        {activeView === 'analytics' && (
+          <SocTrendCharts
+            onSelectTactic={(tactic) => {
+              setSearchQuery(tactic);
+              setActiveView('incidents');
+            }}
           />
         )}
 

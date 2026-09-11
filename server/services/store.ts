@@ -6,7 +6,12 @@ import {
   IncidentStatus, 
   IngestionStats, 
   GraphConnectorConfig, 
-  SentinelConnectorConfig 
+  SentinelConnectorConfig,
+  AnalyticsTrends,
+  TimelinePoint,
+  MitreTacticMetric,
+  DistributionMetric,
+  EntityType
 } from '../types/security';
 import { SAMPLE_INCIDENTS } from './sampleData';
 
@@ -262,6 +267,176 @@ export class DataStore {
       incidentCount: item.incidents.size,
       incidents: Array.from(item.incidents)
     })).sort((a, b) => b.incidentCount - a.incidentCount);
+  }
+
+  public getAnalyticsTrends(): AnalyticsTrends {
+    const list = Array.from(this.incidents.values());
+    const total = list.length || 1;
+
+    // 1. Build 7-day timeline (from 6 days ago up to today)
+    const timelineMap = new Map<string, TimelinePoint>();
+    const now = new Date();
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      const isoDate = d.toISOString().split('T')[0];
+      const dateLabel = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      timelineMap.set(isoDate, {
+        date: dateLabel,
+        isoDate,
+        count: 0,
+        byProvider: {},
+        bySeverity: {
+          CRITICAL: 0,
+          HIGH: 0,
+          MEDIUM: 0,
+          LOW: 0,
+          INFORMATIONAL: 0
+        }
+      });
+    }
+
+    // Tally incidents into timeline
+    list.forEach(inc => {
+      const incDate = (inc.createdTime ? new Date(inc.createdTime) : now).toISOString().split('T')[0];
+      let point = timelineMap.get(incDate);
+      if (!point) {
+        const d = new Date(inc.createdTime || now);
+        point = {
+          date: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+          isoDate: incDate,
+          count: 0,
+          byProvider: {},
+          bySeverity: {
+            CRITICAL: 0,
+            HIGH: 0,
+            MEDIUM: 0,
+            LOW: 0,
+            INFORMATIONAL: 0
+          }
+        };
+        timelineMap.set(incDate, point);
+      }
+      point.count++;
+      point.byProvider[inc.provider] = (point.byProvider[inc.provider] || 0) + 1;
+      if (point.bySeverity[inc.severity] !== undefined) {
+        point.bySeverity[inc.severity]++;
+      }
+    });
+
+    const timeline = Array.from(timelineMap.values()).sort((a, b) => a.isoDate.localeCompare(b.isoDate));
+
+    // 2. MITRE ATT&CK Tactics aggregation
+    const tacticsMap = new Map<string, { count: number; techniques: Map<string, { name: string; count: number }> }>();
+    list.forEach(inc => {
+      const techniques = [...(inc.mitreTechniques || [])];
+      inc.alerts?.forEach(a => {
+        if (a.mitreTechniques) techniques.push(...a.mitreTechniques);
+      });
+
+      techniques.forEach(m => {
+        if (!m.tactic) return;
+        const tacticName = m.tactic.trim();
+        if (!tacticsMap.has(tacticName)) {
+          tacticsMap.set(tacticName, { count: 0, techniques: new Map() });
+        }
+        const tac = tacticsMap.get(tacticName)!;
+        tac.count++;
+        const techId = m.techniqueId || m.techniqueName;
+        if (!tac.techniques.has(techId)) {
+          tac.techniques.set(techId, { name: m.techniqueName || m.techniqueId, count: 0 });
+        }
+        tac.techniques.get(techId)!.count++;
+      });
+    });
+
+    const mitreTactics: MitreTacticMetric[] = Array.from(tacticsMap.entries()).map(([tactic, data]) => ({
+      tactic,
+      count: data.count,
+      techniques: Array.from(data.techniques.entries()).map(([id, tech]) => ({
+        id,
+        name: tech.name,
+        count: tech.count
+      })).sort((a, b) => b.count - a.count)
+    })).sort((a, b) => b.count - a.count);
+
+    // 3. Severity breakdown
+    const sevCounts: Record<IncidentSeverity, number> = {
+      CRITICAL: 0,
+      HIGH: 0,
+      MEDIUM: 0,
+      LOW: 0,
+      INFORMATIONAL: 0
+    };
+    list.forEach(i => {
+      if (sevCounts[i.severity] !== undefined) sevCounts[i.severity]++;
+    });
+
+    const severityBreakdown: DistributionMetric[] = [
+      { name: 'CRITICAL', count: sevCounts.CRITICAL, percentage: Math.round((sevCounts.CRITICAL / total) * 100), color: '#ef4444' },
+      { name: 'HIGH', count: sevCounts.HIGH, percentage: Math.round((sevCounts.HIGH / total) * 100), color: '#f97316' },
+      { name: 'MEDIUM', count: sevCounts.MEDIUM, percentage: Math.round((sevCounts.MEDIUM / total) * 100), color: '#f59e0b' },
+      { name: 'LOW', count: sevCounts.LOW, percentage: Math.round((sevCounts.LOW / total) * 100), color: '#3b82f6' },
+      { name: 'INFORMATIONAL', count: sevCounts.INFORMATIONAL, percentage: Math.round((sevCounts.INFORMATIONAL / total) * 100), color: '#64748b' }
+    ];
+
+    // 4. Status breakdown
+    const statCounts: Record<IncidentStatus, number> = {
+      NEW: 0,
+      ACTIVE: 0,
+      IN_PROGRESS: 0,
+      RESOLVED: 0,
+      CLOSED: 0
+    };
+    list.forEach(i => {
+      if (statCounts[i.status] !== undefined) statCounts[i.status]++;
+    });
+
+    const statusBreakdown: DistributionMetric[] = [
+      { name: 'Active', count: statCounts.ACTIVE, percentage: Math.round((statCounts.ACTIVE / total) * 100), color: '#06b6d4' },
+      { name: 'In Progress', count: statCounts.IN_PROGRESS, percentage: Math.round((statCounts.IN_PROGRESS / total) * 100), color: '#a855f7' },
+      { name: 'New', count: statCounts.NEW, percentage: Math.round((statCounts.NEW / total) * 100), color: '#3b82f6' },
+      { name: 'Resolved', count: statCounts.RESOLVED + statCounts.CLOSED, percentage: Math.round(((statCounts.RESOLVED + statCounts.CLOSED) / total) * 100), color: '#10b981' }
+    ];
+
+    // 5. Provider breakdown
+    const provCounts: Record<string, number> = {};
+    list.forEach(i => {
+      provCounts[i.provider] = (provCounts[i.provider] || 0) + 1;
+    });
+
+    const providerColors: Record<string, string> = {
+      M365_DEFENDER: '#0284c7',
+      SENTINEL_SIEM: '#0ea5e9',
+      DEFENDER_ENDPOINT: '#8b5cf6',
+      DEFENDER_OFFICE365: '#ec4899',
+      DEFENDER_IDENTITY: '#f59e0b',
+      DEFENDER_CLOUD_APPS: '#10b981',
+      GENERIC_IMPORT: '#64748b'
+    };
+
+    const providerBreakdown: DistributionMetric[] = Object.entries(provCounts).map(([provider, count]) => ({
+      name: provider.replace(/_/g, ' '),
+      count,
+      percentage: Math.round((count / total) * 100),
+      color: providerColors[provider] || '#06b6d4'
+    })).sort((a, b) => b.count - a.count);
+
+    // 6. Top entities
+    const entityCounts = this.getEntities().slice(0, 8).map(e => ({
+      type: e.type as EntityType,
+      value: e.value,
+      count: e.incidentCount
+    }));
+
+    return {
+      timeline,
+      mitreTactics,
+      severityBreakdown,
+      statusBreakdown,
+      providerBreakdown,
+      topEntities: entityCounts
+    };
   }
 
   public getConfig(): StorageConfig {

@@ -49,6 +49,12 @@ app.get('/api/entities', (req, res) => {
   res.json(entities);
 });
 
+// Analytics & Trend metrics
+app.get('/api/analytics/trends', (req, res) => {
+  const trends = store.getAnalyticsTrends();
+  res.json(trends);
+});
+
 // Incidents list with filtering
 app.get('/api/incidents', (req, res) => {
   const { severity, provider, status, search } = req.query;

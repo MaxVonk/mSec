@@ -26,8 +26,11 @@ import {
   ExternalLink,
   MessageSquare,
   Lightbulb,
-  UserCheck
+  UserCheck,
+  Layers
 } from 'lucide-react';
+import { InvestigationGraph } from './graph/InvestigationGraph';
+import { buildIncidentGraph } from '../utils/graphBuilder';
 
 interface IncidentDetailModalProps {
   incident: UnifiedIncident | null;
@@ -44,7 +47,7 @@ export const IncidentDetailModal: React.FC<IncidentDetailModalProps> = ({
   onUpdateStatus,
   onDelete
 }) => {
-  const [activeTab, setActiveTab] = useState<'threat' | 'timeline' | 'entities' | 'comments' | 'raw'>('threat');
+  const [activeTab, setActiveTab] = useState<'threat' | 'graph' | 'timeline' | 'entities' | 'comments' | 'raw'>('threat');
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [executingActionId, setExecutingActionId] = useState<string | null>(null);
 
@@ -190,6 +193,18 @@ export const IncidentDetailModal: React.FC<IncidentDetailModalProps> = ({
           </button>
 
           <button
+            onClick={() => setActiveTab('graph')}
+            className={`flex items-center gap-2 py-3 px-4 text-xs font-semibold border-b-2 transition-colors cursor-pointer shrink-0 ${
+              activeTab === 'graph'
+                ? 'border-cyan-500 text-cyan-400'
+                : 'border-transparent text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <Layers className="w-4 h-4" />
+            <span>Investigation Graph</span>
+          </button>
+
+          <button
             onClick={() => setActiveTab('timeline')}
             className={`flex items-center gap-2 py-3 px-4 text-xs font-semibold border-b-2 transition-colors cursor-pointer shrink-0 ${
               activeTab === 'timeline'
@@ -240,6 +255,18 @@ export const IncidentDetailModal: React.FC<IncidentDetailModalProps> = ({
 
         {/* Modal Content Body */}
         <div className="p-6 overflow-y-auto flex-1 space-y-6">
+          {/* TAB: INVESTIGATION GRAPH */}
+          {activeTab === 'graph' && (
+            <div className="space-y-4">
+              <InvestigationGraph
+                data={buildIncidentGraph(incident)}
+                height={500}
+                title={`Attack Path & Correlated Blast Radius: #${incident.incidentNumber || incident.id}`}
+                subtitle={`${incident.alerts.length} alert(s) • ${incident.entities.length} entity/entities • ${incident.mitreTechniques.length} ATT&CK technique(s)`}
+              />
+            </div>
+          )}
+
           {/* TAB 1: THREAT OVERSIGHT */}
           {activeTab === 'threat' && assessment && (
             <div className="space-y-6">

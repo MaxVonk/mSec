@@ -131,3 +131,58 @@ export interface ConnectorConfig {
   };
 }
 
+export interface TimelinePoint {
+  date: string;
+  isoDate: string;
+  count: number;
+  byProvider: Record<string, number>;
+  bySeverity: Record<IncidentSeverity, number>;
+}
+
+export interface MitreTacticMetric {
+  tactic: string;
+  count: number;
+  techniques: { id: string; name: string; count: number }[];
+}
+
+export interface DistributionMetric {
+  name: string;
+  count: number;
+  percentage: number;
+  color?: string;
+}
+
+export interface AnalyticsTrends {
+  timeline: TimelinePoint[];
+  mitreTactics: MitreTacticMetric[];
+  severityBreakdown: DistributionMetric[];
+  statusBreakdown: DistributionMetric[];
+  providerBreakdown: DistributionMetric[];
+  topEntities: { type: EntityType; value: string; count: number }[];
+}
+
+export interface GraphNode {
+  id: string;
+  label: string;
+  sublabel?: string;
+  type: 'incident' | 'alert' | 'user' | 'host' | 'ip' | 'file' | 'url' | 'mitre';
+  severity?: IncidentSeverity;
+  data?: any;
+  x?: number;
+  y?: number;
+  vx?: number;
+  vy?: number;
+}
+
+export interface GraphEdge {
+  id: string;
+  source: string;
+  target: string;
+  label?: string;
+}
+
+export interface GraphData {
+  nodes: GraphNode[];
+  edges: GraphEdge[];
+}
+

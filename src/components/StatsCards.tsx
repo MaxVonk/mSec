@@ -1,12 +1,13 @@
 import React from 'react';
-import { ShieldAlert, Users, Laptop, Activity, Cloud, Database } from 'lucide-react';
+import { ShieldAlert, Users, Laptop, Activity, Cloud, Database, TrendingUp } from 'lucide-react';
 import { IngestionStats } from '../types';
 
 interface StatsCardsProps {
   stats: IngestionStats | null;
+  onViewAnalytics?: () => void;
 }
 
-export const StatsCards: React.FC<StatsCardsProps> = ({ stats }) => {
+export const StatsCards: React.FC<StatsCardsProps> = ({ stats, onViewAnalytics }) => {
   if (!stats) return null;
 
   const criticalAndHigh = (stats.bySeverity.CRITICAL || 0) + (stats.bySeverity.HIGH || 0);
@@ -21,9 +22,20 @@ export const StatsCards: React.FC<StatsCardsProps> = ({ stats }) => {
             <Activity className="w-4 h-4" />
           </div>
         </div>
-        <div className="mt-2 flex items-baseline gap-2">
-          <span className="text-2xl font-bold text-white">{stats.totalIncidents}</span>
-          <span className="text-xs text-slate-500">Across all feeds</span>
+        <div className="mt-2 flex items-baseline justify-between">
+          <div className="flex items-baseline gap-2">
+            <span className="text-2xl font-bold text-white">{stats.totalIncidents}</span>
+            <span className="text-xs text-slate-500">Across all feeds</span>
+          </div>
+          {onViewAnalytics && (
+            <button
+              onClick={onViewAnalytics}
+              className="text-[11px] text-cyan-400 hover:text-cyan-300 font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+            >
+              <TrendingUp className="w-3 h-3" />
+              <span>Trends</span>
+            </button>
+          )}
         </div>
         <div className="mt-3 flex gap-1">
           <div className="h-1 flex-1 bg-red-500 rounded-full" style={{ width: `${((stats.bySeverity.CRITICAL || 0) / (stats.totalIncidents || 1)) * 100}%` }} />
