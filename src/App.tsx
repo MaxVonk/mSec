@@ -21,6 +21,7 @@ import { PlaybookRunnerModal } from './components/soar/PlaybookRunnerModal';
 import { WarRoomModal } from './components/warroom/WarRoomModal';
 import { CommandPaletteModal } from './components/command/CommandPaletteModal';
 import { SecOpsCopilotDrawer } from './components/copilot/SecOpsCopilotDrawer';
+import { Sidebar, MainNavView } from './components/navigation/Sidebar';
 import { 
   Users, 
   Settings, 
@@ -38,7 +39,7 @@ export const App: React.FC = () => {
   const [incidents, setIncidents] = useState<UnifiedIncident[]>([]);
   const [stats, setStats] = useState<IngestionStats | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [activeView, setActiveView] = useState<'incidents' | 'analytics' | 'phishpilot' | 'entities' | 'connectors'>('incidents');
+  const [activeView, setActiveView] = useState<MainNavView>('incidents');
 
   // Filtering states
   const [selectedSeverity, setSelectedSeverity] = useState<string>('ALL');
@@ -264,131 +265,96 @@ export const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-cyan-500 selection:text-white">
-      {/* Header */}
-      <Header
-        onOpenImport={() => setIsImportModalOpen(true)}
-        onResetDemo={handleResetDemo}
-        onRefresh={() => { fetchIncidents(); fetchStats(); }}
-        onOpenShiftHandover={() => setIsShiftHandoverOpen(true)}
-        onOpenUserManagement={() => setIsUserManagementOpen(true)}
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex font-sans selection:bg-cyan-500 selection:text-white">
+      {/* Left Navigation Sidebar */}
+      <Sidebar
+        activeView={activeView}
+        onSelectView={setActiveView}
+        incidentCount={incidents.length}
+        currentUser={currentUser}
         onOpenWarRoom={() => setIsWarRoomOpen(true)}
         onOpenMitre={() => setIsMitreOpen(true)}
         onOpenCopilot={() => setIsCopilotOpen(true)}
-        onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
-        currentUser={currentUser}
+        onOpenShiftHandover={() => setIsShiftHandoverOpen(true)}
+        onOpenPlaybooks={() => {
+          setPlaybookIncident(null);
+          setIsPlaybooksOpen(true);
+        }}
+        onOpenUserManagement={() => setIsUserManagementOpen(true)}
+        onOpenConnectors={() => setIsImportModalOpen(true)}
         onLogout={handleLogout}
-        isRefreshing={isRefreshing}
-        totalIncidents={stats?.totalIncidents || incidents.length}
       />
 
-      {/* Main Container */}
-      <main className="max-w-7xl mx-auto px-6 py-8 flex-1 w-full space-y-6">
-        {/* Metric Cards */}
-        <StatsCards 
-          stats={stats} 
-          onViewAnalytics={() => setActiveView('analytics')} 
+      {/* Main Content Column */}
+      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-y-auto">
+        {/* Header */}
+        <Header
+          onOpenImport={() => setIsImportModalOpen(true)}
+          onResetDemo={handleResetDemo}
+          onRefresh={() => { fetchIncidents(); fetchStats(); }}
+          onOpenShiftHandover={() => setIsShiftHandoverOpen(true)}
+          onOpenUserManagement={() => setIsUserManagementOpen(true)}
+          onOpenWarRoom={() => setIsWarRoomOpen(true)}
+          onOpenMitre={() => setIsMitreOpen(true)}
+          onOpenCopilot={() => setIsCopilotOpen(true)}
+          onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
+          currentUser={currentUser}
+          onLogout={handleLogout}
+          isRefreshing={isRefreshing}
+          totalIncidents={stats?.totalIncidents || incidents.length}
         />
 
-        {/* View Switcher Tabs */}
-        <div className="flex items-center gap-2 border-b border-slate-800 pb-2">
-          <button
-            onClick={() => setActiveView('incidents')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
-              activeView === 'incidents'
-                ? 'bg-cyan-950 text-cyan-400 border border-cyan-800 shadow-sm'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <Activity className="w-4 h-4" />
-            <span>Incidents & Alerts ({incidents.length})</span>
-          </button>
+        {/* Main Viewport Container */}
+        <main className="max-w-7xl mx-auto px-6 py-6 flex-1 w-full space-y-6">
+          {/* Metric Cards shown on Dashboard and Analytics */}
+          {(activeView === 'dashboard' || activeView === 'incidents' || activeView === 'analytics') && (
+            <StatsCards 
+              stats={stats} 
+              onViewAnalytics={() => setActiveView('analytics')} 
+            />
+          )}
 
-          <button
-            onClick={() => setActiveView('analytics')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
-              activeView === 'analytics'
-                ? 'bg-cyan-950 text-cyan-400 border border-cyan-800 shadow-sm'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <TrendingUp className="w-4 h-4" />
-            <span>SOC Analytics & Trends</span>
-          </button>
+          {/* Content Views */}
+          {(activeView === 'dashboard' || activeView === 'incidents') && (
+            <IncidentList
+              incidents={incidents}
+              selectedSeverity={selectedSeverity}
+              setSelectedSeverity={setSelectedSeverity}
+              selectedProvider={selectedProvider}
+              setSelectedProvider={setSelectedProvider}
+              selectedStatus={selectedStatus}
+              setSelectedStatus={setSelectedStatus}
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              onSelectIncident={(inc) => setSelectedIncident(inc)}
+              onUpdateStatus={handleUpdateStatus}
+              onDeleteIncident={handleDeleteIncident}
+              onBulkDelete={handleBulkDelete}
+              onClearAll={handleClearAll}
+            />
+          )}
 
-          <button
-            onClick={() => setActiveView('phishpilot')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
-              activeView === 'phishpilot'
-                ? 'bg-cyan-950 text-cyan-400 border border-cyan-800 shadow-sm'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <Shield className="w-4 h-4" />
-            <span>PhishPilot</span>
-          </button>
+          {activeView === 'analytics' && (
+            <SocTrendCharts
+              onSelectTactic={(tactic) => {
+                setSearchQuery(tactic);
+                setActiveView('incidents');
+              }}
+            />
+          )}
 
-          <button
-            onClick={() => setActiveView('entities')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
-              activeView === 'entities'
-                ? 'bg-cyan-950 text-cyan-400 border border-cyan-800 shadow-sm'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <Users className="w-4 h-4" />
-            <span>Entity Correlation Graph</span>
-          </button>
+          {activeView === 'phishpilot' && (
+            <PhishPilotDashboard />
+          )}
 
-          <button
-            onClick={() => setIsImportModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold text-slate-400 hover:text-slate-200 transition-colors cursor-pointer ml-auto"
-          >
-            <Settings className="w-4 h-4" />
-            <span>Connectors & Ingestion Config</span>
-          </button>
-        </div>
-
-        {/* Content View */}
-        {activeView === 'incidents' && (
-          <IncidentList
-            incidents={incidents}
-            selectedSeverity={selectedSeverity}
-            setSelectedSeverity={setSelectedSeverity}
-            selectedProvider={selectedProvider}
-            setSelectedProvider={setSelectedProvider}
-            selectedStatus={selectedStatus}
-            setSelectedStatus={setSelectedStatus}
-            searchQuery={searchQuery}
-            setSearchQuery={setSearchQuery}
-            onSelectIncident={(inc) => setSelectedIncident(inc)}
-            onUpdateStatus={handleUpdateStatus}
-            onDeleteIncident={handleDeleteIncident}
-            onBulkDelete={handleBulkDelete}
-            onClearAll={handleClearAll}
-          />
-        )}
-
-        {activeView === 'analytics' && (
-          <SocTrendCharts
-            onSelectTactic={(tactic) => {
-              setSearchQuery(tactic);
-              setActiveView('incidents');
-            }}
-          />
-        )}
-
-        {activeView === 'phishpilot' && (
-          <PhishPilotDashboard />
-        )}
-
-        {activeView === 'entities' && (
-          <EntityExplorer
-            incidents={incidents}
-            onSelectIncidentById={handleSelectIncidentById}
-          />
-        )}
-      </main>
+          {activeView === 'entities' && (
+            <EntityExplorer
+              incidents={incidents}
+              onSelectIncidentById={handleSelectIncidentById}
+            />
+          )}
+        </main>
+      </div>
 
       {/* Modals */}
       <IncidentDetailModal

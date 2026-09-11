@@ -50,3 +50,4 @@ export interface PlaybookExecutionLog {
   status: 'RUNNING' | 'COMPLETED' | 'FAILED';
   stepResults: StepExecutionState[];
 }
+

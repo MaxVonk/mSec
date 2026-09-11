@@ -297,3 +297,4 @@ export const SecOpsCopilotDrawer: React.FC<SecOpsCopilotDrawerProps> = ({
     </div>
   );
 };
+
