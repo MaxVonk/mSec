@@ -492,6 +492,12 @@ export const InvestigationGraph: React.FC<InvestigationGraphProps> = ({
               <div
                 key={node.id}
                 onMouseDown={e => handleStartNodeDrag(e, node)}
+                onDoubleClick={e => {
+                  e.stopPropagation();
+                  if ((node.type === 'incident' || node.data?.incidentId) && onSelectIncident) {
+                    onSelectIncident(node.data?.incidentId || node.id.replace('inc-', ''));
+                  }
+                }}
                 onMouseEnter={() => setHoveredNodeId(node.id)}
                 onMouseLeave={() => setHoveredNodeId(null)}
                 style={{
@@ -630,14 +636,35 @@ export const InvestigationGraph: React.FC<InvestigationGraphProps> = ({
                   )}
                 </button>
 
-                {selectedNode.data?.incidentId && onSelectIncident && (
+                {(selectedNode.data?.incidentId || selectedNode.type === 'incident') && onSelectIncident && (
                   <button
-                    onClick={() => onSelectIncident(selectedNode.data.incidentId)}
-                    className="flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg bg-cyan-950 hover:bg-cyan-900 border border-cyan-800 text-cyan-300 text-xs font-semibold transition-colors cursor-pointer"
+                    onClick={() => onSelectIncident(selectedNode.data?.incidentId || selectedNode.id.replace('inc-', ''))}
+                    className="flex items-center justify-center gap-2 py-2 px-3 rounded-lg bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-xs font-bold shadow-md shadow-cyan-950 transition-all cursor-pointer"
                   >
-                    <ExternalLink className="w-3.5 h-3.5" />
-                    <span>View Incident Details</span>
+                    <ShieldAlert className="w-4 h-4 text-cyan-200" />
+                    <span>Go to Threat Oversight</span>
                   </button>
+                )}
+
+                {/* Connected Incidents if an Entity (User, Host, IP) is selected */}
+                {selectedNode.data?.incidents && Array.isArray(selectedNode.data.incidents) && selectedNode.data.incidents.length > 0 && onSelectIncident && (
+                  <div className="pt-2 border-t border-slate-800 space-y-1.5">
+                    <span className="text-[10px] text-slate-400 uppercase font-semibold block">
+                      Connected Incidents ({selectedNode.data.incidents.length})
+                    </span>
+                    <div className="space-y-1 max-h-36 overflow-y-auto pr-1">
+                      {selectedNode.data.incidents.map((incId: string) => (
+                        <button
+                          key={incId}
+                          onClick={() => onSelectIncident(incId)}
+                          className="w-full flex items-center justify-between gap-1.5 p-2 rounded-lg bg-slate-950 hover:bg-slate-800 border border-slate-800 text-left text-xs font-mono text-cyan-300 hover:text-cyan-200 transition-colors cursor-pointer"
+                        >
+                          <span className="truncate">#{incId}</span>
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-cyan-950 text-cyan-400 font-sans shrink-0 font-medium">Oversight →</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 )}
               </div>
             </div>

@@ -186,30 +186,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
           )}
           <div className="space-y-1">
             <button
-              onClick={() => handleNav('dashboard')}
-              title="Dashboard"
-              className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-all cursor-pointer ${
-                activeView === 'dashboard'
-                  ? 'bg-slate-800/90 text-white font-semibold shadow-sm border border-slate-700/80'
-                  : 'hover:bg-slate-800/50 hover:text-slate-200'
-              }`}
-            >
-              <LayoutDashboard className={`w-4 h-4 shrink-0 ${activeView === 'dashboard' ? 'text-cyan-400' : 'text-slate-400'}`} />
-              {!isCollapsed && <span>Dashboard</span>}
-            </button>
-
-            <button
               onClick={() => handleNav('incidents')}
-              title="Incidents"
+              title="Dashboard & Incidents"
               className={`w-full flex items-center justify-between px-3 py-2 rounded-xl transition-all cursor-pointer ${
-                activeView === 'incidents'
+                activeView === 'incidents' || activeView === 'dashboard'
                   ? 'bg-slate-800/90 text-white font-semibold shadow-sm border border-slate-700/80'
                   : 'hover:bg-slate-800/50 hover:text-slate-200'
               }`}
             >
               <div className="flex items-center gap-3 min-w-0">
-                <ShieldAlert className="w-4 h-4 text-amber-500 shrink-0" />
-                {!isCollapsed && <span className="font-semibold text-white">Incidents</span>}
+                <LayoutDashboard className={`w-4 h-4 shrink-0 ${activeView === 'incidents' || activeView === 'dashboard' ? 'text-cyan-400' : 'text-slate-400'}`} />
+                {!isCollapsed && <span className="font-semibold text-white">Dashboard & Incidents</span>}
               </div>
               {!isCollapsed && (
                 <span className="px-1.5 py-0.2 text-[10px] font-bold font-mono rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">

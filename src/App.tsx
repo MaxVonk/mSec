@@ -241,13 +241,19 @@ export const App: React.FC = () => {
   };
 
   const handleSelectIncidentById = (id: string) => {
-    const found = incidents.find(i => i.id === id);
+    if (!id) return;
+    const cleanId = id.startsWith('inc-') ? id.slice(4) : id;
+    const found = incidents.find(
+      i => i.id === id || i.id === cleanId || `inc-${i.id}` === id || String(i.incidentNumber) === id || String(i.incidentNumber) === cleanId
+    );
     if (found) {
       setSelectedIncident(found);
     } else {
-      fetch(`/api/incidents/${id}`)
-        .then(res => res.json())
-        .then(data => setSelectedIncident(data))
+      fetch(`/api/incidents/${encodeURIComponent(cleanId)}`)
+        .then(res => res.ok ? res.json() : fetch(`/api/incidents/${encodeURIComponent(id)}`).then(r => r.ok ? r.json() : null))
+        .then(data => {
+          if (data && data.id) setSelectedIncident(data);
+        })
         .catch(err => console.error('Could not fetch incident:', err));
     }
   };

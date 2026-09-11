@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   UnifiedIncident, 
   IncidentSeverity, 
@@ -21,7 +21,9 @@ import {
   SquareCheck,
   Square,
   MinusSquare,
-  XCircle
+  XCircle,
+  Calendar,
+  ArrowUpDown
 } from 'lucide-react';
 
 interface IncidentListProps {
@@ -62,6 +64,48 @@ export const IncidentList: React.FC<IncidentListProps> = ({
   const [showBulkConfirm, setShowBulkConfirm] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
+  const [timeRange, setTimeRange] = useState<'ALL' | '24H' | '7D' | '30D'>('ALL');
+  const [sortBy, setSortBy] = useState<'recent' | 'severity' | 'oldest' | 'entities'>('recent');
+
+  const filteredAndSortedIncidents = useMemo(() => {
+    let list = [...incidents];
+
+    // Timeframe filtering
+    if (timeRange !== 'ALL') {
+      const now = Date.now();
+      let windowMs = 24 * 60 * 60 * 1000;
+      if (timeRange === '7D') windowMs = 7 * 24 * 60 * 60 * 1000;
+      if (timeRange === '30D') windowMs = 30 * 24 * 60 * 60 * 1000;
+
+      const cutoff = now - windowMs;
+      list = list.filter(inc => {
+        const timeStr = inc.createdTime || inc.lastUpdatedTime;
+        if (!timeStr) return true;
+        const t = new Date(timeStr).getTime();
+        return !isNaN(t) && t >= cutoff;
+      });
+    }
+
+    // Sorting
+    list.sort((a, b) => {
+      if (sortBy === 'severity') {
+        const order: Record<string, number> = { CRITICAL: 4, HIGH: 3, MEDIUM: 2, LOW: 1, INFORMATIONAL: 0 };
+        const diff = (order[b.severity] ?? 0) - (order[a.severity] ?? 0);
+        if (diff !== 0) return diff;
+      }
+      if (sortBy === 'oldest') {
+        return new Date(a.createdTime || 0).getTime() - new Date(b.createdTime || 0).getTime();
+      }
+      if (sortBy === 'entities') {
+        return (b.entities?.length || 0) - (a.entities?.length || 0);
+      }
+      // Default: 'recent' (newest first)
+      return new Date(b.createdTime || 0).getTime() - new Date(a.createdTime || 0).getTime();
+    });
+
+    return list;
+  }, [incidents, timeRange, sortBy]);
+
   const toggleSelect = (id: string) => {
     setSelectedIds(prev => {
       const next = new Set(prev);
@@ -75,10 +119,10 @@ export const IncidentList: React.FC<IncidentListProps> = ({
   };
 
   const toggleSelectAll = () => {
-    if (selectedIds.size === incidents.length) {
+    if (selectedIds.size === filteredAndSortedIncidents.length) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(incidents.map(i => i.id)));
+      setSelectedIds(new Set(filteredAndSortedIncidents.map(i => i.id)));
     }
   };
 
@@ -139,8 +183,8 @@ export const IncidentList: React.FC<IncidentListProps> = ({
     }
   };
 
-  const allSelected = incidents.length > 0 && selectedIds.size === incidents.length;
-  const someSelected = selectedIds.size > 0 && selectedIds.size < incidents.length;
+  const allSelected = filteredAndSortedIncidents.length > 0 && selectedIds.size === filteredAndSortedIncidents.length;
+  const someSelected = selectedIds.size > 0 && selectedIds.size < filteredAndSortedIncidents.length;
 
   return (
     <div className="space-y-4">
@@ -204,6 +248,45 @@ export const IncidentList: React.FC<IncidentListProps> = ({
               <option value="ACTIVE" className="bg-slate-900">Active</option>
               <option value="IN_PROGRESS" className="bg-slate-900">In Progress</option>
               <option value="RESOLVED" className="bg-slate-900">Resolved</option>
+            </select>
+          </div>
+
+          {/* Time Range Filter */}
+          <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800 text-xs">
+            <Calendar className="w-3.5 h-3.5 text-cyan-400 ml-1.5 mr-0.5 shrink-0" />
+            {[
+              { id: 'ALL', label: 'All Time' },
+              { id: '24H', label: 'Last 24h' },
+              { id: '7D', label: 'Last 7d' },
+              { id: '30D', label: 'Last 30d' }
+            ].map(t => (
+              <button
+                key={t.id}
+                onClick={() => setTimeRange(t.id as any)}
+                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors cursor-pointer ${
+                  timeRange === t.id
+                    ? 'bg-cyan-950 text-cyan-300 font-bold border border-cyan-700/80 shadow-sm'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Sort By Dropdown */}
+          <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs">
+            <ArrowUpDown className="w-3.5 h-3.5 text-cyan-400" />
+            <span className="text-slate-400 font-medium">Sort:</span>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as any)}
+              className="bg-transparent text-slate-200 focus:outline-none cursor-pointer"
+            >
+              <option value="recent" className="bg-slate-900">Most Recent</option>
+              <option value="severity" className="bg-slate-900">Highest Severity</option>
+              <option value="oldest" className="bg-slate-900">Oldest First</option>
+              <option value="entities" className="bg-slate-900">Most Entities</option>
             </select>
           </div>
 
@@ -304,7 +387,7 @@ export const IncidentList: React.FC<IncidentListProps> = ({
       {/* Incidents Count + Select All */}
       <div className="flex items-center justify-between px-1 text-xs text-slate-400">
         <div className="flex items-center gap-3">
-          {incidents.length > 0 && (
+          {filteredAndSortedIncidents.length > 0 && (
             <button
               onClick={toggleSelectAll}
               className="flex items-center gap-1.5 text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"
@@ -320,23 +403,43 @@ export const IncidentList: React.FC<IncidentListProps> = ({
               <span className="text-[11px]">{allSelected ? 'Deselect all' : 'Select all'}</span>
             </button>
           )}
-          <span>Showing <strong className="text-slate-200">{incidents.length}</strong> incidents</span>
+          <span>
+            Showing <strong className="text-slate-200">{filteredAndSortedIncidents.length}</strong>
+            {timeRange !== 'ALL' && <span className="text-cyan-400 font-medium"> ({timeRange === '24H' ? 'Last 24 Hours' : timeRange === '7D' ? 'Last 7 Days' : 'Last 30 Days'})</span>}
+            {filteredAndSortedIncidents.length !== incidents.length && ` of ${incidents.length} total`}
+          </span>
         </div>
-        <span>Sorted by most recent</span>
+        <span className="text-slate-500 font-mono text-[11px]">
+          Sorted by {sortBy === 'recent' ? 'most recent' : sortBy === 'severity' ? 'highest severity' : sortBy === 'oldest' ? 'oldest first' : 'most entities'}
+        </span>
       </div>
 
       {/* Incident Cards */}
-      {incidents.length === 0 ? (
+      {filteredAndSortedIncidents.length === 0 ? (
         <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-12 text-center">
           <AlertCircle className="w-10 h-10 text-slate-600 mx-auto mb-3" />
-          <h3 className="text-base font-semibold text-slate-300">No security incidents found</h3>
+          <h3 className="text-base font-semibold text-slate-300">
+            {timeRange !== 'ALL'
+              ? `No incidents found in ${timeRange === '24H' ? 'the Last 24 Hours' : timeRange === '7D' ? 'the Last 7 Days' : 'the Last 30 Days'}`
+              : 'No security incidents found'}
+          </h3>
           <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
-            Try adjusting your filters or search query, or click "Import Data" to ingest files from M365 Defender or Sentinel.
+            {timeRange !== 'ALL'
+              ? 'Try widening your timeframe to "Last 7d" or "All Time" to view older ingested incidents.'
+              : 'Try adjusting your filters or search query, or click "Import Data" to ingest files from M365 Defender or Sentinel.'}
           </p>
+          {timeRange !== 'ALL' && (
+            <button
+              onClick={() => setTimeRange('ALL')}
+              className="mt-4 px-3 py-1.5 rounded-lg bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-800 text-cyan-300 text-xs font-semibold transition-colors cursor-pointer"
+            >
+              Reset to All Time
+            </button>
+          )}
         </div>
       ) : (
         <div className="space-y-3">
-          {incidents.map((incident) => {
+          {filteredAndSortedIncidents.map((incident) => {
             const providerInfo = getProviderBadge(incident.provider);
             const pendingActions = incident.threatAssessment?.containmentActions.filter(a => a.status === 'PENDING').length || 0;
             const isSelected = selectedIds.has(incident.id);
@@ -471,9 +574,11 @@ export const IncidentList: React.FC<IncidentListProps> = ({
 
                     <button
                       onClick={() => onSelectIncident(incident)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-cyan-400 bg-cyan-950/50 hover:bg-cyan-900/60 border border-cyan-800/80 rounded-lg transition-colors cursor-pointer group-hover:border-cyan-600"
+                      className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-white bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 rounded-lg shadow-md shadow-cyan-950/50 transition-all cursor-pointer"
+                      title="Open full Incident Threat Oversight"
                     >
-                      <span>Investigate</span>
+                      <ShieldAlert className="w-3.5 h-3.5 text-cyan-200" />
+                      <span>Threat Oversight</span>
                       <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
                     </button>
                   </div>
