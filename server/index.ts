@@ -184,16 +184,26 @@ app.get('/api/connectors', (req, res) => {
 
 // Test Graph Connection
 app.post('/api/connectors/graph/test', async (req, res) => {
-  const config = req.body;
-  const result = await GraphConnector.testConnection(config);
+  const stored = store.getConfig().graph;
+  const config = {
+    tenantId: req.body?.tenantId || stored.tenantId,
+    clientId: req.body?.clientId || stored.clientId,
+    clientSecret: req.body?.clientSecret || stored.clientSecret,
+  };
+  const result = await GraphConnector.testConnection(config as any);
   res.json(result);
 });
 
 // Sync Graph Incidents
 app.post('/api/connectors/graph/sync', async (req, res) => {
   try {
-    const config = req.body;
-    const result = await GraphConnector.sync(config);
+    const stored = store.getConfig().graph;
+    const config = {
+      tenantId: req.body?.tenantId || stored.tenantId,
+      clientId: req.body?.clientId || stored.clientId,
+      clientSecret: req.body?.clientSecret || stored.clientSecret,
+    };
+    const result = await GraphConnector.sync(config as any);
     res.json(result);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -202,16 +212,32 @@ app.post('/api/connectors/graph/sync', async (req, res) => {
 
 // Test Sentinel Connection
 app.post('/api/connectors/sentinel/test', async (req, res) => {
-  const config = req.body;
-  const result = await SentinelConnector.testConnection(config);
+  const stored = store.getConfig().sentinel;
+  const config = {
+    tenantId: req.body?.tenantId || stored.tenantId,
+    clientId: req.body?.clientId || stored.clientId,
+    clientSecret: req.body?.clientSecret || stored.clientSecret,
+    subscriptionId: req.body?.subscriptionId || stored.subscriptionId,
+    resourceGroup: req.body?.resourceGroup || stored.resourceGroup,
+    workspaceName: req.body?.workspaceName || stored.workspaceName,
+  };
+  const result = await SentinelConnector.testConnection(config as any);
   res.json(result);
 });
 
 // Sync Sentinel Incidents
 app.post('/api/connectors/sentinel/sync', async (req, res) => {
   try {
-    const config = req.body;
-    const result = await SentinelConnector.sync(config);
+    const stored = store.getConfig().sentinel;
+    const config = {
+      tenantId: req.body?.tenantId || stored.tenantId,
+      clientId: req.body?.clientId || stored.clientId,
+      clientSecret: req.body?.clientSecret || stored.clientSecret,
+      subscriptionId: req.body?.subscriptionId || stored.subscriptionId,
+      resourceGroup: req.body?.resourceGroup || stored.resourceGroup,
+      workspaceName: req.body?.workspaceName || stored.workspaceName,
+    };
+    const result = await SentinelConnector.sync(config as any);
     res.json(result);
   } catch (err: any) {
     res.status(500).json({ error: err.message });

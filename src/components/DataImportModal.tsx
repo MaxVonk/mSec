@@ -55,6 +55,33 @@ export const DataImportModal: React.FC<DataImportModalProps> = ({
   const [testingSentinel, setTestingSentinel] = useState(false);
   const [syncingSentinel, setSyncingSentinel] = useState(false);
 
+  React.useEffect(() => {
+    if (isOpen) {
+      fetch('/api/connectors')
+        .then(res => res.json())
+        .then((data: any) => {
+          if (data?.graph) {
+            setGraphConfig(prev => ({
+              tenantId: data.graph.tenantId || prev.tenantId,
+              clientId: data.graph.clientId || prev.clientId,
+              clientSecret: data.graph.clientSecret || prev.clientSecret,
+            }));
+          }
+          if (data?.sentinel) {
+            setSentinelConfig(prev => ({
+              tenantId: data.sentinel.tenantId || prev.tenantId,
+              clientId: data.sentinel.clientId || prev.clientId,
+              clientSecret: data.sentinel.clientSecret || prev.clientSecret,
+              subscriptionId: data.sentinel.subscriptionId || prev.subscriptionId,
+              resourceGroup: data.sentinel.resourceGroup || prev.resourceGroup,
+              workspaceName: data.sentinel.workspaceName || prev.workspaceName,
+            }));
+          }
+        })
+        .catch(() => {});
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const handleFileUpload = async (file: File) => {
