@@ -112,7 +112,7 @@ fi
 echo -e "\n${CYAN}[4/6] Configuring Microsoft Graph permissions...${NC}"
 GRAPH_APP_ID="00000003-0000-0000-c000-000000000000"
 
-# Application permissions needed for backend ingestion
+# Application permissions needed for backend ingestion and mailbox polling
 APP_ROLES=(
   "SecurityIncident.Read.All"
   "SecurityAlert.Read.All"
@@ -120,7 +120,8 @@ APP_ROLES=(
   "IdentityRiskyUser.Read.All"
   "IdentityRiskEvent.Read.All"
   "Organization.Read.All"
-  "Mail.Read"
+  "Mail.ReadWrite"
+  "Mail.Send"
 )
 
 # Delegated permissions for user login
