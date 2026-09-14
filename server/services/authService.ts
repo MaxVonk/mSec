@@ -13,12 +13,37 @@ export class AuthService {
   private static sessions = new Map<string, UserSessionProfile>();
 
   /**
-   * Generates Microsoft OAuth 2.0 authorization URL with PKCE
+   * Resolves a fully-qualified, absolute redirect URI for OAuth2.
+   * Ensures schemes like https:// or http:// are never omitted, preventing AADSTS90102.
+   */
+  public static resolveRedirectUri(origin?: string): string {
+    let uri = (process.env.AUTH_REDIRECT_URI || '').trim();
+    if (!uri && origin) {
+      uri = `${origin.trim().replace(/\/+$/, '')}/api/auth/callback`;
+    }
+    if (!uri) {
+      uri = 'http://localhost:3310/api/auth/callback';
+    }
+
+    // If scheme is missing (e.g. user specified "msec.vermiculus.work")
+    if (!/^https?:\/\//i.test(uri)) {
+      if (/^(localhost|127\.0\.0\.1)(:\d+)?(\/.*)?$/i.test(uri)) {
+        uri = `http://${uri}`;
+      } else {
+        uri = `https://${uri}`;
+      }
+    }
+
+    return uri;
+  }
+
+  /**
+   * Generates Microsoft OAuth2 PKCE login authorization URL
    */
   public static generateAuthUrl(origin: string): { url: string; state: string } {
     const graphConfig = store.getConfig().graph;
     const tenantId = graphConfig.tenantId || process.env.GRAPH_TENANT_ID || 'common';
-    const clientId = graphConfig.clientId || process.env.GRAPH_CLIENT_ID;
+    const clientId = graphConfig.clientId || process.env.GRAPH_CLIENT_ID || '';
 
     if (!clientId) {
       throw new Error('Microsoft Client ID not configured. Please add it in Connectors or environment.');
@@ -38,7 +63,7 @@ export class AuthService {
       }
     }
 
-    const redirectUri = process.env.AUTH_REDIRECT_URI || `${origin.replace(/\/+$/, '')}/api/auth/callback`;
+    const redirectUri = this.resolveRedirectUri(origin);
     const scopes = ['openid', 'profile', 'email', 'User.Read', 'offline_access'];
 
     const params = new URLSearchParams({
@@ -71,7 +96,7 @@ export class AuthService {
     const clientId = graphConfig.clientId || process.env.GRAPH_CLIENT_ID || '';
     const clientSecret = graphConfig.clientSecret || process.env.GRAPH_CLIENT_SECRET || '';
 
-    const redirectUri = process.env.AUTH_REDIRECT_URI || `${origin.replace(/\/+$/, '')}/api/auth/callback`;
+    const redirectUri = this.resolveRedirectUri(origin);
 
     const bodyParams = new URLSearchParams({
       client_id: clientId,

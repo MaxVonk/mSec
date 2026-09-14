@@ -71,10 +71,21 @@ router.post('/change-password', (req, res) => {
   }
 });
 
+function getOrigin(req: any): string {
+  let origin = (process.env.APP_URL || '').trim();
+  if (!origin) {
+    origin = `${req.protocol}://${req.get('host')}`;
+  }
+  if (!/^https?:\/\//i.test(origin)) {
+    origin = `https://${origin}`;
+  }
+  return origin;
+}
+
 // 2. Microsoft SSO Login
 router.get('/microsoft', (req, res) => {
   try {
-    const origin = process.env.APP_URL || `${req.protocol}://${req.get('host')}`;
+    const origin = getOrigin(req);
     const { url } = AuthService.generateAuthUrl(origin);
     res.redirect(url);
   } catch (err: any) {
@@ -99,7 +110,7 @@ router.get('/callback', async (req, res) => {
   }
 
   try {
-    const origin = process.env.APP_URL || `${req.protocol}://${req.get('host')}`;
+    const origin = getOrigin(req);
     const { sessionId } = await AuthService.handleCallback(String(code), String(state), origin);
 
     res.cookie('msec_session', sessionId, {

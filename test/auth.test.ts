@@ -18,6 +18,15 @@ describe('Microsoft Authentication & Security Lookups', () => {
     assert.ok(url.includes('redirect_uri=http%3A%2F%2Flocalhost%3A3310%2Fapi%2Fauth%2Fcallback'));
   });
 
+  it('should automatically prepend https scheme to bare domain for valid absolute redirect_uri', () => {
+    delete process.env.AUTH_REDIRECT_URI;
+    const uri = AuthService.resolveRedirectUri('msec.vermiculus.work');
+    assert.strictEqual(uri, 'https://msec.vermiculus.work/api/auth/callback');
+
+    const uriWithSlash = AuthService.resolveRedirectUri('msec.vermiculus.work/');
+    assert.strictEqual(uriWithSlash, 'https://msec.vermiculus.work/api/auth/callback');
+  });
+
   it('should provide default unauthenticated guest session', () => {
     const session = AuthService.getSession(undefined);
     assert.strictEqual(session.isAuthenticated, false);

@@ -76,7 +76,20 @@ REDIRECT_URIS=(
 )
 
 if [ "$LOCAL_HOST" != "localhost" ] && [ "$LOCAL_HOST" != "127.0.0.1" ]; then
-  REDIRECT_URIS+=("http://${LOCAL_HOST}:3310/api/auth/callback")
+  # Strip any protocol or trailing slashes if user pasted a full URL
+  LOCAL_HOST="${LOCAL_HOST#http://}"
+  LOCAL_HOST="${LOCAL_HOST#https://}"
+  LOCAL_HOST="${LOCAL_HOST%/}"
+
+  if [[ "$LOCAL_HOST" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+(:[0-9]+)?$ ]]; then
+    REDIRECT_URIS+=("http://${LOCAL_HOST}/api/auth/callback")
+    [[ "$LOCAL_HOST" != *:* ]] && REDIRECT_URIS+=("http://${LOCAL_HOST}:3310/api/auth/callback")
+  else
+    REDIRECT_URIS+=(
+      "https://${LOCAL_HOST}/api/auth/callback"
+      "http://${LOCAL_HOST}:3310/api/auth/callback"
+    )
+  fi
 fi
 
 echo -e "\n${CYAN}[2/6] Registering Single-Tenant Application '${APP_NAME}'...${NC}"
