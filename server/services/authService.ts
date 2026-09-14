@@ -34,6 +34,11 @@ export class AuthService {
       }
     }
 
+    // Always ensure the callback path is appended if omitted
+    if (!uri.includes('/callback')) {
+      uri = `${uri.replace(/\/+$/, '')}/api/auth/callback`;
+    }
+
     return uri;
   }
 
