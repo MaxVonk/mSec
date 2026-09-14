@@ -1,10 +1,12 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { MailboxPollerConfig, PhishPilotReport } from '../../types/phishpilot.js';
+import { SyncTrigger } from '../../types/security.js';
 import { GraphConnector } from '../graphConnector.js';
 import { store } from '../store.js';
 import { ReportGeneratorService } from './reportGenerator.js';
 import { CoachingService } from './coachingService.js';
+import { SyncLogService } from '../syncLogService.js';
 
 const CONFIG_FILE = path.resolve('.msec_data/phishpilot_mailbox_config.json');
 
@@ -54,7 +56,7 @@ export class MailboxPollerService {
     this.stopBackgroundPoller();
     const intervalMs = Math.max(1, this.config.pollingIntervalMinutes) * 60 * 1000;
     this.pollTimer = setInterval(() => {
-      this.syncMailbox().catch(err => console.error('[MailboxPoller] Background sync error:', err));
+      this.syncMailbox('SCHEDULED').catch(err => console.error('[MailboxPoller] Background sync error:', err));
     }, intervalMs);
     console.log(`[MailboxPoller] Started background polling for ${this.config.mailbox} every ${this.config.pollingIntervalMinutes}m`);
   }
@@ -69,12 +71,24 @@ export class MailboxPollerService {
   /**
    * Syncs unread messages from target mailbox in Microsoft 365
    */
-  public static async syncMailbox(): Promise<{ processedCount: number; reports: PhishPilotReport[]; error?: string }> {
+  public static async syncMailbox(trigger: SyncTrigger = 'MANUAL'): Promise<{ processedCount: number; reports: PhishPilotReport[]; error?: string }> {
+    const startTime = Date.now();
     const graphConfig = store.getConfig().graph;
     if (!graphConfig.tenantId || !graphConfig.clientId || !graphConfig.clientSecret) {
       const err = 'Microsoft Graph credentials not configured in Connectors settings.';
       this.config.lastStatus = 'ERROR';
       this.config.lastError = err;
+      SyncLogService.addLog({
+        timestamp: new Date().toISOString(),
+        source: 'PHISHPILOT_MAILBOX',
+        sourceLabel: `PhishPilot Mailbox (${this.config.mailbox})`,
+        trigger,
+        status: 'ERROR',
+        importedCount: 0,
+        durationMs: Date.now() - startTime,
+        message: 'Mailbox sync failed: Microsoft Graph credentials not configured.',
+        errors: [err]
+      });
       return { processedCount: 0, reports: [], error: err };
     }
 
@@ -83,6 +97,17 @@ export class MailboxPollerService {
       const err = 'No target mailbox address specified.';
       this.config.lastStatus = 'ERROR';
       this.config.lastError = err;
+      SyncLogService.addLog({
+        timestamp: new Date().toISOString(),
+        source: 'PHISHPILOT_MAILBOX',
+        sourceLabel: 'PhishPilot Mailbox',
+        trigger,
+        status: 'ERROR',
+        importedCount: 0,
+        durationMs: Date.now() - startTime,
+        message: 'Mailbox sync failed: No target mailbox address specified.',
+        errors: [err]
+      });
       return { processedCount: 0, reports: [], error: err };
     }
 
@@ -122,31 +147,15 @@ export class MailboxPollerService {
         }
 
         if (!emlContentToAnalyze) {
-          // Check if message contains forwarded .eml attachment in JSON metadata
           const emlAttachment = msg.attachments?.find((att: any) => 
             (att['@odata.type']?.includes('fileAttachment') || att['@odata.type']?.includes('itemAttachment')) && 
             (att.name?.toLowerCase().endsWith('.eml') || att.contentType === 'message/rfc822')
           );
 
-          if (emlAttachment?.contentBytes) {
+          if (emlAttachment && emlAttachment.contentBytes) {
             emlContentToAnalyze = Buffer.from(emlAttachment.contentBytes, 'base64');
-          } else {
-            // Construct RFC 822 format from Graph message metadata
-            const fromAddr = msg.from?.emailAddress?.address || 'unknown';
-            const toAddr = (msg.toRecipients || []).map((r: any) => r.emailAddress?.address).join(', ');
-            const subject = msg.subject || '(No Subject)';
-            const date = msg.receivedDateTime || new Date().toISOString();
-            const body = msg.body?.content || msg.bodyPreview || '';
-
-            emlContentToAnalyze = [
-              `From: ${fromAddr}`,
-              `To: ${toAddr}`,
-              `Subject: ${subject}`,
-              `Date: ${date}`,
-              `Content-Type: text/html; charset=UTF-8`,
-              '',
-              body
-            ].join('\n');
+          } else if (msg.body && msg.body.content) {
+            emlContentToAnalyze = msg.body.content;
           }
         }
 
@@ -171,18 +180,44 @@ export class MailboxPollerService {
         }
       }
 
+      const durationMs = Date.now() - startTime;
       this.config.lastPollTimestamp = new Date().toISOString();
       this.config.lastStatus = 'SUCCESS';
       this.config.lastError = undefined;
       this.config.totalImportedCount += generatedReports.length;
       await this.updateConfig(this.config);
 
+      SyncLogService.addLog({
+        timestamp: new Date().toISOString(),
+        source: 'PHISHPILOT_MAILBOX',
+        sourceLabel: `PhishPilot Mailbox (${this.config.mailbox})`,
+        trigger,
+        status: 'SUCCESS',
+        importedCount: generatedReports.length,
+        durationMs,
+        message: generatedReports.length > 0
+          ? `Processed ${generatedReports.length} reported email(s) from ${this.config.mailbox}.`
+          : `Mailbox check completed. No new unread messages in ${this.config.mailbox}.`,
+        details: `Target: ${this.config.mailbox} | Fetched: ${messages.length} message(s)`
+      });
+
       return { processedCount: generatedReports.length, reports: generatedReports };
     } catch (e: any) {
+      const durationMs = Date.now() - startTime;
       this.config.lastStatus = 'ERROR';
       this.config.lastError = e.message;
+      SyncLogService.addLog({
+        timestamp: new Date().toISOString(),
+        source: 'PHISHPILOT_MAILBOX',
+        sourceLabel: `PhishPilot Mailbox (${this.config.mailbox})`,
+        trigger,
+        status: 'ERROR',
+        importedCount: 0,
+        durationMs,
+        message: `Mailbox sync error: ${e.message}`,
+        errors: [e.message]
+      });
       return { processedCount: 0, reports: [], error: e.message };
     }
   }
 }
-

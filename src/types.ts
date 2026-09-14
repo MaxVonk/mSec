@@ -199,6 +199,32 @@ export interface IngestionSchedulerConfig {
   totalAutoIngested: number;
 }
 
+export type SyncSource = 'SENTINEL' | 'GRAPH_DEFENDER' | 'PHISHPILOT_MAILBOX' | 'ALL' | 'MANUAL_IMPORT';
+export type SyncTrigger = 'MANUAL' | 'SCHEDULED' | 'AUTO_REFRESH';
+export type SyncStatus = 'SUCCESS' | 'ERROR' | 'IN_PROGRESS';
+
+export interface SyncLogEntry {
+  id: string;
+  timestamp: string;
+  source: SyncSource;
+  sourceLabel: string;
+  trigger: SyncTrigger;
+  status: SyncStatus;
+  importedCount: number;
+  durationMs: number;
+  message: string;
+  details?: string;
+  errors?: string[];
+}
+
+export interface SyncLogStats {
+  totalRuns: number;
+  successCount: number;
+  errorCount: number;
+  totalImported: number;
+  lastSync?: SyncLogEntry;
+}
+
 export interface WebhookConfig {
   teamsWebhookUrl?: string;
   slackWebhookUrl?: string;

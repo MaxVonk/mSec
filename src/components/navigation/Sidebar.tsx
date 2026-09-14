@@ -19,7 +19,8 @@ import {
   ChevronRight,
   ChevronLeft,
   Shield,
-  LogOut
+  LogOut,
+  Activity
 } from 'lucide-react';
 import { UserSessionProfile } from '../../types';
 import { audioService } from '../../utils/audioService';
@@ -48,6 +49,7 @@ interface SidebarProps {
   onResetDemo: () => void;
   onLogout: () => void;
   demoMode?: boolean;
+  onOpenSyncLog?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -61,7 +63,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isRefreshing,
   onResetDemo,
   onLogout,
-  demoMode
+  demoMode,
+  onOpenSyncLog
 }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMuted, setIsMuted] = useState(audioService.isMuted());
@@ -325,6 +328,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <Settings className={`w-4 h-4 shrink-0 ${activeView === 'settings' ? 'text-cyan-400' : 'text-slate-400'}`} />
               {!isCollapsed && <span>Settings & Connectors</span>}
             </button>
+
+            {onOpenSyncLog && (
+              <button
+                onClick={() => {
+                  audioService.playInfoChime();
+                  onOpenSyncLog();
+                }}
+                title="Synchronization Engine & Connector Logs"
+                className="w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-all cursor-pointer hover:bg-slate-800/50 hover:text-slate-200 text-slate-400"
+              >
+                <Activity className="w-4 h-4 shrink-0 text-cyan-400" />
+                {!isCollapsed && <span>Sync Logs</span>}
+              </button>
+            )}
 
             {currentUser?.role === 'ADMIN' && (
               <button

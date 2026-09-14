@@ -19,6 +19,7 @@ import { MitreMatrixModal } from './components/mitre/MitreMatrixModal';
 import { PlaybookRunnerModal } from './components/soar/PlaybookRunnerModal';
 import { WarRoomModal } from './components/warroom/WarRoomModal';
 import { CommandPaletteModal } from './components/command/CommandPaletteModal';
+import { SyncLogModal } from './components/sync/SyncLogModal';
 import { Sidebar, MainNavView } from './components/navigation/Sidebar';
 import { 
   Users, 
@@ -54,6 +55,24 @@ export const App: React.FC = () => {
   const [playbookIncident, setPlaybookIncident] = useState<UnifiedIncident | null>(null);
   const [isWarRoomOpen, setIsWarRoomOpen] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+  const [isSyncLogOpen, setIsSyncLogOpen] = useState(false);
+  const [isSyncingAll, setIsSyncingAll] = useState(false);
+  const [lastRefreshed, setLastRefreshed] = useState<Date | null>(new Date());
+  const [autoRefreshInterval, setAutoRefreshInterval] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem('msec_auto_refresh_interval');
+      return saved !== null ? parseInt(saved, 10) : 30;
+    } catch {
+      return 30;
+    }
+  });
+
+  const handleSetAutoRefreshInterval = (interval: number) => {
+    setAutoRefreshInterval(interval);
+    try {
+      localStorage.setItem('msec_auto_refresh_interval', interval.toString());
+    } catch {}
+  };
 
   // Global Ctrl + K / Cmd + K keyboard shortcut
   useEffect(() => {
@@ -107,6 +126,7 @@ export const App: React.FC = () => {
       if (res.ok) {
         const data = await res.json();
         setIncidents(data);
+        setLastRefreshed(new Date());
       }
     } catch (err) {
       console.error('Failed to load incidents:', err);
@@ -121,6 +141,7 @@ export const App: React.FC = () => {
       if (res.ok) {
         const data = await res.json();
         setStats(data);
+        setLastRefreshed(new Date());
       }
     } catch (err) {
       console.error('Failed to load stats:', err);
@@ -131,6 +152,31 @@ export const App: React.FC = () => {
     fetchIncidents();
     fetchStats();
   }, [selectedSeverity, selectedProvider, selectedStatus, searchQuery]);
+
+  // Automated background polling timer
+  useEffect(() => {
+    if (autoRefreshInterval <= 0) return;
+    const intervalMs = autoRefreshInterval * 1000;
+    const timer = setInterval(() => {
+      fetchIncidents();
+      fetchStats();
+    }, intervalMs);
+    return () => clearInterval(timer);
+  }, [autoRefreshInterval, selectedSeverity, selectedProvider, selectedStatus, searchQuery]);
+
+  const handleSyncAll = async () => {
+    setIsSyncingAll(true);
+    try {
+      const res = await fetch('/api/sync/all', { method: 'POST' });
+      if (res.ok) {
+        await Promise.all([fetchIncidents(), fetchStats()]);
+      }
+    } catch (err) {
+      console.error('Sync all error:', err);
+    } finally {
+      setIsSyncingAll(false);
+    }
+  };
 
   const handleUpdateStatus = async (id: string, status: IncidentStatus) => {
     try {
@@ -294,6 +340,7 @@ export const App: React.FC = () => {
         onResetDemo={handleResetDemo}
         onLogout={handleLogout}
         demoMode={stats?.demoMode}
+        onOpenSyncLog={() => setIsSyncLogOpen(true)}
       />
 
       {/* Main Content Column */}
@@ -325,6 +372,14 @@ export const App: React.FC = () => {
               onDeleteIncident={handleDeleteIncident}
               onBulkDelete={handleBulkDelete}
               onClearAll={handleClearAll}
+              onRefresh={() => { fetchIncidents(); fetchStats(); }}
+              isRefreshing={isRefreshing}
+              onOpenSyncLog={() => setIsSyncLogOpen(true)}
+              lastRefreshed={lastRefreshed}
+              autoRefreshInterval={autoRefreshInterval}
+              setAutoRefreshInterval={handleSetAutoRefreshInterval}
+              onSyncAll={handleSyncAll}
+              isSyncingAll={isSyncingAll}
             />
           )}
 
@@ -415,6 +470,17 @@ export const App: React.FC = () => {
       />
 
       {/* Popups triggered contextually when not on the dedicated page */}
+      {isSyncLogOpen && (
+        <SyncLogModal
+          isOpen={isSyncLogOpen}
+          onClose={() => setIsSyncLogOpen(false)}
+          onSyncComplete={() => {
+            fetchIncidents();
+            fetchStats();
+          }}
+        />
+      )}
+
       {isImportModalOpen && activeView !== 'settings' && (
         <DataImportModal
           isOpen={isImportModalOpen}

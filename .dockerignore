@@ -4,9 +4,12 @@ dist
 .github
 .vscode
 .msec_data
+certbot
+nginx
+.env
+.env.*
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .DS_Store
 Thumbs.db
-

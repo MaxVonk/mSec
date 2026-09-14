@@ -20,6 +20,7 @@ import {
   Zap
 } from 'lucide-react';
 import { ConnectorConfig, IngestionSchedulerConfig, WebhookConfig } from '../types';
+import { SyncLogModal } from './sync/SyncLogModal';
 
 interface DataImportModalProps {
   isOpen?: boolean;
@@ -904,6 +905,11 @@ export const DataImportModal: React.FC<DataImportModalProps> = ({
                     Save Scheduler Settings
                   </button>
                 </div>
+              </div>
+
+              {/* Live Synchronization History & Audit Trail */}
+              <div className="p-4 bg-slate-950/60 border border-slate-800/80 rounded-xl">
+                <SyncLogModal inline={true} onSyncComplete={onImportSuccess} />
               </div>
 
               {/* Webhook Notifications */}
