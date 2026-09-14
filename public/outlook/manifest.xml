@@ -15,7 +15,7 @@
   <HighResolutionIconUrl DefaultValue="https://raw.githubusercontent.com/MaxVonk/mSec/main/public/outlook/icon-128.png" />
   <SupportUrl DefaultValue="https://security.example.com" />
   <AppDomains>
-    <AppDomain>https://security.example.com</AppDomain>
+    <AppDomain>https://msec.vermiculus.work</AppDomain>
   </AppDomains>
 
   <Hosts>
