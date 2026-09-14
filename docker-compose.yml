@@ -48,9 +48,11 @@ services:
       - DOMAIN=${DOMAIN:-localhost}
     volumes:
       - ./nginx/templates:/etc/nginx/custom-templates:ro
+      - ./nginx/entrypoint.sh:/entrypoint.sh:ro
       - ./nginx/entrypoint.sh:/docker-entrypoint.d/40-msec-nginx.sh:ro
       - ./certbot/conf:/etc/letsencrypt:ro
       - ./certbot/www:/var/www/certbot:ro
+    command: ["/bin/sh", "-c", "/bin/sh /entrypoint.sh && exec nginx -g 'daemon off;'"]
 
   certbot:
     image: ${CERTBOT_IMAGE:-certbot/certbot}

@@ -17,7 +17,7 @@ fi
 # Parse only the required variables so shell-special characters in other .env
 # values do not affect this script.
 env_get() {
-    awk -F= -v key="${1}" '$1 == key { sub(/^[^=]+=/, ""); gsub(/^['"'"'"]|['"'"'"]$/, ""); print; exit }' .env
+    awk -F= -v key="${1}" '$1 == key { sub(/\r$/, ""); sub(/^[^=]+=/, ""); gsub(/^['"'"'"]|['"'"'"]$/, ""); print; exit }' .env
 }
 
 resolve_path() {
@@ -31,8 +31,8 @@ resolve_path() {
     )
 }
 
-DOMAIN="$(env_get DOMAIN)"
-EMAIL="$(env_get CERTBOT_EMAIL)"
+DOMAIN="$(env_get DOMAIN | tr -d '\r' | xargs)"
+EMAIL="$(env_get CERTBOT_EMAIL | tr -d '\r' | xargs)"
 STAGING="$(env_get CERTBOT_STAGING)"
 CHALLENGE_METHOD="$(env_get CERTBOT_CHALLENGE_METHOD)"
 DNS_PROVIDER="$(env_get CERTBOT_DNS_PROVIDER)"
