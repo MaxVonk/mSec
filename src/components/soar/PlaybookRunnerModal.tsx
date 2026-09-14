@@ -210,7 +210,7 @@ export const PlaybookRunnerModal: React.FC<PlaybookRunnerModalProps> = ({
   const card = (
     <div className={`relative w-full ${inline ? 'max-w-none' : 'max-w-4xl max-h-[90vh]'} bg-slate-900/95 border border-cyan-500/30 rounded-2xl shadow-[0_0_50px_rgba(6,182,212,0.15)] flex flex-col overflow-hidden text-slate-100`}>
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-950/60">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-950/60 shrink-0">
         <div className="flex items-center gap-3">
           <div className="p-2.5 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400">
             <ShieldCheck className="w-5 h-5 animate-pulse" />
@@ -230,14 +230,14 @@ export const PlaybookRunnerModal: React.FC<PlaybookRunnerModalProps> = ({
         {!inline && onClose && (
           <button
             onClick={onClose}
-            className="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800/80 transition-colors"
+            className="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800/80 transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         )}
       </div>
 
-      <div className="flex-1 overflow-y-auto p-6 space-y-6">
+      <div className="flex-1 min-h-0 overflow-y-auto p-6 space-y-6">
         {/* Interactive Target Scope & Incident Context Selector */}
         <div className="p-4 rounded-xl bg-slate-950/90 border border-slate-800 space-y-3.5">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800/80 pb-3">

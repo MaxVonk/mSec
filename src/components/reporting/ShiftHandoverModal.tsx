@@ -77,7 +77,7 @@ export const ShiftHandoverModal: React.FC<ShiftHandoverModalProps> = ({ onClose,
   const card = (
     <div className={`bg-slate-900 border border-slate-700/80 rounded-2xl w-full ${inline ? 'max-w-none' : 'max-w-4xl max-h-[90vh]'} flex flex-col shadow-2xl overflow-hidden print:bg-white print:text-black print:border-none print:shadow-none print:max-w-none print:max-h-none print:static`}>
       {/* Header */}
-      <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/50 print:hidden">
+      <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/50 print:hidden shrink-0">
         <div className="flex items-center gap-2.5">
           <div className="p-2 bg-gradient-to-br from-cyan-500/20 to-blue-500/10 text-cyan-400 rounded-lg border border-cyan-500/20">
             <FileText className="w-5 h-5" />
@@ -132,7 +132,7 @@ export const ShiftHandoverModal: React.FC<ShiftHandoverModalProps> = ({ onClose,
       </div>
 
         {/* Filter / Input Options Bar */}
-        <div className="px-6 py-3 bg-slate-950/70 border-b border-slate-800 flex flex-wrap items-center justify-between gap-4 text-xs print:hidden">
+        <div className="px-6 py-3 bg-slate-950/70 border-b border-slate-800 flex flex-wrap items-center justify-between gap-4 text-xs print:hidden shrink-0">
           <div className="flex items-center gap-2">
             <span className="text-slate-400 font-medium flex items-center gap-1">
               <Clock className="w-3.5 h-3.5 text-cyan-400" /> Timeframe:
@@ -165,7 +165,7 @@ export const ShiftHandoverModal: React.FC<ShiftHandoverModalProps> = ({ onClose,
         </div>
 
         {/* Report Content Body */}
-        <div className="p-6 overflow-y-auto flex-1 space-y-6 print:p-0 print:overflow-visible">
+        <div className="p-6 overflow-y-auto flex-1 min-h-0 space-y-6 print:p-0 print:overflow-visible">
           {isLoading ? (
             <div className="py-20 text-center text-xs text-slate-400">
               <Activity className="w-6 h-6 text-cyan-500 animate-spin mx-auto mb-2" />

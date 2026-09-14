@@ -112,9 +112,9 @@ export const IncidentDetailModal: React.FC<IncidentDetailModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-150">
-      <div className="bg-slate-900 border border-slate-700/80 rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+      <div className="bg-slate-900 border border-slate-700/80 rounded-2xl w-full max-w-5xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden">
         {/* Modal Header */}
-        <div className="px-6 py-4 border-b border-slate-800 flex items-start justify-between gap-4 bg-slate-950/50">
+        <div className="px-6 py-4 border-b border-slate-800 flex items-start justify-between gap-4 bg-slate-950/60 shrink-0">
           <div className="space-y-1.5 min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
               <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
@@ -218,19 +218,19 @@ export const IncidentDetailModal: React.FC<IncidentDetailModalProps> = ({
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex border-b border-slate-800 px-6 bg-slate-950/20 overflow-x-auto">
+        <div className="flex items-center border-b border-slate-800 px-6 py-2 bg-slate-950/40 gap-1.5 overflow-x-auto shrink-0 sticky top-0 z-20">
           <button
             onClick={() => setActiveTab('threat')}
-            className={`flex items-center gap-2 py-3 px-4 text-xs font-semibold border-b-2 transition-colors cursor-pointer shrink-0 ${
+            className={`flex items-center gap-1.5 py-1.5 px-3 rounded-lg text-xs font-semibold transition-all cursor-pointer shrink-0 ${
               activeTab === 'threat'
-                ? 'border-cyan-500 text-cyan-400'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
+                ? 'bg-cyan-950 text-cyan-300 border border-cyan-500/60 shadow-sm shadow-cyan-950/50'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 border border-transparent'
             }`}
           >
             <ShieldAlert className="w-4 h-4" />
             <span>Threat Oversight</span>
             {assessment && (
-              <span className="px-1.5 py-0.2 rounded bg-cyan-950 text-cyan-400 text-[10px] font-mono">
+              <span className="px-1.5 py-0.2 rounded-full bg-cyan-900 text-cyan-300 text-[10px] font-mono">
                 {assessment.containmentActions.length}
               </span>
             )}
@@ -238,10 +238,10 @@ export const IncidentDetailModal: React.FC<IncidentDetailModalProps> = ({
 
           <button
             onClick={() => setActiveTab('graph')}
-            className={`flex items-center gap-2 py-3 px-4 text-xs font-semibold border-b-2 transition-colors cursor-pointer shrink-0 ${
+            className={`flex items-center gap-1.5 py-1.5 px-3 rounded-lg text-xs font-semibold transition-all cursor-pointer shrink-0 ${
               activeTab === 'graph'
-                ? 'border-cyan-500 text-cyan-400'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
+                ? 'bg-cyan-950 text-cyan-300 border border-cyan-500/60 shadow-sm shadow-cyan-950/50'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 border border-transparent'
             }`}
           >
             <Layers className="w-4 h-4" />
@@ -250,10 +250,10 @@ export const IncidentDetailModal: React.FC<IncidentDetailModalProps> = ({
 
           <button
             onClick={() => setActiveTab('timeline')}
-            className={`flex items-center gap-2 py-3 px-4 text-xs font-semibold border-b-2 transition-colors cursor-pointer shrink-0 ${
+            className={`flex items-center gap-1.5 py-1.5 px-3 rounded-lg text-xs font-semibold transition-all cursor-pointer shrink-0 ${
               activeTab === 'timeline'
-                ? 'border-cyan-500 text-cyan-400'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
+                ? 'bg-cyan-950 text-cyan-300 border border-cyan-500/60 shadow-sm shadow-cyan-950/50'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 border border-transparent'
             }`}
           >
             <Clock className="w-4 h-4" />
@@ -262,10 +262,10 @@ export const IncidentDetailModal: React.FC<IncidentDetailModalProps> = ({
 
           <button
             onClick={() => setActiveTab('entities')}
-            className={`flex items-center gap-2 py-3 px-4 text-xs font-semibold border-b-2 transition-colors cursor-pointer shrink-0 ${
+            className={`flex items-center gap-1.5 py-1.5 px-3 rounded-lg text-xs font-semibold transition-all cursor-pointer shrink-0 ${
               activeTab === 'entities'
-                ? 'border-cyan-500 text-cyan-400'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
+                ? 'bg-cyan-950 text-cyan-300 border border-cyan-500/60 shadow-sm shadow-cyan-950/50'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 border border-transparent'
             }`}
           >
             <User className="w-4 h-4" />
@@ -274,10 +274,10 @@ export const IncidentDetailModal: React.FC<IncidentDetailModalProps> = ({
 
           <button
             onClick={() => setActiveTab('comments')}
-            className={`flex items-center gap-2 py-3 px-4 text-xs font-semibold border-b-2 transition-colors cursor-pointer shrink-0 ${
+            className={`flex items-center gap-1.5 py-1.5 px-3 rounded-lg text-xs font-semibold transition-all cursor-pointer shrink-0 ${
               activeTab === 'comments'
-                ? 'border-cyan-500 text-cyan-400'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
+                ? 'bg-cyan-950 text-cyan-300 border border-cyan-500/60 shadow-sm shadow-cyan-950/50'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 border border-transparent'
             }`}
           >
             <MessageSquare className="w-4 h-4" />
@@ -286,10 +286,10 @@ export const IncidentDetailModal: React.FC<IncidentDetailModalProps> = ({
 
           <button
             onClick={() => setActiveTab('raw')}
-            className={`flex items-center gap-2 py-3 px-4 text-xs font-semibold border-b-2 transition-colors cursor-pointer shrink-0 ${
+            className={`flex items-center gap-1.5 py-1.5 px-3 rounded-lg text-xs font-semibold transition-all cursor-pointer shrink-0 ${
               activeTab === 'raw'
-                ? 'border-cyan-500 text-cyan-400'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
+                ? 'bg-cyan-950 text-cyan-300 border border-cyan-500/60 shadow-sm shadow-cyan-950/50'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 border border-transparent'
             }`}
           >
             <Terminal className="w-4 h-4" />
@@ -298,7 +298,7 @@ export const IncidentDetailModal: React.FC<IncidentDetailModalProps> = ({
         </div>
 
         {/* Modal Content Body */}
-        <div className="p-6 overflow-y-auto flex-1 space-y-6">
+        <div className="p-6 overflow-y-auto flex-1 min-h-0 space-y-6">
           {/* TAB: INVESTIGATION GRAPH */}
           {activeTab === 'graph' && (
             <div className="space-y-4">
