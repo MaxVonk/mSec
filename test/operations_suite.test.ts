@@ -6,6 +6,7 @@ import { WebhookNotifierService } from '../server/services/webhookNotifier.js';
 import { ThreatIntelService } from '../server/services/threatIntelService.js';
 import { SocReportService } from '../server/services/socReportService.js';
 import { ConfigService } from '../server/services/configService.js';
+import { SyncLogService } from '../server/services/syncLogService.js';
 import { UnifiedIncident } from '../server/types/security.js';
 
 describe('Advanced SOC Operations Suite Tests', () => {
@@ -218,5 +219,69 @@ describe('Advanced SOC Operations Suite Tests', () => {
     } else {
       delete process.env.NODE_ENV;
     }
+  });
+
+  describe('SyncLogService & Synchronization Pipeline', () => {
+    it('should add log entries and track statistics correctly', async () => {
+      await SyncLogService.clearLogs();
+      assert.strictEqual(SyncLogService.getLogs().length, 0);
+
+      const log1 = SyncLogService.addLog({
+        timestamp: new Date().toISOString(),
+        source: 'SENTINEL',
+        sourceLabel: 'Microsoft Sentinel SIEM',
+        trigger: 'SCHEDULED',
+        status: 'SUCCESS',
+        importedCount: 3,
+        durationMs: 420,
+        message: 'Ingested 3 incident(s) from Sentinel'
+      });
+
+      assert.ok(log1.id.startsWith('sync-'));
+      assert.strictEqual(log1.source, 'SENTINEL');
+      assert.strictEqual(log1.importedCount, 3);
+
+      const log2 = SyncLogService.addLog({
+        timestamp: new Date().toISOString(),
+        source: 'GRAPH_DEFENDER',
+        sourceLabel: 'M365 Defender (Graph)',
+        trigger: 'MANUAL',
+        status: 'ERROR',
+        importedCount: 0,
+        durationMs: 150,
+        message: 'Graph credentials not configured',
+        errors: ['Invalid client secret']
+      });
+
+      const logs = SyncLogService.getLogs();
+      assert.strictEqual(logs.length, 2);
+      assert.strictEqual(logs[0].id, log2.id); // Most recent first
+
+      // Filtering
+      const sentinelOnly = SyncLogService.getLogs(10, { source: 'SENTINEL' });
+      assert.strictEqual(sentinelOnly.length, 1);
+      assert.strictEqual(sentinelOnly[0].source, 'SENTINEL');
+
+      const errorsOnly = SyncLogService.getLogs(10, { status: 'ERROR' });
+      assert.strictEqual(errorsOnly.length, 1);
+      assert.strictEqual(errorsOnly[0].status, 'ERROR');
+
+      // Statistics
+      const stats = SyncLogService.getStats();
+      assert.strictEqual(stats.totalRuns, 2);
+      assert.strictEqual(stats.successCount, 1);
+      assert.strictEqual(stats.errorCount, 1);
+      assert.strictEqual(stats.totalImported, 3);
+      assert.strictEqual(stats.lastSync?.id, log2.id);
+    });
+
+    it('should run syncAll and log results', async () => {
+      const result = await IngestionSchedulerService.syncAll('MANUAL');
+      assert.ok(result, 'Result should exist');
+      assert.strictEqual(typeof result.totalImported, 'number');
+
+      const logs = SyncLogService.getLogs();
+      assert.ok(logs.length >= 2, 'Should have logged sync operations');
+    });
   });
 });

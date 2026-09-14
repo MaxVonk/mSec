@@ -23,7 +23,10 @@ import {
   MinusSquare,
   XCircle,
   Calendar,
-  ArrowUpDown
+  ArrowUpDown,
+  RefreshCw,
+  Activity,
+  Zap
 } from 'lucide-react';
 
 interface IncidentListProps {
@@ -41,6 +44,14 @@ interface IncidentListProps {
   onDeleteIncident: (id: string) => void;
   onBulkDelete: (ids: string[]) => void;
   onClearAll: () => void;
+  onRefresh?: () => void;
+  isRefreshing?: boolean;
+  onOpenSyncLog?: () => void;
+  lastRefreshed?: Date | null;
+  autoRefreshInterval?: number;
+  setAutoRefreshInterval?: (interval: number) => void;
+  onSyncAll?: () => Promise<void>;
+  isSyncingAll?: boolean;
 }
 
 export const IncidentList: React.FC<IncidentListProps> = ({
@@ -57,7 +68,15 @@ export const IncidentList: React.FC<IncidentListProps> = ({
   onUpdateStatus,
   onDeleteIncident,
   onBulkDelete,
-  onClearAll
+  onClearAll,
+  onRefresh,
+  isRefreshing = false,
+  onOpenSyncLog,
+  lastRefreshed,
+  autoRefreshInterval = 30,
+  setAutoRefreshInterval,
+  onSyncAll,
+  isSyncingAll = false
 }) => {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showClearConfirm, setShowClearConfirm] = useState(false);
@@ -289,6 +308,73 @@ export const IncidentList: React.FC<IncidentListProps> = ({
               <option value="entities" className="bg-slate-900">Most Entities</option>
             </select>
           </div>
+
+          {/* Refresh, Auto-Refresh & Synchronization Controls */}
+          {setAutoRefreshInterval && (
+            <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs">
+              <Clock className="w-3.5 h-3.5 text-cyan-400" />
+              <span className="text-slate-400 font-medium">Auto:</span>
+              <select
+                value={autoRefreshInterval}
+                onChange={(e) => setAutoRefreshInterval(Number(e.target.value))}
+                className="bg-transparent text-slate-200 focus:outline-none cursor-pointer"
+                title="Select background auto-refresh interval"
+              >
+                <option value={0} className="bg-slate-900">Off</option>
+                <option value={15} className="bg-slate-900">15s</option>
+                <option value={30} className="bg-slate-900">30s</option>
+                <option value={60} className="bg-slate-900">1m</option>
+                <option value={120} className="bg-slate-900">2m</option>
+                <option value={300} className="bg-slate-900">5m</option>
+              </select>
+              {autoRefreshInterval > 0 && (
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse ml-0.5" title={`Auto-refresh active (${autoRefreshInterval}s)`} />
+              )}
+            </div>
+          )}
+
+          {onSyncAll && (
+            <button
+              onClick={onSyncAll}
+              disabled={isSyncingAll}
+              title="Synchronize all cloud connectors (Sentinel, Defender, Mailbox) now"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-950 hover:bg-slate-850 border border-slate-800 hover:border-cyan-500/50 rounded-lg text-xs font-semibold text-cyan-300 transition-all disabled:opacity-50 cursor-pointer shadow-sm"
+            >
+              <Zap className={`w-3.5 h-3.5 ${isSyncingAll ? 'animate-spin text-amber-400' : 'text-amber-400'}`} />
+              <span>{isSyncingAll ? 'Syncing Feeds...' : 'Sync Feeds'}</span>
+            </button>
+          )}
+
+          {onOpenSyncLog && (
+            <button
+              onClick={onOpenSyncLog}
+              title="Open Synchronization Engine & Connector History"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-950 hover:bg-slate-850 border border-slate-800 hover:border-cyan-500/50 rounded-lg text-xs font-semibold text-slate-200 hover:text-white transition-all cursor-pointer shadow-sm"
+            >
+              <Activity className="w-3.5 h-3.5 text-cyan-400" />
+              <span>Sync Logs</span>
+            </button>
+          )}
+
+          {onRefresh && (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={onRefresh}
+                disabled={isRefreshing}
+                title="Refresh Incident Feeds Now"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-750 border border-slate-700 rounded-lg text-xs font-semibold text-slate-200 transition-colors disabled:opacity-50 cursor-pointer"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-cyan-400' : ''}`} />
+                <span>Refresh</span>
+              </button>
+
+              {lastRefreshed && (
+                <span className="text-[11px] text-slate-500 font-mono hidden xl:inline" title={lastRefreshed.toLocaleString()}>
+                  Updated {lastRefreshed.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                </span>
+              )}
+            </div>
+          )}
 
           {/* Clear All Incidents */}
           {incidents.length > 0 && (

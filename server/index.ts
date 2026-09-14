@@ -13,6 +13,7 @@ import { SentinelConnector } from './services/sentinelConnector';
 import phishpilotRoutes from './routes/phishpilotRoutes';
 import { MailboxPollerService } from './services/phishpilot/mailboxPoller';
 import { IngestionSchedulerService } from './services/ingestionScheduler';
+import { SyncLogService } from './services/syncLogService';
 import { WebhookNotifierService } from './services/webhookNotifier';
 import { ThreatIntelService } from './services/threatIntelService';
 import { SocReportService } from './services/socReportService';
@@ -20,6 +21,7 @@ import { ConfigService } from './services/configService';
 
 import authRoutes, { userRouter } from './routes/authRoutes';
 
+SyncLogService.init().catch(err => console.error('[SyncLog] Init error:', err));
 MailboxPollerService.init().catch(err => console.error('[MailboxPoller] Init error:', err));
 IngestionSchedulerService.init().catch(err => console.error('[Scheduler] Init error:', err));
 WebhookNotifierService.init().catch(err => console.error('[WebhookNotifier] Init error:', err));
@@ -312,6 +314,37 @@ app.post('/api/scheduler/sync/sentinel', async (req, res) => {
 app.post('/api/scheduler/sync/graph', async (req, res) => {
   const result = await IngestionSchedulerService.syncGraph();
   res.json(result);
+});
+
+// Synchronization Audit Logs & Unified Sync
+app.get('/api/sync/logs', (req, res) => {
+  const limit = parseInt(req.query.limit as string) || 100;
+  const source = req.query.source as string;
+  const status = req.query.status as string;
+  const trigger = req.query.trigger as string;
+  const logs = SyncLogService.getLogs(limit, { source, status, trigger });
+  const stats = SyncLogService.getStats();
+  res.json({ logs, stats });
+});
+
+app.post('/api/sync/all', async (req, res) => {
+  try {
+    const result = await IngestionSchedulerService.syncAll('MANUAL');
+    const stats = SyncLogService.getStats();
+    res.json({ success: true, ...result, stats });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/sync/clear', async (req, res) => {
+  await SyncLogService.clearLogs();
+  res.json({ success: true, message: 'Synchronization logs cleared' });
+});
+
+app.delete('/api/sync/logs', async (req, res) => {
+  await SyncLogService.clearLogs();
+  res.json({ success: true, message: 'Synchronization logs cleared' });
 });
 
 // Webhook Notifications API
