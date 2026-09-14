@@ -82,7 +82,7 @@ describe('Tier-3 SOC Command Center Capabilities Tests', () => {
           title: 'Mimikatz LSASS Credential Dump',
           severity: 'CRITICAL',
           entities: [
-            { id: 'e1', type: 'USER', value: 'victim@vermiculus.se' },
+            { id: 'e1', type: 'USER', value: 'victim@example.com' },
             { id: 'e2', type: 'HOST', value: 'WORKSTATION-01' },
             { id: 'e3', type: 'IP', value: '194.26.29.112' }
           ]
@@ -101,7 +101,7 @@ describe('Tier-3 SOC Command Center Capabilities Tests', () => {
         const data = await res.json();
         assert.ok(data.reply.includes('```kql'));
         assert.ok(data.reply.includes('DeviceProcessEvents'));
-        assert.ok(data.reply.includes('victim@vermiculus.se'));
+        assert.ok(data.reply.includes('victim@example.com'));
         assert.ok(data.reply.includes('194.26.29.112'));
       } finally {
         server.close();
@@ -125,7 +125,7 @@ describe('Tier-3 SOC Command Center Capabilities Tests', () => {
           title: 'Suspicious OAuth App Exfiltration',
           severity: 'HIGH',
           entities: [
-            { id: 'e1', type: 'USER', value: 'admin@vermiculus.se' },
+            { id: 'e1', type: 'USER', value: 'admin@example.com' },
             { id: 'e2', type: 'HOST', value: 'LAPTOP-EXEC-02' }
           ]
         };
@@ -142,7 +142,7 @@ describe('Tier-3 SOC Command Center Capabilities Tests', () => {
         assert.equal(res.status, 200);
         const data = await res.json();
         assert.ok(data.reply.includes('Subject:'));
-        assert.ok(data.reply.includes('admin@vermiculus.se'));
+        assert.ok(data.reply.includes('admin@example.com'));
         assert.ok(data.reply.includes('LAPTOP-EXEC-02'));
       } finally {
         server.close();

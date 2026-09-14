@@ -11,8 +11,8 @@
   <DefaultLocale>en-US</DefaultLocale>
   <DisplayName DefaultValue="PhishPilot Security Reporter" />
   <Description DefaultValue="1-Click AI-Powered Phishing Threat Analysis and Reporting for Microsoft Outlook." />
-  <IconUrl DefaultValue="https://security.example.com/outlook/icon-64.png" />
-  <HighResolutionIconUrl DefaultValue="https://security.example.com/outlook/icon-128.png" />
+  <IconUrl DefaultValue="https://raw.githubusercontent.com/MaxVonk/mSec/main/public/outlook/icon-64.png" />
+  <HighResolutionIconUrl DefaultValue="https://raw.githubusercontent.com/MaxVonk/mSec/main/public/outlook/icon-128.png" />
   <SupportUrl DefaultValue="https://security.example.com" />
   <AppDomains>
     <AppDomain>https://security.example.com</AppDomain>
@@ -73,7 +73,6 @@
                   </Icon>
                   <Action xsi:type="ShowTaskpane">
                     <SourceLocation resid="taskpaneUrl" />
-                    <SupportsPinning>true</SupportsPinning>
                   </Action>
                 </Control>
               </Group>
@@ -85,9 +84,9 @@
 
     <Resources>
       <bt:Images>
-        <bt:Image id="icon16" DefaultValue="https://security.example.com/outlook/icon-16.png" />
-        <bt:Image id="icon32" DefaultValue="https://security.example.com/outlook/icon-32.png" />
-        <bt:Image id="icon80" DefaultValue="https://security.example.com/outlook/icon-80.png" />
+        <bt:Image id="icon16" DefaultValue="https://raw.githubusercontent.com/MaxVonk/mSec/main/public/outlook/icon-16.png" />
+        <bt:Image id="icon32" DefaultValue="https://raw.githubusercontent.com/MaxVonk/mSec/main/public/outlook/icon-32.png" />
+        <bt:Image id="icon80" DefaultValue="https://raw.githubusercontent.com/MaxVonk/mSec/main/public/outlook/icon-80.png" />
       </bt:Images>
       <bt:Urls>
         <bt:Url id="taskpaneUrl" DefaultValue="https://security.example.com/outlook/taskpane.html" />

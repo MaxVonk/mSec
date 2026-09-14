@@ -17,7 +17,7 @@ function generateOfflineSecOpsResponse(prompt: string, incident?: UnifiedInciden
   const p = prompt.toLowerCase();
   const incTitle = incident?.title || 'Active Cyber Incident';
   const incId = incident?.id || 'INC-CURRENT';
-  const user = incident?.entities?.find(e => e.type === 'USER')?.value || 'jdoe@vermiculus.se';
+  const user = incident?.entities?.find(e => e.type === 'USER')?.value || 'jdoe@example.com';
   const host = incident?.entities?.find(e => e.type === 'HOST')?.value || 'DESKTOP-SEC-8901';
   const ip = incident?.entities?.find(e => e.type === 'IP')?.value || '194.26.29.112';
 
@@ -103,7 +103,7 @@ As a precautionary security measure:
 2. Please do not approve any multi-factor authentication (MFA) prompts you did not initiate.
 3. Upon your next login, you will be prompted to reset your password.
 
-If you suspect you received a suspicious phishing email or prompt, please contact the Security Operations Team immediately at soc@vermiculus.se.
+If you suspect you received a suspicious phishing email or prompt, please contact the Security Operations Team immediately at soc@example.com.
 
 Sincerely,  
 *mSec Unified Security Operations Center*`;
