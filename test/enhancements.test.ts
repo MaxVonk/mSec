@@ -216,7 +216,7 @@ describe('PhishPilot Comprehensive Enhancements Suite', () => {
 
   // 5. Outlook 365 Add-in Assets Tests
   describe('Microsoft Outlook 365 Web Add-in Assets', () => {
-    it('should have valid Office.js manifest.xml file', () => {
+    it('should have valid Office.js manifest.xml file with VersionOverrides for modern Outlook', () => {
       const manifestPath = path.resolve(process.cwd(), 'public/outlook/manifest.xml');
       assert.ok(fs.existsSync(manifestPath), 'manifest.xml should exist in public/outlook');
 
@@ -224,6 +224,17 @@ describe('PhishPilot Comprehensive Enhancements Suite', () => {
       assert.ok(xml.includes('<OfficeApp'), 'Must contain OfficeApp root element');
       assert.ok(xml.includes('Host Name="Mailbox"'), 'Must target Mailbox host');
       assert.ok(xml.includes('PhishPilot Security Reporter'), 'Must include PhishPilot DisplayName');
+      assert.ok(xml.includes('<VersionOverrides'), 'Must include VersionOverrides for modern Outlook (Web & New Windows)');
+      assert.ok(xml.includes('MessageReadCommandSurface'), 'Must declare MessageReadCommandSurface extension point');
+      assert.ok(xml.includes('xsi:type="ShowTaskpane"'), 'Must define ShowTaskpane action');
+    });
+
+    it('should have all required Outlook PNG icon assets', () => {
+      const sizes = [16, 32, 64, 80, 128];
+      for (const size of sizes) {
+        const iconPath = path.resolve(process.cwd(), `public/outlook/icon-${size}.png`);
+        assert.ok(fs.existsSync(iconPath), `icon-${size}.png must exist in public/outlook`);
+      }
     });
 
     it('should have valid taskpane.html with Office.js integration', () => {

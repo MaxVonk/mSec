@@ -325,8 +325,8 @@ export const PhishPilotDashboard: React.FC = () => {
             <div className="p-4 bg-slate-950 rounded-xl border border-slate-800 space-y-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-xs font-bold text-slate-200">Office.js Manifest File</div>
-                  <div className="text-[11px] text-slate-500 font-mono">manifest.xml (v1.0.0)</div>
+                  <div className="text-xs font-bold text-slate-200">Office.js Manifest File (VersionOverrides v1.0)</div>
+                  <div className="text-[11px] text-slate-500 font-mono">phishpilot-outlook-manifest.xml</div>
                 </div>
                 <a
                   href="/outlook/manifest.xml"
@@ -339,14 +339,33 @@ export const PhishPilotDashboard: React.FC = () => {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Quick Side-Loading Instructions</h4>
-              <ol className="list-decimal list-inside text-xs text-slate-300 space-y-1.5 leading-relaxed bg-slate-950/60 p-3 rounded-xl border border-slate-800/80">
-                <li>Download the <strong className="text-purple-300">manifest.xml</strong> file above.</li>
-                <li>In <strong>Outlook on the web</strong>, open any email and click the <strong>&quot;...&quot;</strong> (More actions) menu &rarr; <strong>Get Add-ins</strong>.</li>
-                <li>Select <strong>My add-ins</strong> &rarr; <strong>Add a custom add-in</strong> &rarr; <strong>Add from file</strong>.</li>
-                <li>Select your downloaded manifest. The <strong>&quot;Report Phish (PhishPilot)&quot;</strong> button is now installed!</li>
-              </ol>
+            <div className="space-y-3">
+              <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">How to Install &amp; View in Outlook</h4>
+              <div className="space-y-2 text-xs text-slate-300 leading-relaxed bg-slate-950/60 p-3.5 rounded-xl border border-slate-800/80">
+                <div>
+                  <strong className="text-purple-300">1. Sideload into Outlook (Web or New Outlook for Windows):</strong>
+                  <ul className="list-disc list-inside mt-1 ml-2 space-y-1 text-slate-400">
+                    <li>Open Outlook &rarr; open any email message.</li>
+                    <li>Click the <strong>&quot;...&quot;</strong> (More actions) menu on the message &rarr; select <strong>Apps</strong> &rarr; <strong>Add apps</strong> (or <strong>Get Add-ins</strong>).</li>
+                    <li>Select <strong>Manage your add-ins</strong> (or <strong>My add-ins</strong>) &rarr; scroll to <strong>Custom add-ins</strong>.</li>
+                    <li>Click <strong>Add a custom add-in</strong> &rarr; <strong>Add from file...</strong> and choose the downloaded XML.</li>
+                  </ul>
+                </div>
+
+                <div className="pt-2 border-t border-slate-800/60">
+                  <strong className="text-cyan-300">2. Where the button appears:</strong>
+                  <p className="mt-1 text-slate-400">
+                    Once installed, open any email. The <span className="text-white font-semibold">Report Phish (PhishPilot)</span> button appears directly on the email ribbon / message action bar, or under the <strong>&quot;...&quot;</strong> menu.
+                  </p>
+                </div>
+
+                <div className="pt-2 border-t border-slate-800/60">
+                  <strong className="text-emerald-300">3. Make it permanently visible next to Reply/Forward:</strong>
+                  <p className="mt-1 text-slate-400">
+                    Go to <strong>Settings (gear icon)</strong> &rarr; <strong>Mail</strong> &rarr; <strong>Customize actions</strong>, check <strong>&quot;Report Phish (PhishPilot)&quot;</strong>, and click <strong>Save</strong>.
+                  </p>
+                </div>
+              </div>
             </div>
 
             <div className="flex items-center justify-end pt-3 border-t border-slate-800">

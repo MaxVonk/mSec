@@ -375,21 +375,40 @@ app.get('/api/reports/incident/:id/markdown', (req, res) => {
 
 // Dynamic manifest generator for Office Outlook Add-in
 app.get(['/outlook/manifest.xml', '/api/phishpilot/manifest.xml'], (req, res) => {
-  const host = (req.query.host as string) || req.headers['x-forwarded-host'] || req.headers.host || 'localhost:3310';
-  const protocol = 'https'; // Microsoft Centralized Deployment strictly mandates HTTPS
-  const baseUrl = `${protocol}://${host}`;
+  let baseUrl = process.env.APP_URL || (req.query.baseUrl as string);
+  if (!baseUrl) {
+    const host = (req.query.host as string) || req.headers['x-forwarded-host'] || req.headers.host || 'vpass.vermiculus.work';
+    const protocol = 'https'; // Microsoft Centralized Deployment strictly mandates HTTPS
+    baseUrl = `${protocol}://${host}`;
+  }
+  // Trim trailing slash
+  baseUrl = baseUrl.replace(/\/+$/, '');
 
   const manifestPath = path.resolve(process.cwd(), 'public/outlook/manifest.xml');
   if (!fs.existsSync(manifestPath)) {
     return res.status(404).send('manifest.xml not found');
   }
   let content = fs.readFileSync(manifestPath, 'utf-8');
-  content = content.replace(/https:\/\/localhost:3310/g, baseUrl);
+  // Dynamically replace default/placeholder domains with active deployment URL
+  content = content.replace(/https:\/\/(vpass\.vermiculus\.work|localhost:3310|127\.0\.0\.1:3310)/g, baseUrl);
 
-  res.setHeader('Content-Type', 'application/xml');
+  res.setHeader('Content-Type', 'application/xml; charset=utf-8');
   res.setHeader('Content-Disposition', 'attachment; filename="phishpilot-outlook-manifest.xml"');
   res.send(content);
 });
+
+// Configure framing headers specifically for Outlook Add-in taskpanes
+app.use('/outlook', (req, res, next) => {
+  res.removeHeader('X-Frame-Options');
+  res.setHeader('Content-Security-Policy', "frame-ancestors 'self' https://*.office.com https://*.office365.com https://*.outlook.com https://*.live.com https://outlook.office.com;");
+  next();
+});
+
+// Serve public directory for static assets (icons, manifest, taskpane)
+const publicPath = path.resolve(process.cwd(), 'public');
+if (fs.existsSync(publicPath)) {
+  app.use(express.static(publicPath));
+}
 
 // Serve frontend build in production
 const distPath = path.resolve(process.cwd(), 'dist');
@@ -397,7 +416,7 @@ if (fs.existsSync(distPath)) {
   app.use(express.static(distPath));
   // Express 5 compatible SPA routing fallback
   app.use((req, res, next) => {
-    if (req.method === 'GET' && !req.path.startsWith('/api')) {
+    if (req.method === 'GET' && !req.path.startsWith('/api') && !req.path.startsWith('/outlook')) {
       return res.sendFile(path.join(distPath, 'index.html'));
     }
     next();

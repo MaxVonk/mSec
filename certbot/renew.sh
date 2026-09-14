@@ -13,3 +13,4 @@ while true; do
     echo "[$(date -u +'%Y-%m-%dT%H:%M:%SZ')] Renewal check complete. Sleeping for 12 hours..."
     sleep 12h
 done
+

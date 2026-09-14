@@ -179,3 +179,4 @@ fi
 echo ""
 echo "==> Done. Start the full stack with:"
 echo "    docker compose up -d --build"
+

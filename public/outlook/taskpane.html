@@ -18,12 +18,12 @@
       line-height: 1.4;
     }
     @media (prefers-color-scheme: dark) {
-      body { background: #201f1e; color: #f3f2f1; }
-      .header { border-bottom-color: #3b3a39 !important; }
-      .email-card { background: #292827 !important; border-color: #3b3a39 !important; }
-      #emailFrom { color: #80c6ff !important; }
-      .subtitle { color: #a19f9d !important; }
-      .verdict-desc { color: #d2d0ce !important; }
+      body { background: #18181b; color: #f4f4f5; }
+      .header { border-bottom-color: #27272a !important; }
+      .email-card { background: #27272a !important; border-color: #3f3f46 !important; }
+      #emailFrom { color: #67e8f9 !important; }
+      .subtitle { color: #a1a1aa !important; }
+      .verdict-desc { color: #e4e4e7 !important; }
     }
     .header {
       display: flex;
@@ -34,9 +34,9 @@
       margin-bottom: 16px;
     }
     .logo {
-      font-weight: 600;
+      font-weight: 700;
       font-size: 15px;
-      color: #0078d4;
+      color: #0284c7;
       letter-spacing: -0.2px;
     }
     .subtitle {
@@ -44,43 +44,43 @@
       color: #605e5c;
     }
     .email-card {
-      background: #f3f2f1;
-      border: 1px solid #edebe9;
-      border-radius: 4px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
       padding: 12px;
       margin-bottom: 16px;
     }
     .btn {
       width: 100%;
-      background: #0078d4;
+      background: #0284c7;
       color: #ffffff;
       border: none;
-      padding: 8px 16px;
-      border-radius: 4px;
+      padding: 9px 16px;
+      border-radius: 6px;
       font-weight: 600;
       font-size: 13px;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 6px;
-      transition: background 0.15s ease;
+      gap: 8px;
+      transition: background 0.15s ease, transform 0.05s ease;
     }
-    .btn:hover { background: #106ebe; }
-    .btn:active { background: #005a9e; }
-    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn:hover { background: #0369a1; }
+    .btn:active { background: #075985; transform: scale(0.99); }
+    .btn:disabled { opacity: 0.6; cursor: not-allowed; }
     .verdict-card {
       margin-top: 16px;
       padding: 14px;
-      border-radius: 4px;
+      border-radius: 6px;
       border: 1px solid transparent;
       display: none;
     }
-    .verdict-phish { background: #fde7e9; border-color: #a80000; color: #a80000; }
-    .verdict-safe { background: #dff6dd; border-color: #107c10; color: #107c10; }
-    .verdict-sus { background: #fff4ce; border-color: #797673; color: #797673; }
-    .verdict-title { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
-    .verdict-desc { font-size: 12px; color: #323130; line-height: 1.4; }
+    .verdict-phish { background: #fef2f2; border-color: #ef4444; color: #991b1b; }
+    .verdict-safe { background: #f0fdf4; border-color: #22c55e; color: #166534; }
+    .verdict-sus { background: #fffbeb; border-color: #f59e0b; color: #92400e; }
+    .verdict-title { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+    .verdict-desc { font-size: 12px; line-height: 1.4; margin-top: 6px; }
     .spinner {
       border: 2px solid rgba(255,255,255,0.3);
       border-top-color: white;
@@ -94,22 +94,22 @@
 </head>
 <body>
   <div class="header">
-    <img src="/outlook/shield-icon.png" alt="PhishPilot" style="width: 30px; height: 30px; border-radius: 4px; object-fit: contain;" />
+    <img src="/outlook/icon-32.png" alt="PhishPilot" style="width: 28px; height: 28px; border-radius: 4px; object-fit: contain;" />
     <div>
       <div class="logo">PhishPilot</div>
-      <div class="subtitle">Security Reporter</div>
+      <div class="subtitle">Security Operations Command</div>
     </div>
   </div>
 
   <div class="email-card">
-    <div style="color: #605e5c; font-size: 11px; margin-bottom: 2px;">Subject:</div>
+    <div style="color: #64748b; font-size: 11px; margin-bottom: 2px;">Subject:</div>
     <div id="emailSubject" style="font-weight: 600; margin-bottom: 8px;">Loading message...</div>
-    <div style="color: #605e5c; font-size: 11px; margin-bottom: 2px;">Sender:</div>
-    <div id="emailFrom" style="font-family: monospace; color: #0078d4; font-size: 11px;"></div>
+    <div style="color: #64748b; font-size: 11px; margin-bottom: 2px;">Sender:</div>
+    <div id="emailFrom" style="font-family: monospace; color: #0284c7; font-size: 11px; word-break: break-all;"></div>
   </div>
 
   <button id="analyzeBtn" class="btn" onclick="analyzeEmail()">
-    <span>Scan & Report</span>
+    <span>Scan &amp; Report Threat</span>
   </button>
 
   <div id="verdictCard" class="verdict-card">
@@ -125,8 +125,9 @@
       if (info.host === Office.HostType.Outlook) {
         currentItem = Office.context.mailbox.item;
         if (currentItem) {
+          const sender = currentItem.from || currentItem.sender;
           document.getElementById('emailSubject').innerText = currentItem.subject || '(No Subject)';
-          document.getElementById('emailFrom').innerText = currentItem.from?.emailAddress || 'Unknown sender';
+          document.getElementById('emailFrom').innerText = sender?.emailAddress || sender?.displayName || 'Unknown sender';
         }
       } else {
         // Standalone preview fallback
@@ -139,24 +140,44 @@
       const btn = document.getElementById('analyzeBtn');
       const verdictCard = document.getElementById('verdictCard');
       btn.disabled = true;
-      btn.innerHTML = '<div class="spinner"></div><span>Analyzing Threat...</span>';
+      btn.innerHTML = '<div class="spinner"></div><span>Forensic Analysis...</span>';
       verdictCard.style.display = 'none';
 
       try {
         let rawContent = '';
-        if (currentItem && currentItem.body) {
-          const bodyText = await new Promise((resolve) => {
-            currentItem.body.getAsync(Office.CoercionType.Text, (res) => resolve(res.value || ''));
-          });
-          rawContent = [
-            `From: ${currentItem.from?.displayName || ''} <${currentItem.from?.emailAddress || ''}>`,
-            `Subject: ${currentItem.subject || ''}`,
-            `Date: ${currentItem.dateTimeCreated ? currentItem.dateTimeCreated.toISOString() : new Date().toISOString()}`,
-            '',
-            bodyText
-          ].join('\\n');
+        if (currentItem) {
+          let bodyText = '';
+          if (currentItem.body && currentItem.body.getAsync) {
+            bodyText = await new Promise((resolve) => {
+              currentItem.body.getAsync(Office.CoercionType.Text, (res) => resolve(res.value || ''));
+            });
+          }
+
+          let internetHeaders = '';
+          if (typeof currentItem.getAllInternetHeadersAsync === 'function') {
+            internetHeaders = await new Promise((resolve) => {
+              currentItem.getAllInternetHeadersAsync((res) => {
+                if (res && res.status === Office.AsyncResultStatus.Succeeded && res.value) {
+                  resolve(res.value);
+                } else {
+                  resolve('');
+                }
+              });
+            });
+          }
+
+          const sender = currentItem.from || currentItem.sender;
+          const fromLine = sender ? `From: "${sender.displayName || ''}" <${sender.emailAddress || ''}>` : 'From: Unknown';
+          const subjectLine = `Subject: ${currentItem.subject || ''}`;
+          const dateLine = `Date: ${currentItem.dateTimeCreated ? currentItem.dateTimeCreated.toISOString() : new Date().toISOString()}`;
+
+          if (internetHeaders) {
+            rawContent = internetHeaders + '\r\n\r\n' + bodyText;
+          } else {
+            rawContent = [fromLine, subjectLine, dateLine, '', bodyText].join('\r\n');
+          }
         } else {
-          rawContent = 'From: "IT Support" <admin@it-secure-dept.com>\\nSubject: URGENT: Account Suspension\\n\\nPlease verify your credentials immediately.';
+          rawContent = 'From: "IT Support" <admin@it-secure-dept.com>\r\nSubject: URGENT: Account Suspension\r\n\r\nPlease verify your credentials immediately.';
         }
 
         const res = await fetch('/api/phishpilot/analyze', {
@@ -165,13 +186,17 @@
           body: JSON.stringify({ rawEmail: rawContent })
         });
 
+        if (!res.ok) {
+          throw new Error('Server returned HTTP ' + res.status);
+        }
+
         const report = await res.json();
         renderVerdict(report);
       } catch (err) {
-        alert('Analysis failed: ' + err.message);
+        alert('PhishPilot analysis failed: ' + err.message);
       } finally {
         btn.disabled = false;
-        btn.innerHTML = '<span>Scan & Report Threat</span>';
+        btn.innerHTML = '<span>Scan &amp; Report Threat</span>';
       }
     }
 
@@ -188,10 +213,9 @@
 
       title.innerText = 'Verdict: ' + report.verdict;
       score.innerText = 'Risk Score: ' + report.riskScore + '/100 (' + (report.confidence * 100).toFixed(0) + '% Confidence)';
-      desc.innerText = report.recommendedActions[0] || 'Investigation complete.';
+      desc.innerText = (report.recommendedActions && report.recommendedActions[0]) || 'Analysis complete. Report forwarded to SOC.';
       card.style.display = 'block';
     }
   </script>
 </body>
 </html>
-

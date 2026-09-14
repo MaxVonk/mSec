@@ -6,16 +6,16 @@
           xmlns:mailappor="http://schemas.microsoft.com/office/mailappversionoverrides/1.0" 
           xsi:type="MailApp">
   <Id>91ff2e5b-5a26-4e49-8d67-c992535dcfdc</Id>
-  <Version>1.0.0.0</Version>
+  <Version>1.0.0.2</Version>
   <ProviderName>mSec PhishPilot</ProviderName>
   <DefaultLocale>en-US</DefaultLocale>
   <DisplayName DefaultValue="PhishPilot Security Reporter" />
   <Description DefaultValue="1-Click AI-Powered Phishing Threat Analysis and Reporting for Microsoft Outlook." />
-  <IconUrl DefaultValue="https://localhost:3310/outlook/shield-icon.png" />
-  <HighResolutionIconUrl DefaultValue="https://localhost:3310/outlook/shield-icon.png" />
-  <SupportUrl DefaultValue="https://localhost:3310" />
+  <IconUrl DefaultValue="https://vpass.vermiculus.work/outlook/icon-64.png" />
+  <HighResolutionIconUrl DefaultValue="https://vpass.vermiculus.work/outlook/icon-128.png" />
+  <SupportUrl DefaultValue="https://vpass.vermiculus.work" />
   <AppDomains>
-    <AppDomain>https://localhost:3310</AppDomain>
+    <AppDomain>https://vpass.vermiculus.work</AppDomain>
   </AppDomains>
 
   <Hosts>
@@ -28,10 +28,11 @@
     </Sets>
   </Requirements>
 
+  <!-- Legacy Outlook (Pre-2016) Form Settings -->
   <FormSettings>
     <Form xsi:type="ItemRead">
       <DesktopSettings>
-        <SourceLocation DefaultValue="https://localhost:3310/outlook/taskpane.html" />
+        <SourceLocation DefaultValue="https://vpass.vermiculus.work/outlook/taskpane.html" />
         <RequestedHeight>450</RequestedHeight>
       </DesktopSettings>
     </Form>
@@ -42,5 +43,63 @@
     <Rule xsi:type="ItemIs" ItemType="Message" FormType="Read" />
   </Rule>
   <DisableEntityHighlighting>false</DisableEntityHighlighting>
-</OfficeApp>
 
+  <!-- Modern Outlook (Web, New Outlook for Windows, Mac) VersionOverrides -->
+  <VersionOverrides xmlns="http://schemas.microsoft.com/office/mailappversionoverrides" xsi:type="VersionOverridesV1_0">
+    <Requirements>
+      <bt:Sets DefaultMinVersion="1.3">
+        <bt:Set Name="Mailbox" />
+      </bt:Sets>
+    </Requirements>
+
+    <Hosts>
+      <Host xsi:type="MailHost">
+        <DesktopFormFactor>
+          <!-- Ribbon and Message Read Command Surface -->
+          <ExtensionPoint xsi:type="MessageReadCommandSurface">
+            <OfficeTab id="TabDefault">
+              <Group id="msgReadGroup">
+                <Label resid="groupLabel" />
+                <Control xsi:type="Button" id="msgReadOpenPaneButton">
+                  <Label resid="buttonLabel" />
+                  <Supertip>
+                    <Title resid="superTipTitle" />
+                    <Description resid="superTipDescription" />
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="icon16" />
+                    <bt:Image size="32" resid="icon32" />
+                    <bt:Image size="80" resid="icon80" />
+                  </Icon>
+                  <Action xsi:type="ShowTaskpane">
+                    <SourceLocation resid="taskpaneUrl" />
+                    <SupportsPinning>true</SupportsPinning>
+                  </Action>
+                </Control>
+              </Group>
+            </OfficeTab>
+          </ExtensionPoint>
+        </DesktopFormFactor>
+      </Host>
+    </Hosts>
+
+    <Resources>
+      <bt:Images>
+        <bt:Image id="icon16" DefaultValue="https://vpass.vermiculus.work/outlook/icon-16.png" />
+        <bt:Image id="icon32" DefaultValue="https://vpass.vermiculus.work/outlook/icon-32.png" />
+        <bt:Image id="icon80" DefaultValue="https://vpass.vermiculus.work/outlook/icon-80.png" />
+      </bt:Images>
+      <bt:Urls>
+        <bt:Url id="taskpaneUrl" DefaultValue="https://vpass.vermiculus.work/outlook/taskpane.html" />
+      </bt:Urls>
+      <bt:ShortStrings>
+        <bt:String id="groupLabel" DefaultValue="Security" />
+        <bt:String id="buttonLabel" DefaultValue="Report Phish (PhishPilot)" />
+        <bt:String id="superTipTitle" DefaultValue="PhishPilot Security Reporter" />
+      </bt:ShortStrings>
+      <bt:LongStrings>
+        <bt:String id="superTipDescription" DefaultValue="Scan, analyze, and report suspicious phishing emails with PhishPilot AI." />
+      </bt:LongStrings>
+    </Resources>
+  </VersionOverrides>
+</OfficeApp>
