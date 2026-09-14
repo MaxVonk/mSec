@@ -212,6 +212,20 @@ app.get('/api/connectors', (req, res) => {
   res.json(store.getConfig());
 });
 
+app.post('/api/connectors', (req, res) => {
+  try {
+    const current = store.getConfig();
+    const updated = {
+      graph: { ...current.graph, ...req.body?.graph },
+      sentinel: { ...current.sentinel, ...req.body?.sentinel },
+    };
+    store.updateConfig(updated);
+    res.json({ success: true, config: store.getConfig() });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Test Graph Connection
 app.post('/api/connectors/graph/test', async (req, res) => {
   const stored = store.getConfig().graph;
@@ -221,6 +235,16 @@ app.post('/api/connectors/graph/test', async (req, res) => {
     clientSecret: req.body?.clientSecret || stored.clientSecret,
   };
   const result = await GraphConnector.testConnection(config as any);
+  if (result.success && req.body?.clientId) {
+    store.updateConfig({
+      graph: {
+        ...stored,
+        ...config,
+        enabled: true,
+        status: 'CONNECTED'
+      }
+    });
+  }
   res.json(result);
 });
 
@@ -233,6 +257,15 @@ app.post('/api/connectors/graph/sync', async (req, res) => {
       clientId: req.body?.clientId || stored.clientId,
       clientSecret: req.body?.clientSecret || stored.clientSecret,
     };
+    if (req.body?.clientId) {
+      store.updateConfig({
+        graph: {
+          ...stored,
+          ...config,
+          enabled: true
+        }
+      });
+    }
     const result = await GraphConnector.sync(config as any);
     res.json(result);
   } catch (err: any) {
@@ -252,6 +285,16 @@ app.post('/api/connectors/sentinel/test', async (req, res) => {
     workspaceName: req.body?.workspaceName || stored.workspaceName,
   };
   const result = await SentinelConnector.testConnection(config as any);
+  if (result.success && (req.body?.subscriptionId || req.body?.workspaceName)) {
+    store.updateConfig({
+      sentinel: {
+        ...stored,
+        ...config,
+        enabled: true,
+        status: 'CONNECTED'
+      }
+    });
+  }
   res.json(result);
 });
 
@@ -267,6 +310,15 @@ app.post('/api/connectors/sentinel/sync', async (req, res) => {
       resourceGroup: req.body?.resourceGroup || stored.resourceGroup,
       workspaceName: req.body?.workspaceName || stored.workspaceName,
     };
+    if (req.body?.subscriptionId || req.body?.workspaceName) {
+      store.updateConfig({
+        sentinel: {
+          ...stored,
+          ...config,
+          enabled: true
+        }
+      });
+    }
     const result = await SentinelConnector.sync(config as any);
     res.json(result);
   } catch (err: any) {

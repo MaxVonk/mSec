@@ -69,7 +69,26 @@ export class DataStore {
       // Load config if exists
       if (fs.existsSync(this.configFile)) {
         const rawConfig = fs.readFileSync(this.configFile, 'utf-8');
-        this.config = { ...this.config, ...JSON.parse(rawConfig) };
+        const fileConfig = JSON.parse(rawConfig);
+        this.config = {
+          graph: {
+            ...this.config.graph,
+            ...fileConfig.graph,
+            ...(process.env.M365_TENANT_ID || process.env.GRAPH_TENANT_ID ? { tenantId: (process.env.M365_TENANT_ID || process.env.GRAPH_TENANT_ID)!.trim() } : {}),
+            ...(process.env.M365_CLIENT_ID || process.env.GRAPH_CLIENT_ID ? { clientId: (process.env.M365_CLIENT_ID || process.env.GRAPH_CLIENT_ID)!.trim() } : {}),
+            ...(process.env.M365_CLIENT_SECRET || process.env.GRAPH_CLIENT_SECRET ? { clientSecret: (process.env.M365_CLIENT_SECRET || process.env.GRAPH_CLIENT_SECRET)!.trim() } : {})
+          },
+          sentinel: {
+            ...this.config.sentinel,
+            ...fileConfig.sentinel,
+            ...(process.env.M365_TENANT_ID || process.env.GRAPH_TENANT_ID ? { tenantId: (process.env.M365_TENANT_ID || process.env.GRAPH_TENANT_ID)!.trim() } : {}),
+            ...(process.env.M365_CLIENT_ID || process.env.GRAPH_CLIENT_ID ? { clientId: (process.env.M365_CLIENT_ID || process.env.GRAPH_CLIENT_ID)!.trim() } : {}),
+            ...(process.env.M365_CLIENT_SECRET || process.env.GRAPH_CLIENT_SECRET ? { clientSecret: (process.env.M365_CLIENT_SECRET || process.env.GRAPH_CLIENT_SECRET)!.trim() } : {}),
+            ...(process.env.SENTINEL_SUBSCRIPTION_ID ? { subscriptionId: process.env.SENTINEL_SUBSCRIPTION_ID.trim() } : {}),
+            ...(process.env.SENTINEL_RESOURCE_GROUP ? { resourceGroup: process.env.SENTINEL_RESOURCE_GROUP.trim() } : {}),
+            ...(process.env.SENTINEL_WORKSPACE_NAME ? { workspaceName: process.env.SENTINEL_WORKSPACE_NAME.trim() } : {})
+          }
+        };
       }
 
       // Load incidents if exists, otherwise load SAMPLE_INCIDENTS by default
