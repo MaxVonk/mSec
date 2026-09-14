@@ -69,6 +69,26 @@ export interface ThreatOversightAssessment {
   remediationGuidance: string[];
 }
 
+export interface EmailMessageEvidence {
+  networkMessageId?: string;
+  internetMessageId?: string;
+  subject?: string;
+  senderEmail?: string;
+  senderDisplayName?: string;
+  senderDomain?: string;
+  returnPathEmail?: string;
+  recipientEmail?: string;
+  senderIp?: string;
+  deliveryAction?: string;
+  deliveryLocation?: string;
+  threats?: string[];
+  detectionMethods?: string[];
+  direction?: string;
+  receivedDateTime?: string;
+  urls?: string[];
+  attachmentsCount?: number;
+}
+
 export interface UnifiedIncident {
   id: string;
   incidentNumber?: string | number;
@@ -90,6 +110,7 @@ export interface UnifiedIncident {
   mitreTechniques: MitreAttackInfo[];
   alerts: UnifiedAlert[];
   threatAssessment?: ThreatOversightAssessment;
+  emailEvidence?: EmailMessageEvidence[];
   rawPayload: any;
 }
 

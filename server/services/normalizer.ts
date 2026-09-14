@@ -5,7 +5,8 @@ import {
   IncidentStatus, 
   ProviderSource, 
   SecurityEntity, 
-  MitreAttackInfo 
+  MitreAttackInfo,
+  EmailMessageEvidence 
 } from '../types/security';
 
 export class DataNormalizer {
@@ -156,8 +157,12 @@ export class DataNormalizer {
 
       // 6. Mailbox Evidence
       if (evType.includes('mailboxevidence') || ev.primaryAddress) {
-        if (ev.primaryAddress || ev.upn) {
-          addEntity('MAILBOX', ev.primaryAddress || ev.upn, 'Target Mailbox', ev);
+        const mbx = ev.primaryAddress || ev.upn || (ev.userAccount?.accountName ? (ev.userAccount?.domainName ? `${ev.userAccount.accountName}@${ev.userAccount.domainName}` : ev.userAccount.accountName) : null);
+        if (mbx) {
+          addEntity('MAILBOX', mbx, 'Target Mailbox', ev);
+        }
+        if (ev.userAccount?.accountName && ev.userAccount?.domainName) {
+          addEntity('USER', `${ev.userAccount.accountName}@${ev.userAccount.domainName}`, 'Impacted Mailbox Account', ev.userAccount);
         }
       }
 
@@ -167,7 +172,103 @@ export class DataNormalizer {
           addEntity('URL', ev.url, 'Malicious / Suspicious URL', ev);
         }
       }
+
+      // 8. Analyzed Email Message Evidence (M365 Defender for Office 365)
+      if (evType.includes('analyzedmessageevidence') || ev.networkMessageId || (ev.p2Sender && ev.recipientEmailAddress)) {
+        if (ev.p2Sender?.emailAddress) {
+          addEntity('USER', ev.p2Sender.emailAddress, 'Email Sender (From)', {
+            displayName: ev.p2Sender.displayName,
+            domain: ev.p2Sender.domainName,
+            type: 'p2Sender'
+          });
+        }
+        if (ev.p1Sender?.emailAddress && ev.p1Sender.emailAddress !== ev.p2Sender?.emailAddress) {
+          addEntity('USER', ev.p1Sender.emailAddress, 'Email Sender (Return-Path)', {
+            domain: ev.p1Sender.domainName,
+            type: 'p1Sender'
+          });
+        }
+        if (ev.recipientEmailAddress) {
+          addEntity('USER', ev.recipientEmailAddress, 'Email Recipient', {
+            role: 'recipient'
+          });
+          addEntity('MAILBOX', ev.recipientEmailAddress, 'Target Mailbox', {
+            role: 'recipient'
+          });
+        }
+        if (ev.senderIp) {
+          addEntity('IP', ev.senderIp, 'Originating Mail Server IP', {
+            type: 'sender_ip'
+          });
+        }
+        if (Array.isArray(ev.urls)) {
+          for (const u of ev.urls) {
+            if (typeof u === 'string' && u.trim().length > 0) {
+              addEntity('URL', u.trim(), 'Extracted Email URL', {
+                source: 'email_body'
+              });
+            }
+          }
+        }
+      }
     }
+  }
+
+  /**
+   * Helper to parse email analyzed message evidence from M365 Defender / Office 365
+   */
+  public static extractEmailEvidence(evidenceList: any[]): EmailMessageEvidence[] {
+    if (!Array.isArray(evidenceList)) return [];
+    const results: EmailMessageEvidence[] = [];
+
+    for (const ev of evidenceList) {
+      if (!ev) continue;
+      const evType = String(ev['@odata.type'] || '').toLowerCase();
+      const isEmailEvidence = 
+        evType.includes('analyzedmessageevidence') ||
+        Boolean(ev.networkMessageId) ||
+        Boolean(ev.internetMessageId) ||
+        Boolean(ev.p2Sender && ev.recipientEmailAddress) ||
+        Boolean(ev.subject && ev.recipientEmailAddress);
+
+      if (isEmailEvidence) {
+        const senderEmail = ev.p2Sender?.emailAddress || ev.senderAddress || ev.sender || undefined;
+        const senderDisplayName = ev.p2Sender?.displayName || undefined;
+        const senderDomain = ev.p2Sender?.domainName || (senderEmail && senderEmail.includes('@') ? senderEmail.split('@')[1] : undefined);
+        const returnPathEmail = ev.p1Sender?.emailAddress || undefined;
+        const recipientEmail = ev.recipientEmailAddress || ev.recipient || undefined;
+        const senderIp = ev.senderIp || undefined;
+        const deliveryAction = ev.deliveryAction || undefined;
+        const deliveryLocation = ev.deliveryLocation || undefined;
+        const threats = Array.isArray(ev.threats) ? ev.threats : (ev.threats ? [String(ev.threats)] : []);
+        const detectionMethods = Array.isArray(ev.detectionMethods) ? ev.detectionMethods : [];
+        const direction = ev.direction || ev.antiSpamDirection || undefined;
+        const receivedDateTime = ev.receivedDateTime || ev.createdDateTime || undefined;
+        const urls = Array.isArray(ev.urls) ? ev.urls.filter((u: any) => typeof u === 'string' && u.trim().length > 0) : [];
+        const attachmentsCount = typeof ev.attachmentsCount === 'number' ? ev.attachmentsCount : undefined;
+
+        results.push({
+          networkMessageId: ev.networkMessageId,
+          internetMessageId: ev.internetMessageId,
+          subject: ev.subject,
+          senderEmail,
+          senderDisplayName,
+          senderDomain,
+          returnPathEmail,
+          recipientEmail,
+          senderIp,
+          deliveryAction,
+          deliveryLocation,
+          threats,
+          detectionMethods,
+          direction,
+          receivedDateTime,
+          urls,
+          attachmentsCount
+        });
+      }
+    }
+    return results;
   }
 
   /**
@@ -306,6 +407,33 @@ export class DataNormalizer {
       }
     }
 
+    // Extract structured email evidence
+    const emailEvidenceList: EmailMessageEvidence[] = [];
+    if (Array.isArray(raw.evidence)) {
+      emailEvidenceList.push(...this.extractEmailEvidence(raw.evidence));
+    }
+    if (Array.isArray(raw.alerts)) {
+      for (const a of raw.alerts) {
+        if (Array.isArray(a.evidence)) {
+          emailEvidenceList.push(...this.extractEmailEvidence(a.evidence));
+        }
+      }
+    }
+
+    const uniqueEmailEvidence: EmailMessageEvidence[] = [];
+    const seenMsgKeys = new Set<string>();
+    for (const em of emailEvidenceList) {
+      const key = em.networkMessageId || em.internetMessageId || `${em.subject}|${em.senderEmail}|${em.recipientEmail}`;
+      if (!seenMsgKeys.has(key)) {
+        seenMsgKeys.add(key);
+        uniqueEmailEvidence.push(em);
+      }
+    }
+
+    if (uniqueEmailEvidence.length > 0 && provider === 'M365_DEFENDER') {
+      provider = 'DEFENDER_OFFICE365';
+    }
+
     const assignedTo = raw.assignedTo || alerts.find(a => a.assignedTo)?.assignedTo;
     const incidentWebUrl = raw.incidentWebUrl;
     const priorityScore = typeof raw.priorityScore === 'number' ? raw.priorityScore : undefined;
@@ -331,6 +459,7 @@ export class DataNormalizer {
       entities,
       mitreTechniques,
       alerts,
+      emailEvidence: uniqueEmailEvidence.length > 0 ? uniqueEmailEvidence : undefined,
       rawPayload: raw
     };
   }

@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { X, ShieldAlert, Crosshair, ExternalLink, Filter, Play, CheckCircle2, ChevronRight, Info } from 'lucide-react';
 import { UnifiedIncident } from '../../types';
-import { audioService } from '../../utils/audioService';
 
 interface MitreMatrixModalProps {
   isOpen?: boolean;
@@ -245,7 +244,6 @@ export const MitreMatrixModal: React.FC<MitreMatrixModalProps> = ({
                           key={tech.id}
                           onClick={() => {
                             setSelectedTechnique(tech);
-                            audioService.playInfoChime();
                           }}
                           className={`w-full text-left p-2.5 rounded-xl border transition-all ${
                             isSelected

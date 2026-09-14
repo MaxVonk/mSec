@@ -3,7 +3,6 @@ import { X, Play, CheckCircle2, AlertTriangle, ShieldCheck, Terminal, ArrowRight
 import { PlaybookDefinition, StepExecutionState } from '../../types/soar';
 import { PREBUILT_PLAYBOOKS } from '../../utils/soarPlaybooks';
 import { UnifiedIncident } from '../../types';
-import { audioService } from '../../utils/audioService';
 
 interface PlaybookRunnerModalProps {
   isOpen?: boolean;
@@ -112,7 +111,6 @@ export const PlaybookRunnerModal: React.FC<PlaybookRunnerModalProps> = ({
       }
       setSelectedPlaybook(bestPlaybook);
       resetExecution(bestPlaybook);
-      audioService.playCommandOpen();
     }
   }, [isOpen, incident, initialPlaybookId, activeIncident]);
 
@@ -202,7 +200,6 @@ export const PlaybookRunnerModal: React.FC<PlaybookRunnerModalProps> = ({
       ...prev,
       `[${new Date().toLocaleTimeString()}] 🏁 SOAR AUTOMATED CONTAINMENT PIPELINE COMPLETED SUCCESSFULLY.`
     ]);
-    audioService.playSuccessFanfare();
   };
 
   if (!inline && !isOpen) return null;

@@ -11,8 +11,6 @@ import {
   Settings,
   Users,
   Search,
-  Volume2,
-  VolumeX,
   RefreshCw,
   Database,
   Monitor,
@@ -23,7 +21,6 @@ import {
   Activity
 } from 'lucide-react';
 import { UserSessionProfile } from '../../types';
-import { audioService } from '../../utils/audioService';
 
 export type MainNavView =
   | 'dashboard'
@@ -67,16 +64,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onOpenSyncLog
 }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [isMuted, setIsMuted] = useState(audioService.isMuted());
-
-  const handleToggleAudio = () => {
-    const muted = audioService.toggleMute();
-    setIsMuted(muted);
-    if (!muted) audioService.playInfoChime();
-  };
 
   const handleNav = (view: MainNavView) => {
-    audioService.playInfoChime();
     onSelectView(view);
   };
 
@@ -136,7 +125,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </button>
 
         {/* Quick Tactical Controls */}
-        <div className={`grid gap-1.5 ${isCollapsed ? 'grid-cols-2' : (demoMode !== false ? 'grid-cols-4' : 'grid-cols-3')}`}>
+        <div className={`grid gap-1.5 ${isCollapsed ? 'grid-cols-2' : (demoMode !== false ? 'grid-cols-3' : 'grid-cols-2')}`}>
           <button
             onClick={onRefresh}
             disabled={isRefreshing}
@@ -144,18 +133,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
             className="p-2 flex items-center justify-center rounded-lg bg-slate-800/80 hover:bg-slate-700 border border-slate-750 text-slate-300 hover:text-white transition-colors disabled:opacity-50 cursor-pointer"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-cyan-400' : ''}`} />
-          </button>
-
-          <button
-            onClick={handleToggleAudio}
-            title={isMuted ? 'Unmute Tactical Cyber Audio' : 'Mute Tactical Cyber Audio'}
-            className={`p-2 flex items-center justify-center rounded-lg border transition-colors cursor-pointer ${
-              isMuted
-                ? 'bg-slate-800/80 border-slate-750 text-slate-500 hover:text-slate-300'
-                : 'bg-slate-800/80 border-slate-750 text-emerald-400 hover:bg-slate-700'
-            }`}
-          >
-            {isMuted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
           </button>
 
           {demoMode !== false && (
@@ -331,10 +308,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
             {onOpenSyncLog && (
               <button
-                onClick={() => {
-                  audioService.playInfoChime();
-                  onOpenSyncLog();
-                }}
+                onClick={onOpenSyncLog}
                 title="Synchronization Engine & Connector Logs"
                 className="w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-all cursor-pointer hover:bg-slate-800/50 hover:text-slate-200 text-slate-400"
               >

@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Search, ShieldAlert, Crosshair, Monitor, FileText, Users, Volume2, VolumeX, Play, ArrowRight, CornerDownLeft } from 'lucide-react';
+import { Search, ShieldAlert, Crosshair, Monitor, FileText, Users, Play, ArrowRight, CornerDownLeft } from 'lucide-react';
 import { UnifiedIncident, UserSessionProfile } from '../../types';
-import { audioService } from '../../utils/audioService';
 
 interface CommandItem {
   id: string;
@@ -49,7 +48,6 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
       setQuery('');
       setSelectedIndex(0);
       setTimeout(() => inputRef.current?.focus(), 50);
-      audioService.playCommandOpen();
     }
   }, [isOpen]);
 
@@ -81,7 +79,7 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
         category: 'NAVIGATION',
         title: 'Generate Shift Handover Briefing',
         subtitle: 'SOC shift executive report, KPI telemetry, and PDF/Markdown export',
-        badge: 'Report',
+        badge: 'REPORT',
         icon: <FileText className="w-4 h-4 text-amber-400" />,
         action: onOpenShiftHandover
       },
@@ -93,21 +91,6 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
         badge: 'SOAR',
         icon: <Play className="w-4 h-4 text-cyan-400 fill-current" />,
         action: () => onOpenPlaybooks()
-      },
-      {
-        id: 'action-mute',
-        category: 'ACTION',
-        title: audioService.isMuted() ? 'Unmute Tactical Cyber Audio' : 'Mute Tactical Cyber Audio',
-        subtitle: 'Toggle synthesized Web Audio alert chimes and warning sirens',
-        badge: audioService.isMuted() ? 'MUTED' : 'ACTIVE',
-        icon: audioService.isMuted() ? (
-          <VolumeX className="w-4 h-4 text-rose-400" />
-        ) : (
-          <Volume2 className="w-4 h-4 text-emerald-400" />
-        ),
-        action: () => {
-          audioService.toggleMute();
-        }
       }
     );
 
@@ -175,7 +158,6 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
       e.preventDefault();
       const current = items[selectedIndex];
       if (current) {
-        audioService.playInfoChime();
         current.action();
         onClose();
       }
@@ -226,7 +208,6 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
                 <button
                   key={item.id}
                   onClick={() => {
-                    audioService.playInfoChime();
                     item.action();
                     onClose();
                   }}

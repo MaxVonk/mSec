@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { X, ShieldAlert, Monitor, Volume2, VolumeX, Maximize2, Minimize2, Play, Activity, Clock, Users, Laptop, Radio, AlertOctagon, CheckCircle2 } from 'lucide-react';
+import { X, ShieldAlert, Monitor, Maximize2, Minimize2, Play, Activity, Clock, Users, Laptop, Radio, AlertOctagon, CheckCircle2 } from 'lucide-react';
 import { UnifiedIncident } from '../../types';
-import { audioService } from '../../utils/audioService';
 
 interface WarRoomModalProps {
   isOpen: boolean;
@@ -21,7 +20,6 @@ export const WarRoomModal: React.FC<WarRoomModalProps> = ({
   onOpenShiftHandover
 }) => {
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [isMuted, setIsMuted] = useState(audioService.isMuted());
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   // Live UTC SOC Clock
@@ -30,18 +28,6 @@ export const WarRoomModal: React.FC<WarRoomModalProps> = ({
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, [isOpen]);
-
-  // Handle tactical warning audio on open if there are criticals
-  useEffect(() => {
-    if (isOpen) {
-      const hasCritical = incidents.some(i => i.severity === 'CRITICAL');
-      if (hasCritical) {
-        audioService.playWarningChime();
-      } else {
-        audioService.playInfoChime();
-      }
-    }
-  }, [isOpen, incidents]);
 
   // Aggregate Metrics
   const metrics = useMemo(() => {
@@ -81,14 +67,6 @@ export const WarRoomModal: React.FC<WarRoomModalProps> = ({
     }
   };
 
-  const handleToggleAudio = () => {
-    const muted = audioService.toggleMute();
-    setIsMuted(muted);
-    if (!muted) {
-      audioService.playInfoChime();
-    }
-  };
-
   if (!isOpen) return null;
 
   return (
@@ -123,17 +101,6 @@ export const WarRoomModal: React.FC<WarRoomModalProps> = ({
 
         {/* Right HUD Controls */}
         <div className="flex items-center gap-3">
-          <button
-            onClick={handleToggleAudio}
-            className={`p-2 rounded-lg border transition-all ${
-              isMuted
-                ? 'bg-slate-900 border-slate-700 text-slate-500'
-                : 'bg-emerald-950/50 border-emerald-500/40 text-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.2)]'
-            }`}
-            title={isMuted ? 'Unmute Tactical Audio' : 'Mute Tactical Audio'}
-          >
-            {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4 animate-pulse" />}
-          </button>
           <button
             onClick={toggleFullscreen}
             className="p-2 rounded-lg bg-slate-900 border border-slate-700 text-slate-400 hover:text-white transition-colors"

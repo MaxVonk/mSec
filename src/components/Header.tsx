@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
-import { Shield, Upload, RefreshCw, Database, Radio, LogOut, Users, FileText, Monitor, Crosshair, Sparkles, Search, Volume2, VolumeX } from 'lucide-react';
+import { Shield, Upload, RefreshCw, Database, Radio, LogOut, Users, FileText, Monitor, Crosshair, Sparkles, Search } from 'lucide-react';
 import { UserSessionProfile } from '../types';
-import { audioService } from '../utils/audioService';
-
 interface HeaderProps {
   onOpenImport: () => void;
   onResetDemo: () => void;
@@ -35,13 +33,6 @@ export const Header: React.FC<HeaderProps> = ({
   totalIncidents
 }) => {
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const [isMuted, setIsMuted] = useState(audioService.isMuted());
-
-  const handleToggleAudio = () => {
-    const muted = audioService.toggleMute();
-    setIsMuted(muted);
-    if (!muted) audioService.playInfoChime();
-  };
 
   const handleLogout = () => {
     setShowUserMenu(false);
@@ -121,19 +112,6 @@ export const Header: React.FC<HeaderProps> = ({
               <span className="hidden sm:inline">Copilot</span>
             </button>
           )}
-
-          {/* Audio Mute/Unmute Toggle */}
-          <button
-            onClick={handleToggleAudio}
-            title={isMuted ? 'Unmute Tactical Cyber Audio' : 'Mute Tactical Cyber Audio'}
-            className={`p-2 rounded-lg border text-xs transition-colors cursor-pointer ${
-              isMuted
-                ? 'bg-slate-800/80 border-slate-700 text-slate-500 hover:text-slate-300'
-                : 'bg-slate-800/80 border-slate-700 text-emerald-400 hover:bg-slate-700'
-            }`}
-          >
-            {isMuted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
-          </button>
 
           {onOpenShiftHandover && (
             <button

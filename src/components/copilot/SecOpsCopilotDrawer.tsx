@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Sparkles, Send, Copy, Check, Terminal, ShieldAlert, Bot, User, RefreshCw } from 'lucide-react';
 import { UnifiedIncident } from '../../types';
-import { audioService } from '../../utils/audioService';
 
 interface ChatMessage {
   id: string;
@@ -32,7 +31,6 @@ export const SecOpsCopilotDrawer: React.FC<SecOpsCopilotDrawerProps> = ({
   // Initialize or greet when opened
   useEffect(() => {
     if (isOpen) {
-      audioService.playCommandOpen();
       setTimeout(() => inputRef.current?.focus(), 100);
 
       if (messages.length === 0) {
@@ -70,7 +68,6 @@ export const SecOpsCopilotDrawer: React.FC<SecOpsCopilotDrawerProps> = ({
     setMessages(prev => [...prev, userMsg]);
     if (!textToSend) setInput('');
     setIsLoading(true);
-    audioService.playInfoChime();
 
     try {
       const res = await fetch('/api/copilot/chat', {

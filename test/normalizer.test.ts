@@ -184,5 +184,94 @@ describe('mSec Security Ingestion & Normalization Tests', () => {
     assert.ok(ipEntities.some(e => e.value === '192.168.1.57'), 'Internal IP extracted');
     assert.ok(ipEntities.some(e => e.value === '213.102.72.73'), 'External IP extracted');
   });
+
+  it('should normalize Defender for Office 365 incident with analyzedMessageEvidence, mailbox evidence, and extracted URLs', () => {
+    const rawOfficeIncident = {
+      id: '1864',
+      displayName: 'Email messages removed after delivery involving one user',
+      description: 'Malicious emails were delivered and later removed -V1.0.0.2',
+      severity: 'informational',
+      status: 'resolved',
+      createdDateTime: '2026-09-14T13:56:19.5366667Z',
+      alerts: [
+        {
+          id: 'da147d34-c360-642d-2ba0-2580556942ad',
+          title: 'Email messages removed after delivery',
+          serviceSource: 'microsoftDefenderForOffice365',
+          evidence: [
+            {
+              '@odata.type': '#microsoft.graph.security.mailboxEvidence',
+              primaryAddress: 'target-user@example.com',
+              userAccount: {
+                accountName: 'target-user',
+                domainName: 'example.com'
+              }
+            },
+            {
+              '@odata.type': '#microsoft.graph.security.analyzedMessageEvidence',
+              networkMessageId: 'a908d132-7204-4b5b-0ec2-08dd0402ae58',
+              internetMessageId: '<BL3PR02MB9058@namprd02.prod.outlook.com>',
+              subject: 'Urgent Wire Transfer Invoice #84920',
+              threats: ['ZapPhish'],
+              detectionMethods: ['heuristic'],
+              direction: 'inbound',
+              receivedDateTime: '2026-09-14T12:00:23Z',
+              deliveryAction: 'delivered',
+              deliveryLocation: 'quarantine',
+              p1Sender: {
+                displayName: null,
+                emailAddress: 'bounce@spoofed-sender.com',
+                domainName: 'spoofed-sender.com'
+              },
+              p2Sender: {
+                displayName: 'Accounts Payable',
+                emailAddress: 'invoicing@spoofed-sender.com',
+                domainName: 'spoofed-sender.com'
+              },
+              recipientEmailAddress: 'target-user@example.com',
+              senderIp: '198.51.100.42',
+              urls: [
+                'https://credential-stealer.fake/login',
+                'https://tracking-pixel.fake/beacon'
+              ]
+            }
+          ]
+        }
+      ]
+    };
+
+    const normalized = DataNormalizer.normalizeGraphIncident(rawOfficeIncident);
+    assert.strictEqual(normalized.id, '1864');
+    assert.strictEqual(normalized.provider, 'DEFENDER_OFFICE365');
+    assert.ok(normalized.emailEvidence && normalized.emailEvidence.length === 1);
+
+    const email = normalized.emailEvidence[0];
+    assert.strictEqual(email.subject, 'Urgent Wire Transfer Invoice #84920');
+    assert.strictEqual(email.senderEmail, 'invoicing@spoofed-sender.com');
+    assert.strictEqual(email.senderDisplayName, 'Accounts Payable');
+    assert.strictEqual(email.returnPathEmail, 'bounce@spoofed-sender.com');
+    assert.strictEqual(email.recipientEmail, 'target-user@example.com');
+    assert.strictEqual(email.senderIp, '198.51.100.42');
+    assert.strictEqual(email.deliveryAction, 'delivered');
+    assert.strictEqual(email.deliveryLocation, 'quarantine');
+    assert.deepStrictEqual(email.threats, ['ZapPhish']);
+    assert.strictEqual(email.urls?.length, 2);
+
+    // Verify entities extracted
+    const senderEntity = normalized.entities.find(e => e.type === 'USER' && e.value === 'invoicing@spoofed-sender.com');
+    assert.ok(senderEntity, 'P2 Sender should be extracted as USER entity');
+
+    const returnPathEntity = normalized.entities.find(e => e.type === 'USER' && e.value === 'bounce@spoofed-sender.com');
+    assert.ok(returnPathEntity, 'P1 Sender should be extracted as USER entity');
+
+    const recipientEntity = normalized.entities.find(e => e.type === 'USER' && e.value === 'target-user@example.com');
+    assert.ok(recipientEntity, 'Recipient should be extracted as USER entity');
+
+    const ipEntity = normalized.entities.find(e => e.type === 'IP' && e.value === '198.51.100.42');
+    assert.ok(ipEntity, 'Sender IP should be extracted as IP entity');
+
+    const urlEntities = normalized.entities.filter(e => e.type === 'URL');
+    assert.strictEqual(urlEntities.length, 2, 'Extracted URLs should be URL entities');
+  });
 });
 

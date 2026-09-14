@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   UnifiedIncident, 
   IncidentStatus, 
@@ -28,7 +28,10 @@ import {
   Lightbulb,
   UserCheck,
   Layers,
-  Download
+  Download,
+  Mail,
+  Inbox,
+  Link
 } from 'lucide-react';
 import { InvestigationGraph } from './graph/InvestigationGraph';
 import { buildIncidentGraph } from '../utils/graphBuilder';
@@ -60,10 +63,94 @@ export const IncidentDetailModal: React.FC<IncidentDetailModalProps> = ({
   const assessment = incident.threatAssessment;
   const commentsCount = (incident.comments?.length || 0) + (incident.resolvingComment ? 1 : 0);
 
-  const handleCopy = (id: string, text: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedId(id);
-    setTimeout(() => setCopiedId(null), 2000);
+  const emailEvidenceList = useMemo(() => {
+    if (incident?.emailEvidence && incident.emailEvidence.length > 0) {
+      return incident.emailEvidence;
+    }
+    // Dynamic fallback from rawPayload if incident was cached before normalization
+    const fromRaw: any[] = [];
+    if (incident?.rawPayload) {
+      const raw = incident.rawPayload;
+      if (Array.isArray(raw.evidence)) fromRaw.push(...raw.evidence);
+      if (Array.isArray(raw.alerts)) {
+        for (const a of raw.alerts) {
+          if (Array.isArray(a.evidence)) fromRaw.push(...a.evidence);
+        }
+      }
+    }
+    return fromRaw.filter(ev => 
+      String(ev['@odata.type'] || '').toLowerCase().includes('analyzedmessageevidence') ||
+      Boolean(ev.networkMessageId) ||
+      Boolean(ev.p2Sender && ev.recipientEmailAddress)
+    ).map(ev => ({
+      networkMessageId: ev.networkMessageId,
+      internetMessageId: ev.internetMessageId,
+      subject: ev.subject,
+      senderEmail: ev.p2Sender?.emailAddress || ev.senderAddress || ev.sender,
+      senderDisplayName: ev.p2Sender?.displayName,
+      senderDomain: ev.p2Sender?.domainName,
+      returnPathEmail: ev.p1Sender?.emailAddress,
+      recipientEmail: ev.recipientEmailAddress || ev.recipient,
+      senderIp: ev.senderIp,
+      deliveryAction: ev.deliveryAction,
+      deliveryLocation: ev.deliveryLocation,
+      threats: Array.isArray(ev.threats) ? ev.threats : (ev.threats ? [String(ev.threats)] : []),
+      detectionMethods: Array.isArray(ev.detectionMethods) ? ev.detectionMethods : [],
+      direction: ev.direction || ev.antiSpamDirection,
+      receivedDateTime: ev.receivedDateTime || ev.createdDateTime,
+      urls: Array.isArray(ev.urls) ? ev.urls.filter((u: any) => typeof u === 'string' && u.trim().length > 0) : [],
+      attachmentsCount: ev.attachmentsCount
+    }));
+  }, [incident]);
+
+  const handleCopy = async (id: string, text: string) => {
+    let success = false;
+    if (navigator.clipboard && window.isSecureContext) {
+      try {
+        await navigator.clipboard.writeText(text);
+        success = true;
+      } catch (err) {
+        console.warn('navigator.clipboard failed, attempting fallback', err);
+      }
+    }
+    if (!success) {
+      try {
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        textArea.style.top = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        success = document.execCommand('copy');
+        textArea.remove();
+      } catch (err) {
+        console.error('Fallback clipboard copy failed:', err);
+      }
+    }
+    if (success) {
+      setCopiedId(id);
+      setTimeout(() => setCopiedId(null), 2000);
+    }
+  };
+
+  const handleDownloadJson = () => {
+    if (!incident) return;
+    try {
+      const data = JSON.stringify(incident.rawPayload || incident, null, 2);
+      const blob = new Blob([data], { type: 'application/json;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `incident-${incident.incidentNumber || incident.id}-payload.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Failed to download JSON:', err);
+    }
   };
 
   const handleActionClick = async (actionId: string) => {
@@ -227,13 +314,17 @@ export const IncidentDetailModal: React.FC<IncidentDetailModalProps> = ({
                 : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 border border-transparent'
             }`}
           >
-            <ShieldAlert className="w-4 h-4" />
-            <span>Threat Oversight</span>
-            {assessment && (
+            {emailEvidenceList.length > 0 ? <Mail className="w-4 h-4 text-indigo-400" /> : <ShieldAlert className="w-4 h-4" />}
+            <span>{emailEvidenceList.length > 0 ? 'Email Threat & Overview' : 'Threat Oversight'}</span>
+            {emailEvidenceList.length > 0 ? (
+              <span className="px-1.5 py-0.2 rounded-full bg-indigo-900/80 text-indigo-300 text-[10px] font-mono border border-indigo-700/60">
+                {emailEvidenceList.length} mail
+              </span>
+            ) : assessment ? (
               <span className="px-1.5 py-0.2 rounded-full bg-cyan-900 text-cyan-300 text-[10px] font-mono">
                 {assessment.containmentActions.length}
               </span>
-            )}
+            ) : null}
           </button>
 
           <button
@@ -311,28 +402,225 @@ export const IncidentDetailModal: React.FC<IncidentDetailModalProps> = ({
             </div>
           )}
 
-          {/* TAB 1: THREAT OVERSIGHT */}
-          {activeTab === 'threat' && assessment && (
+          {/* TAB 1: THREAT OVERSIGHT & EMAIL FORENSICS */}
+          {activeTab === 'threat' && (
             <div className="space-y-6">
-              {/* Summary banner */}
-              <div className="p-4 rounded-xl bg-gradient-to-r from-slate-800/80 to-slate-900 border border-slate-700/80">
-                <div className="flex items-center gap-2 mb-2">
-                  <Compass className="w-4 h-4 text-cyan-400" />
-                  <span className="text-xs font-bold uppercase tracking-wider text-cyan-400">
-                    Threat Oversight Agent Review
-                  </span>
-                  <span className="text-[10px] text-slate-500 ml-auto">
-                    Conforms to .github/agents/threat-oversight.agent.md
-                  </span>
-                </div>
-                <p className="text-sm text-slate-200 leading-relaxed font-medium">
-                  {assessment.summary}
-                </p>
-              </div>
+              {/* Email Threat & Delivery Forensics Card (Defender for Office 365 / Email Incidents) */}
+              {emailEvidenceList.length > 0 && (
+                <div className="rounded-2xl border border-indigo-500/40 bg-gradient-to-b from-indigo-950/40 via-slate-900/90 to-slate-950 p-5 space-y-4 shadow-xl shadow-indigo-950/40">
+                  <div className="flex items-center justify-between border-b border-indigo-500/20 pb-3 flex-wrap gap-2">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2.5 rounded-xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">
+                        <Mail className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold uppercase tracking-wider text-indigo-300">
+                            Email Message Forensics & Delivery Inspection
+                          </span>
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-indigo-900/60 text-indigo-300 border border-indigo-700/50">
+                            Defender for Office 365
+                          </span>
+                        </div>
+                        <h3 className="text-sm font-semibold text-white mt-0.5 select-all">
+                          {emailEvidenceList[0].subject || 'No Subject Line'}
+                        </h3>
+                      </div>
+                    </div>
 
-              {/* Immediate Containment Actions */}
-              <div>
-                <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      {emailEvidenceList[0].deliveryLocation && (
+                        <span className={`px-2.5 py-1 rounded-lg text-xs font-semibold uppercase tracking-wider border ${
+                          emailEvidenceList[0].deliveryLocation.toLowerCase().includes('quarantine')
+                            ? 'bg-rose-950/60 border-rose-600/60 text-rose-300'
+                            : 'bg-amber-950/60 border-amber-600/60 text-amber-300'
+                        }`}>
+                          Location: {emailEvidenceList[0].deliveryLocation}
+                        </span>
+                      )}
+                      {emailEvidenceList[0].deliveryAction && (
+                        <span className="px-2.5 py-1 rounded-lg text-xs font-mono bg-slate-800 border border-slate-700 text-slate-300">
+                          Action: {emailEvidenceList[0].deliveryAction}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Sender / Recipient Matrix */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 text-xs">
+                    <div className="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800 space-y-2.5">
+                      <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                        <User className="w-3.5 h-3.5 text-cyan-400" />
+                        <span>Sender Forensics</span>
+                      </div>
+                      <div className="space-y-1.5">
+                        <div className="text-slate-200 font-medium flex items-center gap-1.5 flex-wrap">
+                          {emailEvidenceList[0].senderDisplayName && (
+                            <span className="font-semibold text-white">{emailEvidenceList[0].senderDisplayName}</span>
+                          )}
+                          {emailEvidenceList[0].senderEmail && (
+                            <code className="text-[11px] font-mono bg-slate-950 px-2 py-0.5 rounded text-cyan-300 border border-slate-800">
+                              &lt;{emailEvidenceList[0].senderEmail}&gt;
+                            </code>
+                          )}
+                          {emailEvidenceList[0].senderEmail && (
+                            <button
+                              onClick={() => handleCopy('sender-email', emailEvidenceList[0].senderEmail || '')}
+                              title="Copy sender address"
+                              className="text-slate-500 hover:text-cyan-400 p-1 rounded hover:bg-slate-800 cursor-pointer"
+                            >
+                              {copiedId === 'sender-email' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                            </button>
+                          )}
+                        </div>
+                        {emailEvidenceList[0].returnPathEmail && emailEvidenceList[0].returnPathEmail !== emailEvidenceList[0].senderEmail && (
+                          <div className="text-[11px] text-slate-400 flex items-center gap-1.5">
+                            <span className="text-amber-400 font-semibold">Envelope Return-Path (P1):</span>
+                            <code className="font-mono text-slate-300 bg-slate-950 px-1.5 py-0.5 rounded border border-slate-800/80">
+                              {emailEvidenceList[0].returnPathEmail}
+                            </code>
+                          </div>
+                        )}
+                        {emailEvidenceList[0].senderDomain && (
+                          <div className="text-[11px] text-slate-400">
+                            Sender Domain: <span className="text-slate-200 font-mono font-semibold">{emailEvidenceList[0].senderDomain}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800 space-y-2.5">
+                      <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                        <Inbox className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>Recipient & Mail Infrastructure</span>
+                      </div>
+                      <div className="space-y-1.5">
+                        <div className="text-slate-200 font-medium flex items-center gap-1.5 flex-wrap">
+                          <span className="text-slate-400">Target Recipient:</span>
+                          {emailEvidenceList[0].recipientEmail && (
+                            <code className="text-[11px] font-mono bg-slate-950 px-2 py-0.5 rounded text-emerald-300 border border-slate-800">
+                              {emailEvidenceList[0].recipientEmail}
+                            </code>
+                          )}
+                          {emailEvidenceList[0].recipientEmail && (
+                            <button
+                              onClick={() => handleCopy('recipient-email', emailEvidenceList[0].recipientEmail || '')}
+                              title="Copy recipient address"
+                              className="text-slate-500 hover:text-emerald-400 p-1 rounded hover:bg-slate-800 cursor-pointer"
+                            >
+                              {copiedId === 'recipient-email' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                            </button>
+                          )}
+                        </div>
+                        {emailEvidenceList[0].senderIp && (
+                          <div className="text-[11px] text-slate-400 flex items-center gap-1.5 flex-wrap">
+                            <Globe className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                            <span>Originating IP:</span>
+                            <code className="font-mono text-cyan-300 bg-slate-950 px-2 py-0.5 rounded border border-slate-800">
+                              {emailEvidenceList[0].senderIp}
+                            </code>
+                            <ThreatIntelBadge indicator={emailEvidenceList[0].senderIp} type="IP" />
+                            <button
+                              onClick={() => handleCopy('sender-ip', emailEvidenceList[0].senderIp || '')}
+                              title="Copy sender IP"
+                              className="text-slate-500 hover:text-cyan-400 p-1 rounded hover:bg-slate-800 cursor-pointer"
+                            >
+                              {copiedId === 'sender-ip' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                            </button>
+                          </div>
+                        )}
+                        {emailEvidenceList[0].receivedDateTime && (
+                          <div className="text-[11px] text-slate-400 flex items-center gap-1.5">
+                            <Clock className="w-3 h-3 text-slate-500" />
+                            <span>Received Time: {new Date(emailEvidenceList[0].receivedDateTime).toLocaleString()}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Threat Tags & Detections */}
+                  {emailEvidenceList[0].threats && emailEvidenceList[0].threats.length > 0 && (
+                    <div className="flex items-center gap-2 flex-wrap pt-1">
+                      <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                        Threat Classifications:
+                      </span>
+                      {emailEvidenceList[0].threats.map((threat: string, idx: number) => (
+                        <span
+                          key={idx}
+                          className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-950/80 text-rose-300 border border-rose-800/80 flex items-center gap-1"
+                        >
+                          <AlertTriangle className="w-3 h-3 text-rose-400" />
+                          {threat}
+                        </span>
+                      ))}
+                      {emailEvidenceList[0].detectionMethods?.map((dm: string, idx: number) => (
+                        <span
+                          key={idx}
+                          className="px-2 py-0.5 rounded-md text-[11px] font-mono bg-slate-800 text-slate-300 border border-slate-700"
+                        >
+                          Detection: {dm}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Extracted URLs */}
+                  {emailEvidenceList[0].urls && emailEvidenceList[0].urls.length > 0 && (
+                    <div className="p-3.5 rounded-xl bg-slate-950/90 border border-slate-800 space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <div className="text-[11px] font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                          <Link className="w-3.5 h-3.5" />
+                          <span>Extracted Email URLs & Embedded Links ({emailEvidenceList[0].urls.length})</span>
+                        </div>
+                        <span className="text-[10px] text-slate-500">Defanged for SOC safety</span>
+                      </div>
+                      <div className="max-h-44 overflow-y-auto space-y-1.5 pr-1">
+                        {emailEvidenceList[0].urls.map((url: string, idx: number) => (
+                          <div
+                            key={idx}
+                            className="flex items-center justify-between gap-2 p-2 rounded-lg bg-slate-900 border border-slate-800 hover:border-slate-700 text-xs font-mono group"
+                          >
+                            <span className="text-slate-300 truncate select-all">{url}</span>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <ThreatIntelBadge indicator={url} type="URL" />
+                              <button
+                                onClick={() => handleCopy(`url-${idx}`, url)}
+                                title="Copy URL"
+                                className="text-slate-500 hover:text-cyan-400 p-1 rounded hover:bg-slate-800 transition-colors cursor-pointer"
+                              >
+                                {copiedId === `url-${idx}` ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Assessment review banner */}
+              {assessment ? (
+                <>
+                  <div className="p-4 rounded-xl bg-gradient-to-r from-slate-800/80 to-slate-900 border border-slate-700/80">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Compass className="w-4 h-4 text-cyan-400" />
+                      <span className="text-xs font-bold uppercase tracking-wider text-cyan-400">
+                        Threat Oversight Agent Review
+                      </span>
+                      <span className="text-[10px] text-slate-500 ml-auto">
+                        Conforms to .github/agents/threat-oversight.agent.md
+                      </span>
+                    </div>
+                    <p className="text-sm text-slate-200 leading-relaxed font-medium">
+                      {assessment.summary}
+                    </p>
+                  </div>
+
+                  {/* Immediate Containment Actions */}
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
                   <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
                     <ShieldCheck className="w-4 h-4 text-emerald-400" />
                     <span>Actionable Containment Controls</span>
@@ -455,8 +743,38 @@ export const IncidentDetailModal: React.FC<IncidentDetailModalProps> = ({
                   ))}
                 </ul>
               </div>
+            </>
+          ) : (
+            <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-3">
+              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-400">
+                <Compass className="w-4 h-4 text-cyan-400" />
+                <span>Incident Overview & Telemetry Details</span>
+              </div>
+              <p className="text-sm text-slate-200 leading-relaxed">
+                {incident.description || 'No additional summary text provided by security telemetry.'}
+              </p>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-slate-800 text-xs">
+                <div className="bg-slate-950 p-2 rounded border border-slate-800/60">
+                  <span className="text-[10px] text-slate-500 uppercase block font-semibold">Provider</span>
+                  <span className="text-cyan-400 font-mono font-medium">{incident.provider}</span>
+                </div>
+                <div className="bg-slate-950 p-2 rounded border border-slate-800/60">
+                  <span className="text-[10px] text-slate-500 uppercase block font-semibold">Status</span>
+                  <span className="text-slate-200 font-mono font-medium">{incident.status}</span>
+                </div>
+                <div className="bg-slate-950 p-2 rounded border border-slate-800/60">
+                  <span className="text-[10px] text-slate-500 uppercase block font-semibold">Classification</span>
+                  <span className="text-slate-300 font-mono font-medium">{incident.classification || 'None'}</span>
+                </div>
+                <div className="bg-slate-950 p-2 rounded border border-slate-800/60">
+                  <span className="text-[10px] text-slate-500 uppercase block font-semibold">Determination</span>
+                  <span className="text-slate-300 font-mono font-medium">{incident.determination || 'None'}</span>
+                </div>
+              </div>
             </div>
           )}
+        </div>
+      )}
 
           {/* TAB 2: TIMELINE & SUB-ALERTS */}
           {activeTab === 'timeline' && (
@@ -715,8 +1033,8 @@ export const IncidentDetailModal: React.FC<IncidentDetailModalProps> = ({
                         {ent.type === 'IP' && <Globe className="w-4 h-4" />}
                         {ent.type === 'FILE' && <FileCode className="w-4 h-4" />}
                         {ent.type === 'CLOUD_RESOURCE' && <Lock className="w-4 h-4" />}
-                        {ent.type === 'MAILBOX' && <User className="w-4 h-4" />}
-                        {ent.type === 'URL' && <Globe className="w-4 h-4" />}
+                        {ent.type === 'MAILBOX' && <Mail className="w-4 h-4" />}
+                        {ent.type === 'URL' && <Link className="w-4 h-4" />}
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center justify-between gap-2">
@@ -795,18 +1113,29 @@ export const IncidentDetailModal: React.FC<IncidentDetailModalProps> = ({
           {/* TAB 5: RAW PAYLOAD */}
           {activeTab === 'raw' && (
             <div className="space-y-3">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between flex-wrap gap-2">
                 <span className="text-xs text-slate-400">Original API / JSON Payload</span>
-                <button
-                  onClick={() => handleCopy('raw-json', JSON.stringify(incident.rawPayload || incident, null, 2))}
-                  className="flex items-center gap-1.5 px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-md text-xs transition-colors cursor-pointer"
-                >
-                  {copiedId === 'raw-json' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                  <span>{copiedId === 'raw-json' ? 'Copied' : 'Copy JSON'}</span>
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleDownloadJson}
+                    title="Download complete raw JSON file"
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-medium transition-colors cursor-pointer border border-slate-700 shadow-sm"
+                  >
+                    <Download className="w-3.5 h-3.5 text-cyan-400" />
+                    <span>Download JSON</span>
+                  </button>
+                  <button
+                    onClick={() => handleCopy('raw-json', JSON.stringify(incident.rawPayload || incident, null, 2))}
+                    title="Copy formatted JSON to clipboard"
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-medium transition-colors cursor-pointer border border-slate-700 shadow-sm"
+                  >
+                    {copiedId === 'raw-json' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                    <span>{copiedId === 'raw-json' ? 'Copied to Clipboard!' : 'Copy JSON'}</span>
+                  </button>
+                </div>
               </div>
 
-              <pre className="p-4 bg-slate-950 border border-slate-800 rounded-xl text-xs font-mono text-cyan-300 overflow-x-auto max-h-[500px]">
+              <pre className="p-4 bg-slate-950 border border-slate-800 rounded-xl text-xs font-mono text-cyan-300 overflow-x-auto max-h-[500px] select-all">
                 {JSON.stringify(incident.rawPayload || incident, null, 2)}
               </pre>
             </div>
