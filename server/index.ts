@@ -18,6 +18,7 @@ import { WebhookNotifierService } from './services/webhookNotifier';
 import { ThreatIntelService } from './services/threatIntelService';
 import { SocReportService } from './services/socReportService';
 import { ConfigService } from './services/configService';
+import { IncidentCorrelatorService } from './services/incidentCorrelator';
 
 import authRoutes, { userRouter } from './routes/authRoutes';
 
@@ -81,19 +82,28 @@ app.get('/api/analytics/trends', (req, res) => {
 
 // Incidents list with filtering
 app.get('/api/incidents', (req, res) => {
-  const { severity, provider, status, search } = req.query;
+  const { severity, provider, status, search, merge } = req.query;
   const incidents = store.getAll({
     severity: severity as string,
     provider: provider as string,
     status: status as string,
     search: search as string,
   });
+  if (merge === 'true') {
+    const { unified } = IncidentCorrelatorService.correlate(incidents);
+    return res.json(unified);
+  }
   res.json(incidents);
 });
 
 // Single incident
 app.get('/api/incidents/:id', (req, res) => {
-  const incident = store.getById(req.params.id);
+  let incident = store.getById(req.params.id);
+  if (!incident && req.params.id.startsWith('chained-')) {
+    const all = store.getAll();
+    const { unified } = IncidentCorrelatorService.correlate(all);
+    incident = unified.find(u => u.id === req.params.id);
+  }
   if (!incident) {
     return res.status(404).json({ error: 'Incident not found' });
   }
@@ -106,6 +116,17 @@ app.patch('/api/incidents/:id/status', (req, res) => {
   if (!status) {
     return res.status(400).json({ error: 'Status is required' });
   }
+  if (req.params.id.startsWith('chained-')) {
+    const all = store.getAll();
+    const { unified } = IncidentCorrelatorService.correlate(all);
+    const chained = unified.find(u => u.id === req.params.id);
+    if (chained && chained.linkedIncidents) {
+      for (const linked of chained.linkedIncidents) {
+        store.updateIncidentStatus(linked.id, status);
+      }
+      return res.json({ ...chained, status });
+    }
+  }
   const updated = store.updateIncidentStatus(req.params.id, status);
   if (!updated) {
     return res.status(404).json({ error: 'Incident not found' });
@@ -115,16 +136,48 @@ app.patch('/api/incidents/:id/status', (req, res) => {
 
 // Execute containment action
 app.post('/api/incidents/:id/actions/:actionId/execute', (req, res) => {
-  const success = store.executeContainmentAction(req.params.id, req.params.actionId);
+  let targetIncidentId = req.params.id;
+  if (req.params.id.startsWith('chained-')) {
+    const all = store.getAll();
+    const { unified } = IncidentCorrelatorService.correlate(all);
+    const chained = unified.find(u => u.id === req.params.id);
+    if (chained && chained.linkedIncidents) {
+      const match = chained.linkedIncidents.find(l => 
+        l.threatAssessment?.containmentActions?.some(a => a.id === req.params.actionId)
+      );
+      if (match) targetIncidentId = match.id;
+    }
+  }
+
+  const success = store.executeContainmentAction(targetIncidentId, req.params.actionId);
   if (!success) {
     return res.status(400).json({ error: 'Action execution failed or action not found' });
   }
+
+  if (req.params.id.startsWith('chained-')) {
+    const all = store.getAll();
+    const { unified } = IncidentCorrelatorService.correlate(all);
+    const chained = unified.find(u => u.id === req.params.id);
+    return res.json({ success: true, incident: chained });
+  }
+
   const updated = store.getById(req.params.id);
   res.json({ success: true, incident: updated });
 });
 
 // Delete a single incident
 app.delete('/api/incidents/:id', (req, res) => {
+  if (req.params.id.startsWith('chained-')) {
+    const all = store.getAll();
+    const { unified } = IncidentCorrelatorService.correlate(all);
+    const chained = unified.find(u => u.id === req.params.id);
+    if (chained && chained.linkedIncidents) {
+      for (const linked of chained.linkedIncidents) {
+        store.delete(linked.id);
+      }
+      return res.json({ success: true, message: `Chained incident ${req.params.id} deleted` });
+    }
+  }
   const deleted = store.delete(req.params.id);
   if (!deleted) {
     return res.status(404).json({ error: 'Incident not found' });

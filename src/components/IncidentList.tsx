@@ -26,8 +26,10 @@ import {
   ArrowUpDown,
   RefreshCw,
   Activity,
-  Zap
+  Zap,
+  Link2
 } from 'lucide-react';
+import { correlateSiemXdrIncidents, formatIncidentDateTime } from '../utils/incidentCorrelator';
 
 interface IncidentListProps {
   incidents: UnifiedIncident[];
@@ -85,9 +87,35 @@ export const IncidentList: React.FC<IncidentListProps> = ({
 
   const [timeRange, setTimeRange] = useState<'ALL' | '24H' | '7D' | '30D'>('ALL');
   const [sortBy, setSortBy] = useState<'recent' | 'severity' | 'oldest' | 'entities'>('recent');
+  const [mergeSiemXdr, setMergeSiemXdr] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem('msec_merge_siem_xdr');
+      return saved !== null ? saved === 'true' : true;
+    } catch {
+      return true;
+    }
+  });
+
+  const toggleMergeSiemXdr = () => {
+    setMergeSiemXdr(prev => {
+      const next = !prev;
+      try {
+        localStorage.setItem('msec_merge_siem_xdr', String(next));
+      } catch {}
+      return next;
+    });
+  };
+
+  const { correlatedList, mergedCount } = useMemo(() => {
+    if (!mergeSiemXdr) {
+      return { correlatedList: incidents, mergedCount: 0 };
+    }
+    const res = correlateSiemXdrIncidents(incidents);
+    return { correlatedList: res.unified, mergedCount: res.mergedCount };
+  }, [incidents, mergeSiemXdr]);
 
   const filteredAndSortedIncidents = useMemo(() => {
-    let list = [...incidents];
+    let list = [...correlatedList];
 
     // Timeframe filtering
     if (timeRange !== 'ALL') {
@@ -123,7 +151,7 @@ export const IncidentList: React.FC<IncidentListProps> = ({
     });
 
     return list;
-  }, [incidents, timeRange, sortBy]);
+  }, [correlatedList, timeRange, sortBy]);
 
   const toggleSelect = (id: string) => {
     setSelectedIds(prev => {
@@ -269,6 +297,25 @@ export const IncidentList: React.FC<IncidentListProps> = ({
               <option value="RESOLVED" className="bg-slate-900">Resolved</option>
             </select>
           </div>
+
+          {/* SIEM & XDR Chaining / Merge Toggle */}
+          <button
+            onClick={toggleMergeSiemXdr}
+            title={mergeSiemXdr ? "Click to disable SIEM & XDR chaining (view separate feeds)" : "Click to chain and merge duplicate Sentinel SIEM & Defender XDR incidents"}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer border ${
+              mergeSiemXdr
+                ? 'bg-gradient-to-r from-cyan-950 via-slate-900 to-indigo-950 text-cyan-300 border-cyan-600/80 shadow-sm shadow-cyan-950/50'
+                : 'bg-slate-950 text-slate-400 hover:text-slate-200 border-slate-800'
+            }`}
+          >
+            <Link2 className={`w-3.5 h-3.5 ${mergeSiemXdr ? 'text-cyan-400' : 'text-slate-500'}`} />
+            <span>{mergeSiemXdr ? 'Chained SIEM & XDR' : 'Separate Feeds'}</span>
+            {mergeSiemXdr && mergedCount > 0 && (
+              <span className="px-1.5 py-0.2 rounded-full bg-cyan-500/20 text-cyan-300 text-[10px] font-mono font-bold border border-cyan-500/40 ml-0.5">
+                {mergedCount} merged
+              </span>
+            )}
+          </button>
 
           {/* Time Range Filter */}
           <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800 text-xs">
@@ -560,16 +607,23 @@ export const IncidentList: React.FC<IncidentListProps> = ({
                         <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${getSeverityBadge(incident.severity)}`}>
                           {incident.severity}
                         </span>
-                        <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-medium border ${providerInfo.color}`}>
-                          {providerInfo.label}
-                        </span>
+                        {incident.isChained ? (
+                          <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold border bg-gradient-to-r from-cyan-950 via-indigo-950 to-purple-950 text-cyan-200 border-cyan-500/50 flex items-center gap-1 shadow-sm">
+                            <Link2 className="w-3 h-3 text-cyan-400" />
+                            <span>Sentinel SIEM + Defender XDR</span>
+                          </span>
+                        ) : (
+                          <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-medium border ${providerInfo.color}`}>
+                            {providerInfo.label}
+                          </span>
+                        )}
                         <span className="text-xs text-slate-400 flex items-center gap-1 font-mono">
                           #{incident.incidentNumber || incident.id}
                         </span>
                         <span className="text-slate-600">•</span>
-                        <span className="text-xs text-slate-500 flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          {new Date(incident.createdTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        <span className="text-xs text-slate-400 flex items-center gap-1" title={incident.createdTime}>
+                          <Calendar className="w-3 h-3 text-cyan-400/80" />
+                          <span>{formatIncidentDateTime(incident.createdTime)}</span>
                         </span>
                       </div>
 

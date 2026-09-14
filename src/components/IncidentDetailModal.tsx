@@ -31,11 +31,14 @@ import {
   Download,
   Mail,
   Inbox,
-  Link
+  Link,
+  Link2,
+  Calendar
 } from 'lucide-react';
 import { InvestigationGraph } from './graph/InvestigationGraph';
 import { buildIncidentGraph } from '../utils/graphBuilder';
 import { ThreatIntelBadge } from './common/ThreatIntelBadge';
+import { formatIncidentDateTime } from '../utils/incidentCorrelator';
 
 interface IncidentDetailModalProps {
   incident: UnifiedIncident | null;
@@ -57,13 +60,11 @@ export const IncidentDetailModal: React.FC<IncidentDetailModalProps> = ({
   const [activeTab, setActiveTab] = useState<'threat' | 'graph' | 'timeline' | 'entities' | 'comments' | 'raw'>('threat');
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [executingActionId, setExecutingActionId] = useState<string | null>(null);
+  const [rawSource, setRawSource] = useState<'unified' | 'defender' | 'sentinel'>('unified');
 
-  if (!incident) return null;
-
-  const assessment = incident.threatAssessment;
-  const commentsCount = (incident.comments?.length || 0) + (incident.resolvingComment ? 1 : 0);
-
+  // React Rules of Hooks: All hooks MUST be declared unconditionally at top
   const emailEvidenceList = useMemo(() => {
+    if (!incident) return [];
     if (incident?.emailEvidence && incident.emailEvidence.length > 0) {
       return incident.emailEvidence;
     }
@@ -103,6 +104,25 @@ export const IncidentDetailModal: React.FC<IncidentDetailModalProps> = ({
     }));
   }, [incident]);
 
+  const currentRawPayload = useMemo(() => {
+    if (!incident) return null;
+    if (!incident.isChained) return incident.rawPayload || incident;
+    if (rawSource === 'defender') {
+      const defRef = incident.linkedIncidents?.find(l => l.provider !== 'SENTINEL_SIEM');
+      return defRef?.rawPayload || incident.rawPayload?.defenderPayload || incident.rawPayload || incident;
+    }
+    if (rawSource === 'sentinel') {
+      const senRef = incident.linkedIncidents?.find(l => l.provider === 'SENTINEL_SIEM');
+      return senRef?.rawPayload || incident.rawPayload?.sentinelPayload || incident.rawPayload || incident;
+    }
+    return incident.rawPayload || incident;
+  }, [incident, rawSource]);
+
+  if (!incident) return null;
+
+  const assessment = incident.threatAssessment;
+  const commentsCount = (incident.comments?.length || 0) + (incident.resolvingComment ? 1 : 0);
+
   const handleCopy = async (id: string, text: string) => {
     let success = false;
     if (navigator.clipboard && window.isSecureContext) {
@@ -136,14 +156,15 @@ export const IncidentDetailModal: React.FC<IncidentDetailModalProps> = ({
   };
 
   const handleDownloadJson = () => {
-    if (!incident) return;
+    if (!incident || !currentRawPayload) return;
     try {
-      const data = JSON.stringify(incident.rawPayload || incident, null, 2);
+      const data = JSON.stringify(currentRawPayload, null, 2);
       const blob = new Blob([data], { type: 'application/json;charset=utf-8' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `incident-${incident.incidentNumber || incident.id}-payload.json`;
+      const fileTag = incident.isChained ? `-${rawSource}` : '';
+      a.download = `incident-${incident.incidentNumber || incident.id}${fileTag}-payload.json`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -211,11 +232,24 @@ export const IncidentDetailModal: React.FC<IncidentDetailModalProps> = ({
               }`}>
                 {incident.severity}
               </span>
-              <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-800 text-slate-300 border border-slate-700">
-                {incident.provider}
-              </span>
+              {incident.isChained ? (
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gradient-to-r from-cyan-950 via-indigo-950 to-purple-950 text-cyan-200 border border-cyan-500/50 flex items-center gap-1 shadow-sm">
+                  <Link2 className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>Sentinel SIEM + Defender XDR</span>
+                </span>
+              ) : (
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-800 text-slate-300 border border-slate-700">
+                  {incident.provider}
+                </span>
+              )}
               <span className="text-xs text-slate-400 font-mono">
                 #{incident.incidentNumber || incident.id}
+              </span>
+
+              <span className="text-slate-600">•</span>
+              <span className="text-xs text-slate-400 flex items-center gap-1 font-mono">
+                <Calendar className="w-3 h-3 text-cyan-400" />
+                <span>{formatIncidentDateTime(incident.createdTime)}</span>
               </span>
 
               {incident.classification && (
@@ -243,19 +277,36 @@ export const IncidentDetailModal: React.FC<IncidentDetailModalProps> = ({
             </h2>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
             {incident.incidentWebUrl && (
               <a
                 href={incident.incidentWebUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-700/60 text-cyan-300 rounded-lg text-xs font-semibold transition-colors cursor-pointer shadow-sm"
-                title="Open incident in Microsoft Defender Portal"
+                title="Open incident in primary security portal"
               >
                 <ExternalLink className="w-3.5 h-3.5" />
-                <span>Defender Portal</span>
+                <span>{incident.isChained ? 'Defender Portal' : (incident.provider === 'SENTINEL_SIEM' ? 'Sentinel Portal' : 'Portal')}</span>
               </a>
             )}
+
+            {incident.isChained && incident.linkedIncidents?.map((link, idx) => {
+              if (!link.incidentWebUrl || link.incidentWebUrl === incident.incidentWebUrl) return null;
+              return (
+                <a
+                  key={idx}
+                  href={link.incidentWebUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-950/80 hover:bg-indigo-900 border border-indigo-700/60 text-indigo-300 rounded-lg text-xs font-semibold transition-colors cursor-pointer shadow-sm"
+                  title={`Open incident in ${link.provider === 'SENTINEL_SIEM' ? 'Azure Sentinel' : 'Microsoft Defender'} Portal`}
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  <span>{link.provider === 'SENTINEL_SIEM' ? 'Sentinel Portal' : 'Defender Portal'}</span>
+                </a>
+              );
+            })}
 
             {onOpenPlaybook && (
               <button
@@ -303,6 +354,42 @@ export const IncidentDetailModal: React.FC<IncidentDetailModalProps> = ({
             </button>
           </div>
         </div>
+
+        {/* Correlated SIEM + XDR Incident Banner */}
+        {incident.isChained && (
+          <div className="mx-6 mt-3 p-3.5 rounded-xl bg-gradient-to-r from-cyan-950/90 via-slate-900 to-indigo-950/90 border border-cyan-500/30 flex flex-wrap items-center justify-between gap-3 text-xs shadow-lg">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 rounded-lg bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shrink-0">
+                <Link2 className="w-4 h-4" />
+              </div>
+              <div>
+                <div className="font-semibold text-cyan-200 flex items-center gap-2">
+                  <span>Correlated Dual-Platform Telemetry</span>
+                  <span className="px-1.5 py-0.2 rounded bg-cyan-500/20 text-[10px] text-cyan-300 font-mono uppercase font-bold border border-cyan-500/30">
+                    SIEM & XDR Chained
+                  </span>
+                </div>
+                <div className="text-slate-300 text-xs mt-0.5">
+                  Unified Microsoft Sentinel SIEM (#{incident.linkedIncidents?.find(l => l.provider === 'SENTINEL_SIEM')?.incidentNumber || 'SIEM'}) with Microsoft 365 Defender XDR (#{incident.linkedIncidents?.find(l => l.provider !== 'SENTINEL_SIEM')?.incidentNumber || 'XDR'}). Deduplicated entities, merged MITRE techniques, and unified forensic telemetry.
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              {incident.linkedIncidents?.map((link, idx) => link.incidentWebUrl ? (
+                <a
+                  key={idx}
+                  href={link.incidentWebUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-950/90 hover:bg-slate-800 border border-cyan-700/50 text-cyan-300 text-xs font-semibold transition-colors cursor-pointer shadow-sm"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  <span>{link.provider === 'SENTINEL_SIEM' ? 'Azure Sentinel Portal' : 'Defender XDR Portal'}</span>
+                </a>
+              ) : null)}
+            </div>
+          </div>
+        )}
 
         {/* Tab Navigation */}
         <div className="flex items-center border-b border-slate-800 px-6 py-2 bg-slate-950/40 gap-1.5 overflow-x-auto shrink-0 sticky top-0 z-20">
@@ -626,12 +713,12 @@ export const IncidentDetailModal: React.FC<IncidentDetailModalProps> = ({
                     <span>Actionable Containment Controls</span>
                   </h4>
                   <span className="text-xs text-slate-500">
-                    {assessment.containmentActions.filter(a => a.status === 'EXECUTED').length} / {assessment.containmentActions.length} Executed
+                    {(assessment.containmentActions || []).filter(a => a.status === 'EXECUTED').length} / {(assessment.containmentActions || []).length} Executed
                   </span>
                 </div>
 
                 <div className="space-y-2.5">
-                  {assessment.containmentActions.map((action) => {
+                  {(assessment.containmentActions || []).map((action) => {
                     const isExecuted = action.status === 'EXECUTED';
                     const isExecuting = executingActionId === action.id;
 
@@ -690,7 +777,7 @@ export const IncidentDetailModal: React.FC<IncidentDetailModalProps> = ({
                     <span>Trust Boundaries Violated</span>
                   </h4>
                   <ul className="space-y-1.5">
-                    {assessment.trustBoundariesViolated.map((tb, idx) => (
+                    {(assessment.trustBoundariesViolated || []).map((tb, idx) => (
                       <li key={idx} className="text-xs text-slate-300 flex items-start gap-2">
                         <span className="text-red-400 font-bold">•</span>
                         <span>{tb}</span>
@@ -711,14 +798,14 @@ export const IncidentDetailModal: React.FC<IncidentDetailModalProps> = ({
               </div>
 
               {/* Frontend & Identity Surface Risks */}
-              {assessment.frontendRisks.length > 0 && (
+              {(assessment.frontendRisks || []).length > 0 && (
                 <div className="bg-slate-950 border border-slate-800 rounded-xl p-4">
                   <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2.5 flex items-center gap-2">
                     <Globe className="w-3.5 h-3.5 text-blue-400" />
                     <span>Frontend & Identity Attack Surfaces</span>
                   </h4>
                   <ul className="space-y-1.5">
-                    {assessment.frontendRisks.map((fr, idx) => (
+                    {(assessment.frontendRisks || []).map((fr, idx) => (
                       <li key={idx} className="text-xs text-slate-300 flex items-start gap-2">
                         <span className="text-cyan-400 font-bold">•</span>
                         <span>{fr}</span>
@@ -735,7 +822,7 @@ export const IncidentDetailModal: React.FC<IncidentDetailModalProps> = ({
                   <span>Long-term Hardening & Remediation</span>
                 </h4>
                 <ul className="space-y-1.5">
-                  {assessment.remediationGuidance.map((rg, idx) => (
+                  {(assessment.remediationGuidance || []).map((rg, idx) => (
                     <li key={idx} className="text-xs text-slate-300 flex items-start gap-2">
                       <span className="text-emerald-400 font-bold">✓</span>
                       <span>{rg}</span>
@@ -1114,18 +1201,57 @@ export const IncidentDetailModal: React.FC<IncidentDetailModalProps> = ({
           {activeTab === 'raw' && (
             <div className="space-y-3">
               <div className="flex items-center justify-between flex-wrap gap-2">
-                <span className="text-xs text-slate-400">Original API / JSON Payload</span>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs text-slate-400">Payload Source:</span>
+                  {incident.isChained ? (
+                    <div className="inline-flex items-center gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800 text-xs">
+                      <button
+                        onClick={() => setRawSource('unified')}
+                        className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors cursor-pointer ${
+                          rawSource === 'unified'
+                            ? 'bg-cyan-950 text-cyan-300 font-bold border border-cyan-700/80 shadow-sm'
+                            : 'text-slate-400 hover:text-slate-200'
+                        }`}
+                      >
+                        Unified Merged
+                      </button>
+                      <button
+                        onClick={() => setRawSource('defender')}
+                        className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors cursor-pointer ${
+                          rawSource === 'defender'
+                            ? 'bg-indigo-950 text-indigo-300 font-bold border border-indigo-700/80 shadow-sm'
+                            : 'text-slate-400 hover:text-slate-200'
+                        }`}
+                      >
+                        M365 Defender
+                      </button>
+                      <button
+                        onClick={() => setRawSource('sentinel')}
+                        className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors cursor-pointer ${
+                          rawSource === 'sentinel'
+                            ? 'bg-cyan-950 text-cyan-300 font-bold border border-cyan-700/80 shadow-sm'
+                            : 'text-slate-400 hover:text-slate-200'
+                        }`}
+                      >
+                        Sentinel SIEM
+                      </button>
+                    </div>
+                  ) : (
+                    <span className="text-xs text-slate-300 font-mono">Original {incident.provider} API JSON</span>
+                  )}
+                </div>
+
                 <div className="flex items-center gap-2">
                   <button
                     onClick={handleDownloadJson}
-                    title="Download complete raw JSON file"
+                    title="Download active raw JSON file"
                     className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-medium transition-colors cursor-pointer border border-slate-700 shadow-sm"
                   >
                     <Download className="w-3.5 h-3.5 text-cyan-400" />
                     <span>Download JSON</span>
                   </button>
                   <button
-                    onClick={() => handleCopy('raw-json', JSON.stringify(incident.rawPayload || incident, null, 2))}
+                    onClick={() => handleCopy('raw-json', JSON.stringify(currentRawPayload || incident, null, 2))}
                     title="Copy formatted JSON to clipboard"
                     className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-medium transition-colors cursor-pointer border border-slate-700 shadow-sm"
                   >
@@ -1136,7 +1262,7 @@ export const IncidentDetailModal: React.FC<IncidentDetailModalProps> = ({
               </div>
 
               <pre className="p-4 bg-slate-950 border border-slate-800 rounded-xl text-xs font-mono text-cyan-300 overflow-x-auto max-h-[500px] select-all">
-                {JSON.stringify(incident.rawPayload || incident, null, 2)}
+                {JSON.stringify(currentRawPayload || incident, null, 2)}
               </pre>
             </div>
           )}

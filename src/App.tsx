@@ -457,17 +457,19 @@ export const App: React.FC = () => {
       </div>
 
       {/* Incident Detail Drawer */}
-      <IncidentDetailModal
-        incident={selectedIncident}
-        onClose={() => setSelectedIncident(null)}
-        onExecuteAction={handleExecuteAction}
-        onUpdateStatus={handleUpdateStatus}
-        onDelete={handleDeleteIncident}
-        onOpenPlaybook={(inc) => {
-          setPlaybookIncident(inc);
-          setActiveView('playbooks');
-        }}
-      />
+      {selectedIncident && (
+        <IncidentDetailModal
+          incident={selectedIncident}
+          onClose={() => setSelectedIncident(null)}
+          onExecuteAction={handleExecuteAction}
+          onUpdateStatus={handleUpdateStatus}
+          onDelete={handleDeleteIncident}
+          onOpenPlaybook={(inc) => {
+            setPlaybookIncident(inc);
+            setActiveView('playbooks');
+          }}
+        />
+      )}
 
       {/* Popups triggered contextually when not on the dedicated page */}
       {isSyncLogOpen && (

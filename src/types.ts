@@ -89,6 +89,20 @@ export interface EmailMessageEvidence {
   attachmentsCount?: number;
 }
 
+export interface LinkedIncidentRef {
+  id: string;
+  incidentNumber?: string | number;
+  provider: ProviderSource;
+  title: string;
+  createdTime: string;
+  incidentWebUrl?: string;
+  rawPayload?: any;
+  entities?: SecurityEntity[];
+  alerts?: UnifiedAlert[];
+  threatAssessment?: ThreatOversightAssessment;
+  emailEvidence?: EmailMessageEvidence[];
+}
+
 export interface UnifiedIncident {
   id: string;
   incidentNumber?: string | number;
@@ -111,6 +125,10 @@ export interface UnifiedIncident {
   alerts: UnifiedAlert[];
   threatAssessment?: ThreatOversightAssessment;
   emailEvidence?: EmailMessageEvidence[];
+  isChained?: boolean;
+  linkedIncidents?: LinkedIncidentRef[];
+  primaryProvider?: ProviderSource;
+  secondaryProvider?: ProviderSource;
   rawPayload: any;
 }
 
