@@ -377,7 +377,7 @@ app.get('/api/reports/incident/:id/markdown', (req, res) => {
 app.get(['/outlook/manifest.xml', '/api/phishpilot/manifest.xml'], (req, res) => {
   let baseUrl = process.env.APP_URL || (req.query.baseUrl as string);
   if (!baseUrl) {
-    const host = (req.query.host as string) || req.headers['x-forwarded-host'] || req.headers.host || 'vpass.vermiculus.work';
+    const host = (req.query.host as string) || req.headers['x-forwarded-host'] || req.headers.host || 'security.example.com';
     const protocol = 'https'; // Microsoft Centralized Deployment strictly mandates HTTPS
     baseUrl = `${protocol}://${host}`;
   }
@@ -390,7 +390,7 @@ app.get(['/outlook/manifest.xml', '/api/phishpilot/manifest.xml'], (req, res) =>
   }
   let content = fs.readFileSync(manifestPath, 'utf-8');
   // Dynamically replace default/placeholder domains with active deployment URL
-  content = content.replace(/https:\/\/(vpass\.vermiculus\.work|localhost:3310|127\.0\.0\.1:3310)/g, baseUrl);
+  content = content.replace(/https:\/\/(security\.example\.com|localhost:3310|127\.0\.0\.1:3310)/g, baseUrl);
 
   res.setHeader('Content-Type', 'application/xml; charset=utf-8');
   res.setHeader('Content-Disposition', 'attachment; filename="phishpilot-outlook-manifest.xml"');

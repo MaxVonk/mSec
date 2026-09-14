@@ -59,7 +59,7 @@ export class CoachingService {
         ]
       : [
           '<strong>No action needed by you:</strong> The threat has been safely quarantined and blocked across the organization.',
-          '<strong>If you already clicked a link:</strong> Please reset your Microsoft 365 password immediately and inform the Security Team (soc@vermiculus.se).'
+          '<strong>If you already clicked a link:</strong> Please reset your Microsoft 365 password immediately and inform the Security Team (soc@example.com).'
         ];
 
     // Verdict-aware Tip / Reinforcement

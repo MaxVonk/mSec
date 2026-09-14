@@ -11,11 +11,11 @@
   <DefaultLocale>en-US</DefaultLocale>
   <DisplayName DefaultValue="PhishPilot Security Reporter" />
   <Description DefaultValue="1-Click AI-Powered Phishing Threat Analysis and Reporting for Microsoft Outlook." />
-  <IconUrl DefaultValue="https://vpass.vermiculus.work/outlook/icon-64.png" />
-  <HighResolutionIconUrl DefaultValue="https://vpass.vermiculus.work/outlook/icon-128.png" />
-  <SupportUrl DefaultValue="https://vpass.vermiculus.work" />
+  <IconUrl DefaultValue="https://security.example.com/outlook/icon-64.png" />
+  <HighResolutionIconUrl DefaultValue="https://security.example.com/outlook/icon-128.png" />
+  <SupportUrl DefaultValue="https://security.example.com" />
   <AppDomains>
-    <AppDomain>https://vpass.vermiculus.work</AppDomain>
+    <AppDomain>https://security.example.com</AppDomain>
   </AppDomains>
 
   <Hosts>
@@ -32,7 +32,7 @@
   <FormSettings>
     <Form xsi:type="ItemRead">
       <DesktopSettings>
-        <SourceLocation DefaultValue="https://vpass.vermiculus.work/outlook/taskpane.html" />
+        <SourceLocation DefaultValue="https://security.example.com/outlook/taskpane.html" />
         <RequestedHeight>450</RequestedHeight>
       </DesktopSettings>
     </Form>
@@ -85,12 +85,12 @@
 
     <Resources>
       <bt:Images>
-        <bt:Image id="icon16" DefaultValue="https://vpass.vermiculus.work/outlook/icon-16.png" />
-        <bt:Image id="icon32" DefaultValue="https://vpass.vermiculus.work/outlook/icon-32.png" />
-        <bt:Image id="icon80" DefaultValue="https://vpass.vermiculus.work/outlook/icon-80.png" />
+        <bt:Image id="icon16" DefaultValue="https://security.example.com/outlook/icon-16.png" />
+        <bt:Image id="icon32" DefaultValue="https://security.example.com/outlook/icon-32.png" />
+        <bt:Image id="icon80" DefaultValue="https://security.example.com/outlook/icon-80.png" />
       </bt:Images>
       <bt:Urls>
-        <bt:Url id="taskpaneUrl" DefaultValue="https://vpass.vermiculus.work/outlook/taskpane.html" />
+        <bt:Url id="taskpaneUrl" DefaultValue="https://security.example.com/outlook/taskpane.html" />
       </bt:Urls>
       <bt:ShortStrings>
         <bt:String id="groupLabel" DefaultValue="Security" />

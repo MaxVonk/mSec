@@ -69,14 +69,14 @@ export const PlaybookRunnerModal: React.FC<PlaybookRunnerModalProps> = ({
   // Sync targets when active incident changes
   useEffect(() => {
     if (activeIncident) {
-      const u = activeIncident.entities?.find(e => e.type === 'USER')?.value || 'jdoe@vermiculus.se';
+      const u = activeIncident.entities?.find(e => e.type === 'USER')?.value || 'jdoe@example.com';
       const h = activeIncident.entities?.find(e => e.type === 'HOST')?.value || 'DESKTOP-SEC-8901';
       const ip = activeIncident.entities?.find(e => e.type === 'IP')?.value || '194.26.29.112';
       setTargetUser(u);
       setTargetHost(h);
       setTargetIp(ip);
     } else {
-      if (!targetUser) setTargetUser('jdoe@vermiculus.se');
+      if (!targetUser) setTargetUser('jdoe@example.com');
       if (!targetHost) setTargetHost('DESKTOP-SEC-8901');
       if (!targetIp) setTargetIp('194.26.29.112');
     }
@@ -139,7 +139,7 @@ export const PlaybookRunnerModal: React.FC<PlaybookRunnerModalProps> = ({
     setIsRunning(true);
     setLogs([`[${new Date().toLocaleTimeString()}] INITIATING SOAR RUNBOOK: "${selectedPlaybook.title}"...`]);
 
-    const activeUser = targetUser.trim() || 'jdoe@vermiculus.se';
+    const activeUser = targetUser.trim() || 'jdoe@example.com';
     const activeHost = targetHost.trim() || 'DESKTOP-SEC-8901';
     const activeIp = targetIp.trim() || '194.26.29.112';
 
@@ -321,7 +321,7 @@ export const PlaybookRunnerModal: React.FC<PlaybookRunnerModalProps> = ({
                 list="discovered-users-list"
                 value={targetUser}
                 onChange={e => setTargetUser(e.target.value)}
-                placeholder="e.g. user@vermiculus.se"
+                placeholder="e.g. user@example.com"
                 disabled={isRunning}
                 className="w-full text-xs font-mono bg-slate-950 border border-slate-700 rounded px-2.5 py-1.5 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 transition-colors"
               />

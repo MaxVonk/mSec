@@ -96,7 +96,7 @@ Deploy the complete platform (frontend + backend + persistent volume) with a sin
 
 ```bash
 # Clone the repository
-git clone http://192.168.0.233:1619/max/mSec.git
+git clone https://github.com/MaxVonk/mSec.git
 cd mSec
 
 # Launch container
@@ -128,13 +128,13 @@ Copy `.env.example` to `.env` and configure your domain settings:
 
 ```env
 # Public base URL
-APP_URL=https://vpass.vermiculus.work
+APP_URL=https://security.example.com
 
 # Domain name for SSL certificate
-DOMAIN=vpass.vermiculus.work
+DOMAIN=security.example.com
 
 # Let's Encrypt registration email
-CERTBOT_EMAIL=internal_it@vermiculus.se
+CERTBOT_EMAIL=admin@example.com
 
 # Set to 'false' for production certificates; use 'true' to avoid rate limits while testing
 CERTBOT_STAGING=false
