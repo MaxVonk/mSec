@@ -30,6 +30,7 @@ describe('Microsoft Authentication & Security Lookups', () => {
     const uriFromEnv = AuthService.resolveRedirectUri();
     assert.strictEqual(uriFromEnv, 'https://msec.vermiculus.work/api/auth/callback');
     delete process.env.AUTH_REDIRECT_URI;
+
   });
 
   it('should provide default unauthenticated guest session', () => {
