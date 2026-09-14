@@ -8,8 +8,8 @@
     "severity": "CRITICAL",
     "status": "ACTIVE",
     "classification": "TruePositive",
-    "createdTime": "2026-09-11T12:10:25.334Z",
-    "lastUpdatedTime": "2026-09-11T12:50:25.335Z",
+    "createdTime": "2026-09-14T09:28:47.335Z",
+    "lastUpdatedTime": "2026-09-14T10:08:47.336Z",
     "entities": [
       {
         "id": "ent-1",
@@ -83,7 +83,7 @@
         "description": "Defender for Office 365 identified a high-confidence phishing campaign targeting executive finance users.",
         "severity": "HIGH",
         "provider": "DEFENDER_OFFICE365",
-        "createdTime": "2026-09-11T12:10:25.335Z",
+        "createdTime": "2026-09-14T09:28:47.336Z",
         "mitreTechniques": [
           {
             "tactic": "Initial Access",
@@ -110,7 +110,7 @@
         "description": "Defender for Endpoint blocked unauthorized memory read into lsass.exe initiated by spawned PowerShell process.",
         "severity": "CRITICAL",
         "provider": "DEFENDER_ENDPOINT",
-        "createdTime": "2026-09-11T12:25:25.335Z",
+        "createdTime": "2026-09-14T09:43:47.336Z",
         "mitreTechniques": [
           {
             "tactic": "Credential Access",
@@ -137,7 +137,7 @@
         "description": "Command line execution detected: vssadmin.exe Delete Shadows /All /Quiet indicating active ransomware defense suppression.",
         "severity": "CRITICAL",
         "provider": "DEFENDER_ENDPOINT",
-        "createdTime": "2026-09-11T12:40:25.335Z",
+        "createdTime": "2026-09-14T09:58:47.336Z",
         "mitreTechniques": [
           {
             "tactic": "Impact",
@@ -165,7 +165,7 @@
       ]
     },
     "threatAssessment": {
-      "assessedAt": "2026-09-11T12:55:25.336Z",
+      "assessedAt": "2026-09-14T10:13:47.336Z",
       "overallRiskLevel": "CRITICAL",
       "summary": "Threat Oversight Assessment for Incident 9842: High confidence adversarial activity evaluated across 3 trust boundaries with 9 immediate containment measures recommended.",
       "trustBoundariesViolated": [
@@ -280,8 +280,8 @@
     "severity": "HIGH",
     "status": "IN_PROGRESS",
     "classification": "TruePositive",
-    "createdTime": "2026-09-11T10:55:25.335Z",
-    "lastUpdatedTime": "2026-09-11T12:35:25.335Z",
+    "createdTime": "2026-09-14T08:13:47.336Z",
+    "lastUpdatedTime": "2026-09-14T09:53:47.336Z",
     "entities": [
       {
         "id": "s-ent-1",
@@ -327,7 +327,7 @@
         "description": "Over 140 secrets read in under 90 seconds from non-standard IP subnet.",
         "severity": "HIGH",
         "provider": "SENTINEL_SIEM",
-        "createdTime": "2026-09-11T11:00:25.335Z",
+        "createdTime": "2026-09-14T08:18:47.336Z",
         "mitreTechniques": [
           {
             "tactic": "Credential Access",
@@ -355,7 +355,7 @@
       "kqlQueryExecuted": "AzureDiagnostics | where ResourceProvider == \"MICROSOFT.KEYVAULT\" | summarize count() by bin(TimeGenerated, 5m), CallerIPAddress"
     },
     "threatAssessment": {
-      "assessedAt": "2026-09-11T12:55:25.336Z",
+      "assessedAt": "2026-09-14T10:13:47.336Z",
       "overallRiskLevel": "HIGH",
       "summary": "Threat Oversight Assessment for Incident 4412: High confidence adversarial activity evaluated across 3 trust boundaries with 5 immediate containment measures recommended.",
       "trustBoundariesViolated": [
@@ -434,8 +434,8 @@
     "severity": "HIGH",
     "status": "ACTIVE",
     "classification": "TruePositive",
-    "createdTime": "2026-09-11T12:20:25.335Z",
-    "lastUpdatedTime": "2026-09-11T12:45:25.335Z",
+    "createdTime": "2026-09-14T09:38:47.336Z",
+    "lastUpdatedTime": "2026-09-14T10:03:47.336Z",
     "entities": [
       {
         "id": "e-ent-1",
@@ -484,7 +484,7 @@
       "correlationId": "c7b5a190-2e38-46cb-8349-14a938cf7822"
     },
     "threatAssessment": {
-      "assessedAt": "2026-09-11T12:55:25.336Z",
+      "assessedAt": "2026-09-14T10:13:47.336Z",
       "overallRiskLevel": "HIGH",
       "summary": "Threat Oversight Assessment for Incident 3301: High confidence adversarial activity evaluated across 2 trust boundaries with 4 immediate containment measures recommended.",
       "trustBoundariesViolated": [
@@ -554,8 +554,8 @@
     "severity": "MEDIUM",
     "status": "ACTIVE",
     "classification": "Suspicious",
-    "createdTime": "2026-09-11T09:55:25.335Z",
-    "lastUpdatedTime": "2026-09-11T12:05:25.335Z",
+    "createdTime": "2026-09-14T07:13:47.336Z",
+    "lastUpdatedTime": "2026-09-14T09:23:47.336Z",
     "entities": [
       {
         "id": "p-ent-1",
@@ -601,7 +601,7 @@
       "severity": "Medium"
     },
     "threatAssessment": {
-      "assessedAt": "2026-09-11T12:55:25.336Z",
+      "assessedAt": "2026-09-14T10:13:47.336Z",
       "overallRiskLevel": "MEDIUM",
       "summary": "Threat Oversight Assessment for Incident 1190: High confidence adversarial activity evaluated across 2 trust boundaries with 4 immediate containment measures recommended.",
       "trustBoundariesViolated": [
@@ -659,295 +659,6 @@
         "Verify Endpoint Detection and Response (MDE) automated investigation and remediation (AIR) is set to Full Remediation mode.",
         "Implement strict Content-Security-Policy (CSP) and HttpOnly/SameSite=Strict cookie flags across customer-facing and employee web interfaces.",
         "Audit Azure App Registrations and verify that no unauthorized service principals hold Mail.ReadWrite or Directory.ReadWrite permissions."
-      ]
-    }
-  },
-  {
-    "id": "INC-MOCK-CORRELATION-01",
-    "incidentNumber": 9991,
-    "title": "Suspicious Command Execution from 198.51.100.42",
-    "description": "Endpoint beaconing observed from attacker IP.",
-    "provider": "DEFENDER_ENDPOINT",
-    "severity": "HIGH",
-    "status": "ACTIVE",
-    "createdTime": "2026-09-11T12:55:25.460Z",
-    "lastUpdatedTime": "2026-09-11T12:55:25.460Z",
-    "entities": [
-      {
-        "id": "e1",
-        "type": "IP",
-        "value": "198.51.100.42"
-      }
-    ],
-    "alerts": [],
-    "mitreTechniques": [],
-    "rawPayload": {}
-  },
-  {
-    "id": "INC-PHISH-325461",
-    "incidentNumber": "PP-TEST-R",
-    "title": "[PhishPilot Escalation] Critical: Immediate Account Verification Required",
-    "description": "Escalated PhishPilot Report #test-rpt-enhancement-001. Multi-engine verdict: PHISHING (Risk Score: 85/100, Confidence: 95%). Sender: security@micr0soft-update.com.",
-    "severity": "HIGH",
-    "status": "ACTIVE",
-    "provider": "M365_DEFENDER",
-    "createdTime": "2026-09-11T12:55:25.400Z",
-    "lastUpdatedTime": "2026-09-11T12:55:25.461Z",
-    "entities": [
-      {
-        "id": "ent-usr-1789131325461-1",
-        "type": "USER",
-        "value": "security@micr0soft-update.com",
-        "riskScore": 90,
-        "details": {
-          "firstSeen": "2026-09-11T12:55:25.400Z",
-          "lastSeen": "2026-09-11T12:55:25.400Z"
-        }
-      },
-      {
-        "id": "ent-usr-1789131325461-2",
-        "type": "USER",
-        "value": "target.employee@company.com",
-        "details": {
-          "firstSeen": "2026-09-11T12:55:25.400Z",
-          "lastSeen": "2026-09-11T12:55:25.400Z"
-        }
-      },
-      {
-        "id": "ent-host-1789131325461-0",
-        "type": "HOST",
-        "value": "micr0soft-update.com",
-        "riskScore": 95,
-        "details": {
-          "firstSeen": "2026-09-11T12:55:25.400Z",
-          "lastSeen": "2026-09-11T12:55:25.400Z",
-          "url": "http://micr0soft-update.com/login"
-        }
-      },
-      {
-        "id": "ent-ip-1789131325461-0",
-        "type": "IP",
-        "value": "198.51.100.42",
-        "details": {
-          "firstSeen": "2026-09-11T12:55:25.400Z",
-          "lastSeen": "2026-09-11T12:55:25.400Z"
-        }
-      },
-      {
-        "id": "ent-file-1789131325461-0",
-        "type": "FILE",
-        "value": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-        "details": {
-          "filename": "invoice_malicious.exe",
-          "mimeType": "application/x-msdownload",
-          "size": 45000
-        }
-      }
-    ],
-    "alerts": [
-      {
-        "id": "ALT-PP-test-rpt",
-        "title": "PhishPilot Detected PHISHING: Critical: Immediate Account Verification Required",
-        "description": "PhishPilot automated escalation: High-risk phishing indicators detected.",
-        "severity": "HIGH",
-        "provider": "M365_DEFENDER",
-        "createdTime": "2026-09-11T12:55:25.400Z",
-        "mitreTechniques": [
-          {
-            "techniqueId": "T1566.001",
-            "techniqueName": "Phishing: Spearphishing Attachment",
-            "tactic": "Initial Access"
-          },
-          {
-            "techniqueId": "T1566.002",
-            "techniqueName": "Phishing: Spearphishing Link",
-            "tactic": "Initial Access"
-          }
-        ],
-        "entities": [
-          {
-            "id": "ent-usr-1789131325461-1",
-            "type": "USER",
-            "value": "security@micr0soft-update.com",
-            "riskScore": 90,
-            "details": {
-              "firstSeen": "2026-09-11T12:55:25.400Z",
-              "lastSeen": "2026-09-11T12:55:25.400Z"
-            }
-          },
-          {
-            "id": "ent-usr-1789131325461-2",
-            "type": "USER",
-            "value": "target.employee@company.com",
-            "details": {
-              "firstSeen": "2026-09-11T12:55:25.400Z",
-              "lastSeen": "2026-09-11T12:55:25.400Z"
-            }
-          },
-          {
-            "id": "ent-host-1789131325461-0",
-            "type": "HOST",
-            "value": "micr0soft-update.com",
-            "riskScore": 95,
-            "details": {
-              "firstSeen": "2026-09-11T12:55:25.400Z",
-              "lastSeen": "2026-09-11T12:55:25.400Z",
-              "url": "http://micr0soft-update.com/login"
-            }
-          },
-          {
-            "id": "ent-ip-1789131325461-0",
-            "type": "IP",
-            "value": "198.51.100.42",
-            "details": {
-              "firstSeen": "2026-09-11T12:55:25.400Z",
-              "lastSeen": "2026-09-11T12:55:25.400Z"
-            }
-          },
-          {
-            "id": "ent-file-1789131325461-0",
-            "type": "FILE",
-            "value": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-            "details": {
-              "filename": "invoice_malicious.exe",
-              "mimeType": "application/x-msdownload",
-              "size": 45000
-            }
-          }
-        ]
-      }
-    ],
-    "mitreTechniques": [
-      {
-        "techniqueId": "T1566.001",
-        "techniqueName": "Phishing: Spearphishing Attachment",
-        "tactic": "Initial Access"
-      },
-      {
-        "techniqueId": "T1566.002",
-        "techniqueName": "Phishing: Spearphishing Link",
-        "tactic": "Initial Access"
-      }
-    ],
-    "rawPayload": {
-      "id": "test-rpt-enhancement-001",
-      "timestamp": "2026-09-11T12:55:25.400Z",
-      "verdict": "PHISHING",
-      "riskScore": 85,
-      "confidence": 0.95,
-      "emailSummary": {
-        "from": "security@micr0soft-update.com",
-        "to": "target.employee@company.com",
-        "subject": "Critical: Immediate Account Verification Required",
-        "date": "2026-09-11T12:55:25.400Z",
-        "replyTo": "phisher@evil-domain.com",
-        "returnPath": "bounce@evil-domain.com",
-        "bodyPreview": "Please verify your credentials immediately at the link below.",
-        "urlCount": 1,
-        "attachmentCount": 1
-      },
-      "headerAnalysis": {
-        "spf": {
-          "name": "SPF",
-          "result": "fail",
-          "detail": "SPF softfail"
-        },
-        "dkim": {
-          "name": "DKIM",
-          "result": "fail",
-          "detail": "No DKIM signature"
-        },
-        "dmarc": {
-          "name": "DMARC",
-          "result": "fail",
-          "detail": "DMARC failed"
-        },
-        "replyToMismatch": true,
-        "returnPathMismatch": true,
-        "receivedHops": 3,
-        "originIps": [
-          "198.51.100.42"
-        ]
-      },
-      "urlAnalysis": [
-        {
-          "url": "http://micr0soft-update.com/login",
-          "domain": "micr0soft-update.com",
-          "domainAgeDays": 2,
-          "isMalicious": true,
-          "isDeceptive": true,
-          "reputationSources": [
-            {
-              "source": "VirusTotal",
-              "result": "malicious"
-            }
-          ],
-          "homoglyph": {
-            "isSuspicious": true,
-            "impersonatedBrand": "Microsoft",
-            "matchedTarget": "microsoft.com",
-            "similarityScore": 0.85,
-            "explanation": "Detected typosquatting / leetspeak mimic of brand \"Microsoft\""
-          }
-        }
-      ],
-      "attachmentAnalysis": [
-        {
-          "filename": "invoice_malicious.exe",
-          "mimeType": "application/x-msdownload",
-          "size": 45000,
-          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-          "md5": "d41d8cd98f00b204e9800998ecf8427e",
-          "isSuspiciousExtension": true,
-          "isPasswordProtected": false,
-          "isMalicious": true,
-          "reputationSources": [
-            {
-              "source": "VirusTotal",
-              "result": "malicious"
-            }
-          ]
-        }
-      ],
-      "aiClassification": {
-        "classification": "PHISHING",
-        "confidence": 0.95,
-        "keyFindings": [
-          "Brand impersonation",
-          "Urgent credential harvesting prompt"
-        ],
-        "indicators": [
-          "micr0soft-update.com",
-          "invoice_malicious.exe"
-        ],
-        "recommendedActions": [
-          "Block sender",
-          "Purge from all mailboxes",
-          "Revoke user credentials"
-        ],
-        "modelUsed": "Azure OpenAI GPT-4o"
-      },
-      "riskBreakdown": {
-        "totalScore": 85,
-        "maxPossible": 100,
-        "deterministicVerdict": "PHISHING",
-        "items": [
-          {
-            "condition": "SPF / DMARC Authentication Failures",
-            "points": 30,
-            "triggered": true
-          },
-          {
-            "condition": "Homoglyph / Brand Typosquatting Deception",
-            "points": 25,
-            "triggered": true
-          }
-        ]
-      },
-      "recommendedActions": [
-        "Purge message",
-        "Block sender in TABL",
-        "Revoke target user sessions"
       ]
     }
   }
