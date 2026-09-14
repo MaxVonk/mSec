@@ -21,6 +21,7 @@
   - [8. Enterprise RBAC & Authentication](#8-enterprise-rbac--authentication)
   - [9. Production Demo Mode Safeguard](#9-production-demo-mode-safeguard)
 - [Quick Start with Docker Compose](#quick-start-with-docker-compose)
+- [HTTPS & Automated Let's Encrypt Setup (Certbot)](#https--automated-lets-encrypt-setup-certbot)
 - [Local Development](#local-development)
 - [Automated Microsoft Entra ID Setup](#automated-microsoft-entra-id-setup)
 - [Configuration Reference](#configuration-reference)
@@ -114,6 +115,85 @@ To monitor logs or stop the container:
 docker compose logs -f
 docker compose down
 ```
+
+---
+
+## HTTPS & Automated Let's Encrypt Setup (Certbot)
+
+mSec includes automated SSL/TLS certificate management using **Let's Encrypt (Certbot)** and an **Nginx reverse proxy**. It supports both internet-facing servers (HTTP challenge) and internal/private office networks (DNS challenge).
+
+### 1. Configure Environment Variables in `.env`
+
+Copy `.env.example` to `.env` and configure your domain settings:
+
+```env
+# Public base URL
+APP_URL=https://vpass.vermiculus.work
+
+# Domain name for SSL certificate
+DOMAIN=vpass.vermiculus.work
+
+# Let's Encrypt registration email
+CERTBOT_EMAIL=internal_it@vermiculus.se
+
+# Set to 'false' for production certificates; use 'true' to avoid rate limits while testing
+CERTBOT_STAGING=false
+```
+
+### 2. Choose Your Challenge Method
+
+#### Method A: DNS-01 Challenge (Recommended for Internal / Office Deployments)
+Works behind private networks without exposing port 80 to the internet.
+
+1. Set the following in `.env`:
+   ```env
+   CERTBOT_CHALLENGE_METHOD=dns
+   CERTBOT_DNS_PROVIDER=cloudflare
+   CERTBOT_IMAGE=certbot/dns-cloudflare:latest
+   CERTBOT_DNS_CREDENTIALS_FILE=./certbot/creds/cloudflare.ini
+   CERTBOT_DNS_PROPAGATION_SECONDS=60
+   ```
+2. Create `./certbot/creds/cloudflare.ini` (see `certbot/creds/cloudflare.ini.example`):
+   ```ini
+   dns_cloudflare_api_token = YOUR_CLOUDFLARE_API_TOKEN
+   ```
+3. Secure the credentials file:
+   ```bash
+   chmod 600 ./certbot/creds/cloudflare.ini
+   ```
+
+#### Method B: HTTP-01 Challenge (For Internet-Reachable Servers)
+Requires inbound port 80 open from the internet to your server.
+
+```env
+CERTBOT_CHALLENGE_METHOD=http
+```
+
+### 3. Bootstrap the Certificates (Run Once)
+
+Execute the initialization script:
+
+```bash
+chmod +x init-letsencrypt.sh
+./init-letsencrypt.sh
+# or: npm run setup:ssl
+```
+
+This script:
+1. Validates `.env` and challenge requirements.
+2. Boots up the Nginx reverse proxy with ACME challenge routing.
+3. Requests and installs the official Let's Encrypt certificates into `./certbot/conf`.
+4. Gracefully reloads Nginx with full TLS (HTTP/2, modern ciphers, and automatic HTTP-to-HTTPS redirect).
+
+### 4. Automated Certificate Renewals
+
+Once bootstrapped, run the full stack:
+
+```bash
+docker compose up -d
+```
+
+The background `certbot` container checks for renewal every 12 hours. Nginx periodically reloads to seamlessly pick up renewed certificates without downtime.
 
 ---
 

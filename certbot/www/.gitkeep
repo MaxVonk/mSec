@@ -1,0 +1,1 @@
+# Keep certbot/www directory in git while ignoring ACME challenge files

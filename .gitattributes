@@ -1,0 +1,3 @@
+# Enforce LF line endings for shell scripts so they run properly inside Linux containers
+*.sh text eol=lf
+*.template text eol=lf

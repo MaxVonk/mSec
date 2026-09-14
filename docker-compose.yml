@@ -6,7 +6,7 @@ services:
     container_name: msec-hub
     restart: unless-stopped
     ports:
-      # Maps port 3310 to all network interfaces
+      # Maps port 3310 to allow direct access or local debugging
       - "3310:3310"
     env_file:
       - path: .env
@@ -14,6 +14,7 @@ services:
     environment:
       - PORT=3310
       - NODE_ENV=production
+      - APP_URL=${APP_URL:-}
       # Security & Environment Modes
       # Set DEMO_MODE=true to enable resetting demo datasets. Set to false in production to prevent data loss.
       - DEMO_MODE=${DEMO_MODE:-false}
@@ -36,8 +37,33 @@ services:
       retries: 3
       start_period: 10s
 
+  nginx:
+    image: nginx:alpine
+    container_name: msec-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - DOMAIN=${DOMAIN:-localhost}
+    volumes:
+      - ./nginx/templates:/etc/nginx/custom-templates:ro
+      - ./nginx/entrypoint.sh:/docker-entrypoint.d/40-msec-nginx.sh:ro
+      - ./certbot/conf:/etc/letsencrypt:ro
+      - ./certbot/www:/var/www/certbot:ro
+
+  certbot:
+    image: ${CERTBOT_IMAGE:-certbot/certbot}
+    container_name: msec-certbot
+    restart: on-failure
+    volumes:
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+      - ./certbot/creds:/certbot-creds:ro
+      - ./certbot/renew.sh:/renew.sh:ro
+    entrypoint: ["/bin/sh", "/renew.sh"]
+
 volumes:
   msec_data:
     name: msec_data
     driver: local
-

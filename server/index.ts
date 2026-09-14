@@ -26,6 +26,7 @@ WebhookNotifierService.init().catch(err => console.error('[WebhookNotifier] Init
 ThreatIntelService.init().catch(err => console.error('[ThreatIntel] Init error:', err));
 
 const app = express();
+app.set('trust proxy', 1);
 const port = process.env.PORT || 3310;
 
 // Upload handler (memory storage)

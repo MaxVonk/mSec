@@ -14,3 +14,11 @@ yarn-error.log*
 .DS_Store
 Thumbs.db
 
+# Certbot & TLS Secrets
+certbot/conf/*
+!certbot/conf/.gitkeep
+certbot/www/*
+!certbot/www/.gitkeep
+certbot/creds/*.ini
+!certbot/creds/*.example
+!certbot/creds/.gitkeep
