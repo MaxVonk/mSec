@@ -51,3 +51,17 @@ export interface PlaybookExecutionLog {
   stepResults: StepExecutionState[];
 }
 
+export interface PlaybookRecommendation {
+  playbook: PlaybookDefinition;
+  score: number; // 0 - 100
+  confidence: 'HIGH' | 'MEDIUM' | 'LOW';
+  rationale: string;
+  matchedSignals: string[];
+  suggestedTarget?: {
+    type: 'USER' | 'HOST' | 'IP';
+    value: string;
+    label: string;
+  };
+  keyActionSummary: string;
+}
+

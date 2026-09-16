@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { X, Play, CheckCircle2, AlertTriangle, ShieldCheck, Terminal, ArrowRight, RefreshCw, Layers, User, Server, Globe, Target } from 'lucide-react';
+import { X, Play, CheckCircle2, AlertTriangle, ShieldCheck, Terminal, ArrowRight, RefreshCw, Layers, User, Server, Globe, Target, Zap } from 'lucide-react';
 import { PlaybookDefinition, StepExecutionState } from '../../types/soar';
 import { PREBUILT_PLAYBOOKS } from '../../utils/soarPlaybooks';
+import { recommendPlaybook } from '../../utils/playbookRecommender';
 import { UnifiedIncident } from '../../types';
 
 interface PlaybookRunnerModalProps {
@@ -88,31 +89,38 @@ export const PlaybookRunnerModal: React.FC<PlaybookRunnerModalProps> = ({
     }
   }, [incident]);
 
-  // Auto-select most relevant playbook if opened with an incident
+  // Calculate recommendation for the active incident
+  const activeTargetIncident = activeIncident || incident;
+  const recommendation = useMemo(() => {
+    return recommendPlaybook(activeTargetIncident, { forceRecommend: true });
+  }, [activeTargetIncident]);
+
+  // Auto-select recommended playbook and populate target entity
   useEffect(() => {
     if (isOpen || inline) {
       let bestPlaybook = PREBUILT_PLAYBOOKS[0];
-      const targetInc = activeIncident || incident;
       if (initialPlaybookId) {
         const found = PREBUILT_PLAYBOOKS.find(p => p.id === initialPlaybookId);
         if (found) bestPlaybook = found;
-      } else if (targetInc) {
-        const mitreStr = targetInc.mitreTechniques?.map(m => `${m.tactic} ${m.techniqueId} ${m.techniqueName}`).join(' ') || '';
-        const incText = `${targetInc.title} ${targetInc.description} ${mitreStr}`.toLowerCase();
-        if (incText.includes('phish') || incText.includes('email')) {
-          bestPlaybook = PREBUILT_PLAYBOOKS.find(p => p.id === 'phishing-campaign-purge') || bestPlaybook;
-        } else if (incText.includes('ransom') || incText.includes('cobalt') || incText.includes('endpoint') || incText.includes('mimikatz')) {
-          bestPlaybook = PREBUILT_PLAYBOOKS.find(p => p.id === 'ransomware-host-isolation') || bestPlaybook;
-        } else if (incText.includes('exfiltrat') || incText.includes('download') || incText.includes('oauth')) {
-          bestPlaybook = PREBUILT_PLAYBOOKS.find(p => p.id === 'data-exfiltration-blockade') || bestPlaybook;
-        } else {
-          bestPlaybook = PREBUILT_PLAYBOOKS.find(p => p.id === 'compromised-identity') || bestPlaybook;
-        }
+      } else if (recommendation) {
+        bestPlaybook = recommendation.playbook;
       }
+
       setSelectedPlaybook(bestPlaybook);
       resetExecution(bestPlaybook);
+
+      // Pre-fill target from recommendation if available
+      if (recommendation?.suggestedTarget) {
+        if (recommendation.suggestedTarget.type === 'USER' && recommendation.suggestedTarget.value) {
+          setTargetUser(recommendation.suggestedTarget.value);
+        } else if (recommendation.suggestedTarget.type === 'HOST' && recommendation.suggestedTarget.value) {
+          setTargetHost(recommendation.suggestedTarget.value);
+        } else if (recommendation.suggestedTarget.type === 'IP' && recommendation.suggestedTarget.value) {
+          setTargetIp(recommendation.suggestedTarget.value);
+        }
+      }
     }
-  }, [isOpen, incident, initialPlaybookId, activeIncident]);
+  }, [isOpen, incident, initialPlaybookId, activeIncident, recommendation]);
 
   const resetExecution = (playbook: PlaybookDefinition) => {
     setIsRunning(false);
@@ -387,6 +395,25 @@ export const PlaybookRunnerModal: React.FC<PlaybookRunnerModalProps> = ({
 
           {/* Playbook Selector Tabs */}
           <div>
+            {recommendation && activeTargetIncident && (
+              <div className="p-3 mb-3 rounded-xl bg-gradient-to-r from-amber-950/40 via-cyan-950/30 to-slate-900 border border-amber-500/30 text-xs flex items-start gap-2.5 shadow-sm">
+                <div className="p-1.5 rounded-lg bg-amber-500/20 text-amber-300 border border-amber-500/40 mt-0.5 shrink-0">
+                  <Zap className="w-3.5 h-3.5 fill-current" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-bold text-white">Recommended Strategy</span>
+                    <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 uppercase font-bold">
+                      {recommendation.confidence} Confidence ({recommendation.score}% Match)
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-300 mt-0.5 leading-relaxed">
+                    {recommendation.rationale}
+                  </p>
+                </div>
+              </div>
+            )}
+
             <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2 flex items-center gap-1.5">
               <Layers className="w-3.5 h-3.5 text-cyan-400" />
               Available SOC Playbooks
@@ -394,6 +421,7 @@ export const PlaybookRunnerModal: React.FC<PlaybookRunnerModalProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-1.5">
               {PREBUILT_PLAYBOOKS.map(pb => {
                 const isSelected = pb.id === selectedPlaybook.id;
+                const isRecommended = recommendation?.playbook.id === pb.id;
                 return (
                   <button
                     key={pb.id}
@@ -402,13 +430,23 @@ export const PlaybookRunnerModal: React.FC<PlaybookRunnerModalProps> = ({
                     className={`text-left p-3.5 rounded-xl border transition-all ${
                       isSelected
                         ? 'bg-cyan-950/40 border-cyan-500/50 shadow-[0_0_20px_rgba(6,182,212,0.15)] ring-1 ring-cyan-500/30'
+                        : isRecommended
+                        ? 'bg-slate-950/70 border-amber-500/40 hover:border-amber-500/60'
                         : 'bg-slate-950/50 border-slate-800 hover:border-slate-700 hover:bg-slate-900/50'
                     } ${isRunning ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-sm font-bold text-white">{pb.title}</span>
+                    <div className="flex items-center justify-between mb-1 gap-1">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span className="text-sm font-bold text-white truncate">{pb.title}</span>
+                        {isRecommended && (
+                          <span className="shrink-0 flex items-center gap-0.5 text-[9px] font-bold uppercase tracking-wider text-amber-300 bg-amber-950/80 px-1.5 py-0.5 rounded border border-amber-500/50 shadow-sm animate-pulse">
+                            <Zap className="w-2.5 h-2.5 fill-current text-amber-400" />
+                            Suggested
+                          </span>
+                        )}
+                      </div>
                       <span
-                        className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded ${
+                        className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded shrink-0 ${
                           pb.category === 'IDENTITY'
                             ? 'bg-purple-500/20 text-purple-300'
                             : pb.category === 'ENDPOINT'

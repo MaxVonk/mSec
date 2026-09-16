@@ -30,6 +30,7 @@ import {
   Link2
 } from 'lucide-react';
 import { correlateSiemXdrIncidents, formatIncidentDateTime } from '../utils/incidentCorrelator';
+import { recommendPlaybook } from '../utils/playbookRecommender';
 
 interface IncidentListProps {
   incidents: UnifiedIncident[];
@@ -54,6 +55,7 @@ interface IncidentListProps {
   setAutoRefreshInterval?: (interval: number) => void;
   onSyncAll?: () => Promise<void>;
   isSyncingAll?: boolean;
+  onOpenPlaybook?: (incident: UnifiedIncident, playbookId?: string) => void;
 }
 
 export const IncidentList: React.FC<IncidentListProps> = ({
@@ -78,7 +80,8 @@ export const IncidentList: React.FC<IncidentListProps> = ({
   autoRefreshInterval = 30,
   setAutoRefreshInterval,
   onSyncAll,
-  isSyncingAll = false
+  isSyncingAll = false,
+  onOpenPlaybook
 }) => {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showClearConfirm, setShowClearConfirm] = useState(false);
@@ -577,6 +580,7 @@ export const IncidentList: React.FC<IncidentListProps> = ({
             const pendingActions = incident.threatAssessment?.containmentActions.filter(a => a.status === 'PENDING').length || 0;
             const isSelected = selectedIds.has(incident.id);
             const isDeleting = deletingId === incident.id;
+            const rec = recommendPlaybook(incident);
 
             return (
               <div
@@ -616,6 +620,19 @@ export const IncidentList: React.FC<IncidentListProps> = ({
                           <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-medium border ${providerInfo.color}`}>
                             {providerInfo.label}
                           </span>
+                        )}
+                        {rec && onOpenPlaybook && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onOpenPlaybook(incident, rec.playbook.id);
+                            }}
+                            title={`Recommended Playbook (${rec.confidence} Confidence):\n${rec.playbook.title}\n\n${rec.rationale}`}
+                            className="px-2.5 py-0.5 rounded-full text-[11px] font-bold border bg-amber-950/80 hover:bg-amber-900 text-amber-300 border-amber-500/60 flex items-center gap-1 shadow-sm transition-all cursor-pointer hover:border-amber-400 group/rec"
+                          >
+                            <Zap className="w-3 h-3 fill-current text-amber-400 group-hover/rec:scale-110 transition-transform" />
+                            <span>Playbook: {rec.playbook.category}</span>
+                          </button>
                         )}
                         <span className="text-xs text-slate-400 flex items-center gap-1 font-mono">
                           #{incident.incidentNumber || incident.id}
@@ -712,15 +729,31 @@ export const IncidentList: React.FC<IncidentListProps> = ({
                       </div>
                     )}
 
-                    <button
-                      onClick={() => onSelectIncident(incident)}
-                      className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-white bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 rounded-lg shadow-md shadow-cyan-950/50 transition-all cursor-pointer"
-                      title="Open full Incident Threat Oversight"
-                    >
-                      <ShieldAlert className="w-3.5 h-3.5 text-cyan-200" />
-                      <span>Threat Oversight</span>
-                      <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-                    </button>
+                    <div className="flex items-center gap-2">
+                      {rec && onOpenPlaybook && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onOpenPlaybook(incident, rec.playbook.id);
+                          }}
+                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-amber-300 bg-amber-950/70 hover:bg-amber-900 border border-amber-500/60 rounded-lg shadow-sm transition-all cursor-pointer hover:border-amber-400"
+                          title={`Launch Suggested Playbook (${rec.confidence} Confidence): ${rec.playbook.title}`}
+                        >
+                          <Zap className="w-3.5 h-3.5 fill-current text-amber-400 animate-pulse" />
+                          <span>Run Playbook</span>
+                        </button>
+                      )}
+
+                      <button
+                        onClick={() => onSelectIncident(incident)}
+                        className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-white bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 rounded-lg shadow-md shadow-cyan-950/50 transition-all cursor-pointer"
+                        title="Open full Incident Threat Oversight"
+                      >
+                        <ShieldAlert className="w-3.5 h-3.5 text-cyan-200" />
+                        <span>Threat Oversight</span>
+                        <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>

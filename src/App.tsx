@@ -54,6 +54,13 @@ export const App: React.FC = () => {
   const [isMitreOpen, setIsMitreOpen] = useState(false);
   const [isPlaybooksOpen, setIsPlaybooksOpen] = useState(false);
   const [playbookIncident, setPlaybookIncident] = useState<UnifiedIncident | null>(null);
+  const [initialPlaybookId, setInitialPlaybookId] = useState<string | undefined>(undefined);
+
+  const handleOpenPlaybook = (inc?: UnifiedIncident, pbId?: string) => {
+    setPlaybookIncident(inc || null);
+    setInitialPlaybookId(pbId);
+    setActiveView('playbooks');
+  };
   const [isWarRoomOpen, setIsWarRoomOpen] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isSyncLogOpen, setIsSyncLogOpen] = useState(false);
@@ -381,6 +388,7 @@ export const App: React.FC = () => {
               setAutoRefreshInterval={handleSetAutoRefreshInterval}
               onSyncAll={handleSyncAll}
               isSyncingAll={isSyncingAll}
+              onOpenPlaybook={handleOpenPlaybook}
             />
           )}
 
@@ -435,6 +443,7 @@ export const App: React.FC = () => {
             <PlaybookRunnerModal
               inline={true}
               incident={playbookIncident || selectedIncident}
+              initialPlaybookId={initialPlaybookId}
               incidents={incidents}
             />
           )}
@@ -475,10 +484,7 @@ export const App: React.FC = () => {
           onExecuteAction={handleExecuteAction}
           onUpdateStatus={handleUpdateStatus}
           onDelete={handleDeleteIncident}
-          onOpenPlaybook={(inc) => {
-            setPlaybookIncident(inc);
-            setActiveView('playbooks');
-          }}
+          onOpenPlaybook={handleOpenPlaybook}
         />
       )}
 
@@ -536,8 +542,10 @@ export const App: React.FC = () => {
           onClose={() => {
             setIsPlaybooksOpen(false);
             setPlaybookIncident(null);
+            setInitialPlaybookId(undefined);
           }}
           incident={playbookIncident || selectedIncident}
+          initialPlaybookId={initialPlaybookId}
           incidents={incidents}
         />
       )}
@@ -548,10 +556,7 @@ export const App: React.FC = () => {
         onClose={() => setIsWarRoomOpen(false)}
         incidents={incidents}
         onSelectIncident={inc => setSelectedIncident(inc)}
-        onRunPlaybook={inc => {
-          setPlaybookIncident(inc || null);
-          setActiveView('playbooks');
-        }}
+        onRunPlaybook={inc => handleOpenPlaybook(inc || undefined)}
         onOpenShiftHandover={() => setActiveView('reports')}
       />
 
@@ -566,10 +571,7 @@ export const App: React.FC = () => {
         onOpenWarRoom={() => setIsWarRoomOpen(true)}
         onOpenShiftHandover={() => setActiveView('reports')}
         onOpenUserManagement={() => setActiveView('users')}
-        onOpenPlaybooks={inc => {
-          setPlaybookIncident(inc || null);
-          setActiveView('playbooks');
-        }}
+        onOpenPlaybooks={inc => handleOpenPlaybook(inc)}
         onOpenConnectors={() => setActiveView('settings')}
         onOpenThreatInsight={() => setActiveView('threat-insight')}
       />

@@ -33,12 +33,15 @@ import {
   Inbox,
   Link,
   Link2,
-  Calendar
+  Calendar,
+  Zap,
+  ArrowRight
 } from 'lucide-react';
 import { InvestigationGraph } from './graph/InvestigationGraph';
 import { buildIncidentGraph } from '../utils/graphBuilder';
 import { ThreatIntelBadge } from './common/ThreatIntelBadge';
 import { formatIncidentDateTime } from '../utils/incidentCorrelator';
+import { recommendPlaybook } from '../utils/playbookRecommender';
 
 interface IncidentDetailModalProps {
   incident: UnifiedIncident | null;
@@ -46,7 +49,7 @@ interface IncidentDetailModalProps {
   onExecuteAction: (incidentId: string, actionId: string) => Promise<void>;
   onUpdateStatus: (id: string, status: IncidentStatus) => void;
   onDelete: (id: string) => void;
-  onOpenPlaybook?: (incident: UnifiedIncident) => void;
+  onOpenPlaybook?: (incident: UnifiedIncident, playbookId?: string) => void;
 }
 
 export const IncidentDetailModal: React.FC<IncidentDetailModalProps> = ({
@@ -119,6 +122,10 @@ export const IncidentDetailModal: React.FC<IncidentDetailModalProps> = ({
   }, [incident, rawSource]);
 
   if (!incident) return null;
+
+  const recommendation = useMemo(() => {
+    return recommendPlaybook(incident);
+  }, [incident]);
 
   const assessment = incident.threatAssessment;
   const commentsCount = (incident.comments?.length || 0) + (incident.resolvingComment ? 1 : 0);
@@ -310,12 +317,20 @@ export const IncidentDetailModal: React.FC<IncidentDetailModalProps> = ({
 
             {onOpenPlaybook && (
               <button
-                onClick={() => onOpenPlaybook(incident)}
-                title="Launch Automated SOAR Containment Playbook"
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-500/50 text-cyan-300 rounded-lg text-xs font-semibold transition-colors cursor-pointer shadow-sm"
+                onClick={() => onOpenPlaybook(incident, recommendation?.playbook.id)}
+                title={recommendation ? `Launch Recommended Playbook: ${recommendation.playbook.title}` : "Launch Automated SOAR Containment Playbook"}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer shadow-sm ${
+                  recommendation
+                    ? 'bg-amber-950/80 hover:bg-amber-900 border border-amber-500/60 text-amber-300 ring-1 ring-amber-500/30 shadow-[0_0_15px_rgba(245,158,11,0.15)]'
+                    : 'bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-500/50 text-cyan-300'
+                }`}
               >
-                <Play className="w-3.5 h-3.5 fill-current" />
-                <span>Playbook</span>
+                {recommendation ? (
+                  <Zap className="w-3.5 h-3.5 fill-current text-amber-400 animate-pulse" />
+                ) : (
+                  <Play className="w-3.5 h-3.5 fill-current" />
+                )}
+                <span>{recommendation ? `Playbook: ${recommendation.playbook.category}` : 'Playbook'}</span>
               </button>
             )}
 
@@ -387,6 +402,77 @@ export const IncidentDetailModal: React.FC<IncidentDetailModalProps> = ({
                   <span>{link.provider === 'SENTINEL_SIEM' ? 'Azure Sentinel Portal' : 'Defender XDR Portal'}</span>
                 </a>
               ) : null)}
+            </div>
+          </div>
+        )}
+
+        {/* Automated Playbook Recommendation Banner for High & Critical Incidents */}
+        {recommendation && (
+          <div className="mx-6 mt-3 p-4 rounded-2xl bg-gradient-to-r from-amber-950/50 via-slate-900 to-cyan-950/40 border border-amber-500/40 shadow-xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-72 h-72 bg-amber-500/5 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
+            
+            <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+              <div className="space-y-2 flex-1 min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="flex items-center gap-1 text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/50 shadow-sm animate-pulse">
+                    <Zap className="w-3 h-3 fill-current text-amber-400" />
+                    Recommended Containment Playbook
+                  </span>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
+                    {recommendation.confidence} Confidence ({recommendation.score}% Match)
+                  </span>
+                  <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-400 border border-cyan-800">
+                    Category: {recommendation.playbook.category}
+                  </span>
+                </div>
+
+                <div>
+                  <h3 className="text-base font-bold text-white tracking-tight flex items-center gap-2">
+                    {recommendation.playbook.title}
+                  </h3>
+                  <p className="text-xs text-slate-300 mt-1 leading-relaxed">
+                    {recommendation.rationale}
+                  </p>
+                </div>
+
+                {/* Pre-configured Containment Target & Steps Preview */}
+                <div className="flex flex-wrap items-center gap-2.5 pt-1 text-xs">
+                  {recommendation.suggestedTarget && (
+                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-950/80 border border-slate-800 text-slate-200 font-mono text-[11px]">
+                      <span className="text-amber-400 font-semibold">{recommendation.suggestedTarget.label}:</span>
+                      <span className="text-white font-bold">{recommendation.suggestedTarget.value}</span>
+                    </div>
+                  )}
+
+                  <div className="text-[11px] text-slate-400 flex items-center gap-1">
+                    <span className="text-slate-500 font-medium">Runbook:</span>
+                    <span className="text-cyan-300 font-mono">{recommendation.keyActionSummary}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex sm:flex-col items-center sm:items-end gap-2 shrink-0">
+                {onOpenPlaybook && (
+                  <button
+                    onClick={() => onOpenPlaybook(incident, recommendation.playbook.id)}
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 via-amber-600 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-slate-950 font-bold text-xs transition-all shadow-lg shadow-amber-500/25 cursor-pointer"
+                    title="Launch this recommended playbook with pre-populated targets"
+                  >
+                    <Zap className="w-4 h-4 fill-current" />
+                    <span>Run Suggested Playbook</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                )}
+                {onOpenPlaybook && (
+                  <button
+                    onClick={() => onOpenPlaybook(incident)}
+                    className="text-[11px] text-slate-400 hover:text-slate-200 underline cursor-pointer"
+                  >
+                    Browse other playbooks
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         )}
