@@ -854,26 +854,99 @@ export const AnalysisReport: React.FC<Props> = ({ report: initialReport, onClose
                     </div>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-mono mb-4">
-                      <div><span className="text-slate-500">MD5:</span> <span className="text-slate-300 select-all">{att.md5}</span></div>
-                      <div><span className="text-slate-500">SHA256:</span> <span className="text-slate-300 select-all truncate block">{att.sha256}</span></div>
+                      <div className="bg-slate-950/60 p-2.5 rounded-lg border border-slate-800/80">
+                        <span className="text-slate-500 font-medium">MD5:</span>{' '}
+                        <span className="text-slate-300 select-all">{att.md5}</span>
+                      </div>
+                      <div className="bg-slate-950/60 p-2.5 rounded-lg border border-slate-800/80 flex items-center justify-between gap-2">
+                        <div className="min-w-0">
+                          <span className="text-slate-500 font-medium">SHA256:</span>{' '}
+                          <span className="text-slate-300 select-all truncate inline-block max-w-[220px] sm:max-w-xs align-bottom" title={att.sha256}>
+                            {att.sha256}
+                          </span>
+                        </div>
+                        {att.sha256 && (
+                          <a
+                            href={`https://www.virustotal.com/gui/file/${att.sha256}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-[11px] text-sky-400 hover:text-sky-300 bg-sky-500/10 hover:bg-sky-500/20 border border-sky-500/30 px-2 py-0.5 rounded shrink-0 transition-colors"
+                            title="Inspect file hash on VirusTotal"
+                          >
+                            <span>VirusTotal</span>
+                            <ExternalLink className="w-3 h-3" />
+                          </a>
+                        )}
+                      </div>
                     </div>
 
-                    {att.reputationSources.length > 0 && (
-                      <div className="bg-slate-950 rounded-lg p-3">
-                        <div className="text-xs font-bold text-slate-500 mb-2 uppercase">Reputation Checks</div>
-                        <div className="flex flex-wrap gap-2">
+                    <div className="bg-slate-950 rounded-lg p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">Reputation Checks</div>
+                        {att.sha256 && (
+                          <a
+                            href={`https://www.virustotal.com/gui/file/${att.sha256}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-[11px] text-sky-400 hover:text-sky-300 font-medium transition-colors"
+                          >
+                            <span>Open VirusTotal GUI</span>
+                            <ExternalLink className="w-3 h-3" />
+                          </a>
+                        )}
+                      </div>
+
+                      {att.reputationSources && att.reputationSources.length > 0 ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                           {att.reputationSources.map((rep, j) => (
-                            <span key={j} className={`px-2 py-1 rounded text-xs border ${
-                              rep.result === 'malicious' ? 'border-red-500/30 text-red-400 bg-red-500/10' : 
-                              rep.result === 'suspicious' ? 'border-amber-500/30 text-amber-400 bg-amber-500/10' : 
-                              'border-emerald-500/30 text-emerald-400 bg-emerald-500/10'
-                            }`}>
-                              {rep.source}: {rep.result}
-                            </span>
+                            <div key={j} className="flex flex-col text-xs bg-slate-900 border border-slate-800 px-3 py-2.5 rounded-lg gap-1.5">
+                              <div className="flex items-center justify-between">
+                                <span className="text-slate-300 font-medium">{rep.source}</span>
+                                <span className={`font-bold uppercase text-[10px] px-1.5 py-0.5 rounded border ${
+                                  rep.result === 'malicious' ? 'bg-red-500/20 text-red-400 border-red-500/30' : 
+                                  rep.result === 'suspicious' ? 'bg-amber-500/20 text-amber-400 border-amber-500/30' : 
+                                  'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                                }`}>
+                                  {rep.result}
+                                </span>
+                              </div>
+                              {rep.detail && (
+                                <span className="text-[11px] text-slate-400 leading-tight">
+                                  {rep.detail}
+                                </span>
+                              )}
+                              {rep.maliciousCount !== undefined && rep.totalEngines !== undefined && (
+                                <div className="mt-1 flex items-center gap-2">
+                                  <div className="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                                    <div 
+                                      className={`h-full ${rep.maliciousCount > 0 ? 'bg-red-500' : 'bg-emerald-500'}`} 
+                                      style={{ width: `${Math.min(100, Math.max(rep.maliciousCount > 0 ? 8 : 0, (rep.maliciousCount / (rep.totalEngines || 70)) * 100))}%` }}
+                                    />
+                                  </div>
+                                  <span className="text-[10px] font-mono text-slate-400 whitespace-nowrap">
+                                    {rep.maliciousCount}/{rep.totalEngines} flagged
+                                  </span>
+                                </div>
+                              )}
+                            </div>
                           ))}
                         </div>
-                      </div>
-                    )}
+                      ) : (
+                        <div className="flex items-center justify-between text-xs text-slate-500 py-1.5 px-1">
+                          <span>No automated reputation lookup recorded (configure <code className="text-slate-400 bg-slate-900 px-1 py-0.5 rounded">VIRUSTOTAL_API_KEY</code> to enable)</span>
+                          {att.sha256 && (
+                            <a
+                              href={`https://www.virustotal.com/gui/file/${att.sha256}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-sky-400 hover:text-sky-300 ml-2 underline underline-offset-2 flex-shrink-0"
+                            >
+                              Check VirusTotal
+                            </a>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 ))
               )}
