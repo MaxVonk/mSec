@@ -6,16 +6,16 @@
           xmlns:mailappor="http://schemas.microsoft.com/office/mailappversionoverrides/1.0" 
           xsi:type="MailApp">
   <Id>91ff2e5b-5a26-4e49-8d67-c992535dcfdc</Id>
-  <Version>1.0.0.2</Version>
+  <Version>1.0.0.3</Version>
   <ProviderName>mSec PhishPilot</ProviderName>
   <DefaultLocale>en-US</DefaultLocale>
   <DisplayName DefaultValue="PhishPilot Security Reporter" />
   <Description DefaultValue="1-Click AI-Powered Phishing Threat Analysis and Reporting for Microsoft Outlook." />
   <IconUrl DefaultValue="https://raw.githubusercontent.com/MaxVonk/mSec/main/public/outlook/icon-64.png" />
   <HighResolutionIconUrl DefaultValue="https://raw.githubusercontent.com/MaxVonk/mSec/main/public/outlook/icon-128.png" />
-  <SupportUrl DefaultValue="https://security.example.com" />
+  <SupportUrl DefaultValue="https://msec.vermiculus.work" />
   <AppDomains>
-    <AppDomain>https://security.example.com</AppDomain>
+    <AppDomain>https://msec.vermiculus.work</AppDomain>
   </AppDomains>
 
   <Hosts>
@@ -89,7 +89,7 @@
         <bt:Image id="icon80" DefaultValue="https://raw.githubusercontent.com/MaxVonk/mSec/main/public/outlook/icon-80.png" />
       </bt:Images>
       <bt:Urls>
-        <bt:Url id="taskpaneUrl" DefaultValue="https://security.example.com/outlook/taskpane.html" />
+        <bt:Url id="taskpaneUrl" DefaultValue="https://https://msec.vermiculus.work/outlook/taskpane.html" />
       </bt:Urls>
       <bt:ShortStrings>
         <bt:String id="groupLabel" DefaultValue="Security" />

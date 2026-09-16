@@ -196,3 +196,4 @@ describe('SIEM & XDR Duplicate Chaining and Correlation Tests', () => {
     assert.equal(chained.mitreTechniques.length, 2);
   });
 });
+

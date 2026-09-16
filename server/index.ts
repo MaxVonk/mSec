@@ -19,14 +19,17 @@ import { ThreatIntelService } from './services/threatIntelService';
 import { SocReportService } from './services/socReportService';
 import { ConfigService } from './services/configService';
 import { IncidentCorrelatorService } from './services/incidentCorrelator';
+import { ThreatFeedService } from './services/threatFeedService';
 
 import authRoutes, { userRouter } from './routes/authRoutes';
+import threatFeedRoutes from './routes/threatFeedRoutes';
 
 SyncLogService.init().catch(err => console.error('[SyncLog] Init error:', err));
 MailboxPollerService.init().catch(err => console.error('[MailboxPoller] Init error:', err));
 IngestionSchedulerService.init().catch(err => console.error('[Scheduler] Init error:', err));
 WebhookNotifierService.init().catch(err => console.error('[WebhookNotifier] Init error:', err));
 ThreatIntelService.init().catch(err => console.error('[ThreatIntel] Init error:', err));
+ThreatFeedService.init().catch(err => console.error('[ThreatFeed] Init error:', err));
 
 const app = express();
 app.set('trust proxy', 1);
@@ -46,6 +49,9 @@ app.use('/api/users', userRouter);
 
 // PhishPilot email threat analysis routes
 app.use('/api/phishpilot', phishpilotRoutes);
+
+// Threat Insight RSS & Cyber Intelligence Feed routes
+app.use('/api/threat-feeds', threatFeedRoutes);
 
 export const isDemoMode = (): boolean => ConfigService.isDemoMode();
 

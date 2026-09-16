@@ -12,7 +12,7 @@
     "start": "tsx server/index.ts",
     "setup:entra": "bash ./scripts/setup-entra.sh",
     "setup:ssl": "bash ./init-letsencrypt.sh",
-    "test": "tsx --test test/normalizer.test.ts test/phishpilot.test.ts test/auth.test.ts test/enhancements.test.ts test/analytics_graph.test.ts test/operations_suite.test.ts test/auth_usermgmt.test.ts test/tier3_soc_suite.test.ts test/incident_correlator.test.ts"
+    "test": "tsx --test --test-concurrency=1 test/normalizer.test.ts test/phishpilot.test.ts test/auth.test.ts test/enhancements.test.ts test/analytics_graph.test.ts test/operations_suite.test.ts test/auth_usermgmt.test.ts test/tier3_soc_suite.test.ts test/incident_correlator.test.ts test/threat_feed.test.ts"
   },
   "dependencies": {
     "@types/mailparser": "^3.4.6",

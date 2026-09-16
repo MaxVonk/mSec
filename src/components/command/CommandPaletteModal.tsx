@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Search, ShieldAlert, Crosshair, Monitor, FileText, Users, Play, ArrowRight, CornerDownLeft } from 'lucide-react';
+import { Search, ShieldAlert, Crosshair, Monitor, FileText, Users, Play, ArrowRight, CornerDownLeft, Rss } from 'lucide-react';
 import { UnifiedIncident, UserSessionProfile } from '../../types';
 
 interface CommandItem {
@@ -24,6 +24,7 @@ interface CommandPaletteModalProps {
   onOpenUserManagement: () => void;
   onOpenPlaybooks: (incident?: UnifiedIncident) => void;
   onOpenConnectors: () => void;
+  onOpenThreatInsight?: () => void;
 }
 
 export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
@@ -37,7 +38,8 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
   onOpenShiftHandover,
   onOpenUserManagement,
   onOpenPlaybooks,
-  onOpenConnectors
+  onOpenConnectors,
+  onOpenThreatInsight
 }) => {
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -55,6 +57,18 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
     const list: CommandItem[] = [];
 
     // 1. Navigation Commands
+    if (onOpenThreatInsight) {
+      list.push({
+        id: 'nav-threat-insight',
+        category: 'NAVIGATION',
+        title: 'Open Threat Insight (RSS & Cyber Feeds)',
+        subtitle: 'Live CERT-SE, CISA & OSINT cyber advisories with automated CVE tracking',
+        badge: 'INTEL',
+        icon: <Rss className="w-4 h-4 text-cyan-400" />,
+        action: onOpenThreatInsight
+      });
+    }
+
     list.push(
       {
         id: 'nav-warroom',

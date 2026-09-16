@@ -18,7 +18,8 @@ import {
   ChevronLeft,
   Shield,
   LogOut,
-  Activity
+  Activity,
+  Rss
 } from 'lucide-react';
 import { UserSessionProfile } from '../../types';
 
@@ -26,6 +27,7 @@ export type MainNavView =
   | 'dashboard'
   | 'incidents'
   | 'entities'
+  | 'threat-insight'
   | 'phishpilot'
   | 'analytics'
   | 'mitre'
@@ -209,6 +211,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
           )}
           <div className="space-y-1">
             <button
+              onClick={() => handleNav('threat-insight')}
+              title="Threat Insight"
+              className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-all cursor-pointer ${
+                activeView === 'threat-insight'
+                  ? 'bg-slate-800/90 text-white font-semibold shadow-sm border border-slate-700/80'
+                  : 'hover:bg-slate-800/50 hover:text-slate-200'
+              }`}
+            >
+              <Rss className={`w-4 h-4 shrink-0 ${activeView === 'threat-insight' ? 'text-cyan-400' : 'text-slate-400'}`} />
+              {!isCollapsed && <span>Threat Insight</span>}
+            </button>
+
+            <button
               onClick={() => handleNav('phishpilot')}
               title="Threat Notices (PhishPilot)"
               className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-all cursor-pointer ${
@@ -223,7 +238,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
             <button
               onClick={() => handleNav('analytics')}
-              title="Threat Insights"
+              title="SOC Trends & Analytics"
               className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-all cursor-pointer ${
                 activeView === 'analytics'
                   ? 'bg-slate-800/90 text-white font-semibold shadow-sm border border-slate-700/80'
@@ -231,7 +246,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               }`}
             >
               <TrendingUp className={`w-4 h-4 shrink-0 ${activeView === 'analytics' ? 'text-cyan-400' : 'text-slate-400'}`} />
-              {!isCollapsed && <span>Threat Insights</span>}
+              {!isCollapsed && <span>SOC Trends & Analytics</span>}
             </button>
 
             <button

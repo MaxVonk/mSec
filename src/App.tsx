@@ -21,6 +21,7 @@ import { WarRoomModal } from './components/warroom/WarRoomModal';
 import { CommandPaletteModal } from './components/command/CommandPaletteModal';
 import { SyncLogModal } from './components/sync/SyncLogModal';
 import { Sidebar, MainNavView } from './components/navigation/Sidebar';
+import { ThreatInsightDashboard } from './components/threatinsight/ThreatInsightDashboard';
 import { 
   Users, 
   Settings, 
@@ -383,6 +384,16 @@ export const App: React.FC = () => {
             />
           )}
 
+          {/* View: Threat Insight (RSS & Cyber Intelligence Feeds) */}
+          {activeView === 'threat-insight' && (
+            <ThreatInsightDashboard
+              onSelectIncidentSearch={(query) => {
+                setSearchQuery(query);
+                setActiveView('incidents');
+              }}
+            />
+          )}
+
           {/* View: Threat Insights / Analytics */}
           {activeView === 'analytics' && (
             <SocTrendCharts
@@ -560,6 +571,7 @@ export const App: React.FC = () => {
           setActiveView('playbooks');
         }}
         onOpenConnectors={() => setActiveView('settings')}
+        onOpenThreatInsight={() => setActiveView('threat-insight')}
       />
     </div>
   );

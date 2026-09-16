@@ -356,3 +356,31 @@ export interface PublicUser {
   lastLogin?: string;
 }
 
+export interface ThreatFeedSource {
+  id: string;
+  name: string;
+  url: string;
+  category: string;
+  enabled: boolean;
+  lastFetched?: string;
+  lastStatus?: 'OK' | 'ERROR' | 'PENDING';
+  lastError?: string;
+  itemCount?: number;
+  isCustom?: boolean;
+}
+
+export interface ThreatFeedItem {
+  id: string;
+  feedId: string;
+  feedName: string;
+  title: string;
+  link: string;
+  pubDate: string;
+  summary: string;
+  content?: string;
+  author?: string;
+  categories?: string[];
+  cves?: string[];
+  severity?: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW' | 'INFO';
+}
+
