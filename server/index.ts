@@ -689,6 +689,19 @@ if (fs.existsSync(publicPath)) {
   app.use(express.static(publicPath));
 }
 
+// In development mode, automatically redirect browser navigation to the Vite dev server
+if (process.env.NODE_ENV !== 'production') {
+  app.use((req, res, next) => {
+    if (req.method === 'GET' && !req.path.startsWith('/api') && !req.path.startsWith('/outlook')) {
+      const acceptsHtml = req.headers.accept?.includes('text/html');
+      if (acceptsHtml || req.path === '/') {
+        return res.redirect(`http://localhost:5173${req.url}`);
+      }
+    }
+    next();
+  });
+}
+
 // Serve frontend build in production
 const distPath = path.resolve(process.cwd(), 'dist');
 if (fs.existsSync(distPath)) {
@@ -696,6 +709,9 @@ if (fs.existsSync(distPath)) {
   // Express 5 compatible SPA routing fallback
   app.use((req, res, next) => {
     if (req.method === 'GET' && !req.path.startsWith('/api') && !req.path.startsWith('/outlook')) {
+      if (path.extname(req.path)) {
+        return res.status(404).send('Asset not found');
+      }
       return res.sendFile(path.join(distPath, 'index.html'));
     }
     next();
@@ -703,6 +719,14 @@ if (fs.existsSync(distPath)) {
 }
 
 app.listen(port, () => {
-  console.log(`[mSec Engine] Server listening on http://localhost:${port}`);
+  console.log(`\n======================================================`);
+  console.log(`  🛡️  mSec Tier-3 SOC Command Hub Engine Started`);
+  if (process.env.NODE_ENV !== 'production') {
+    console.log(`  👉 UI Dashboard (Vite): http://localhost:5173`);
+    console.log(`  📡 API Backend:         http://localhost:${port}`);
+  } else {
+    console.log(`  👉 Production Server:   http://localhost:${port}`);
+  }
+  console.log(`======================================================\n`);
 });
 
