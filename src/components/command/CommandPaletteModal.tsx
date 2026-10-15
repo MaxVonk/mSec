@@ -93,8 +93,8 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
       {
         id: 'nav-handover',
         category: 'NAVIGATION',
-        title: 'Generate Shift Handover Briefing',
-        subtitle: 'SOC shift executive report, KPI telemetry, and PDF/Markdown export',
+        title: 'Generate Executive Security Briefing',
+        subtitle: 'On-demand executive report, KPI telemetry, and PDF/Markdown export',
         badge: 'REPORT',
         icon: <FileText className="w-4 h-4 text-amber-400" />,
         action: onOpenShiftHandover

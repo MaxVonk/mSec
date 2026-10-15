@@ -290,7 +290,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
             <button
               onClick={() => handleNav('reports')}
-              title="Operational Reports"
+              title="Executive Briefings & Reports"
               className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-all cursor-pointer ${
                 activeView === 'reports'
                   ? 'bg-slate-800/90 text-white font-semibold shadow-sm border border-slate-700/80'
@@ -298,7 +298,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               }`}
             >
               <FileText className={`w-4 h-4 shrink-0 ${activeView === 'reports' ? 'text-cyan-400' : 'text-slate-400'}`} />
-              {!isCollapsed && <span>Operational Reports</span>}
+              {!isCollapsed && <span>Executive Briefings</span>}
             </button>
           </div>
         </div>

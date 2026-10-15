@@ -61,7 +61,7 @@ export const ShiftHandoverModal: React.FC<ShiftHandoverModalProps> = ({ onClose,
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `mSec-Shift-Handover-${new Date().toISOString().slice(0, 10)}.md`;
+    a.download = `mSec-Security-Briefing-${new Date().toISOString().slice(0, 10)}.md`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -84,13 +84,13 @@ export const ShiftHandoverModal: React.FC<ShiftHandoverModalProps> = ({ onClose,
           </div>
           <div>
             <h3 className="text-sm font-bold text-slate-100 flex items-center gap-2">
-              Executive SOC Shift Handover Briefing
+              Executive Security Briefing & Operational Summary
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-400 border border-cyan-800 font-mono">
-                Operational Report
+                Executive Summary (On-Demand)
               </span>
             </h3>
             <p className="text-xs text-slate-400">
-              Summarizes shift triage activity, containment status, and action items for oncoming analysts
+              On-demand executive summary of triage metrics, threat status, and priority incident action items
             </p>
           </div>
         </div>
@@ -178,10 +178,10 @@ export const ShiftHandoverModal: React.FC<ShiftHandoverModalProps> = ({ onClose,
                 <div className="flex items-center justify-between">
                   <div>
                     <h2 className="text-lg font-bold text-slate-100 print:text-black">
-                      SOC Operational Shift Handover
+                      Executive SOC Security Briefing & Activity Summary
                     </h2>
                     <p className="text-xs text-slate-400 print:text-gray-600">
-                      Shift ID: <code className="text-cyan-400 font-mono print:text-black">{rep.shiftId}</code> • Timeframe: Last {rep.timeframeHours} Hours
+                      Briefing Ref: <code className="text-cyan-400 font-mono print:text-black">{rep.shiftId}</code> • Timeframe: Last {rep.timeframeHours} Hours
                     </p>
                   </div>
                   <div className="text-right text-xs text-slate-400 print:text-gray-600">
@@ -194,11 +194,11 @@ export const ShiftHandoverModal: React.FC<ShiftHandoverModalProps> = ({ onClose,
               {/* Analyst Observations Box */}
               <div className="space-y-1.5 print:hidden">
                 <label className="text-xs font-bold text-slate-300 block">
-                  Analyst Handover Notes & Shift Observations:
+                  Executive Summary Remarks & Notes (Optional):
                 </label>
                 <textarea
                   rows={2}
-                  placeholder="Record any active investigations, pending threat hunting tasks, or infrastructure alerts for the incoming shift..."
+                  placeholder="Optional: Add executive remarks, active investigations summary, or follow-up notes for this briefing report..."
                   value={notes}
                   onChange={e => setNotes(e.target.value)}
                   onBlur={fetchReport}
@@ -208,7 +208,7 @@ export const ShiftHandoverModal: React.FC<ShiftHandoverModalProps> = ({ onClose,
 
               {rep.notes && (
                 <div className="hidden print:block p-3 border border-gray-300 rounded bg-gray-50 text-xs">
-                  <strong>Analyst Notes:</strong> {rep.notes}
+                  <strong>Briefing Notes:</strong> {rep.notes}
                 </div>
               )}
 
@@ -256,7 +256,7 @@ export const ShiftHandoverModal: React.FC<ShiftHandoverModalProps> = ({ onClose,
                 <div className="space-y-2">
                   <h4 className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5 print:text-black">
                     <AlertTriangle className="w-3.5 h-3.5" />
-                    Priority Handover Action Items
+                    Priority Action Items & Containment Tasks
                   </h4>
                   <div className="space-y-1.5">
                     {rep.pendingActions.map((p, idx) => (
@@ -283,7 +283,7 @@ export const ShiftHandoverModal: React.FC<ShiftHandoverModalProps> = ({ onClose,
               <div className="space-y-2">
                 <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5 print:text-black">
                   <ShieldAlert className="w-3.5 h-3.5 text-red-400" />
-                  Key Handover Incidents (Critical & High)
+                  Key Priority Incidents (Critical & High)
                 </h4>
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs border border-slate-800 rounded-xl overflow-hidden print:border-gray-300">

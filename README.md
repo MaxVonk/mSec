@@ -20,7 +20,7 @@
   - [6. SOAR Automated Playbook Runner](#6-soar-automated-playbook-runner)
   - [7. Tactical SOC War Room HUD](#7-tactical-soc-war-room-hud)
   - [8. MITRE ATT&CK Enterprise Matrix](#8-mitre-attck-enterprise-matrix)
-  - [9. Shift Handover Reports & Forensic Dossiers](#9-shift-handover-reports--forensic-dossiers)
+  - [9. Executive Security Briefings & Forensic Dossiers](#9-executive-security-briefings--forensic-dossiers)
   - [10. Threat Intelligence & Reputation Engine](#10-threat-intelligence--reputation-engine)
   - [11. Threat Insight RSS & Cyber Intelligence Feeds](#11-threat-insight-rss--cyber-intelligence-feeds)
   - [12. Enterprise RBAC & Dual Authentication](#12-enterprise-rbac--dual-authentication)
@@ -168,8 +168,8 @@ Try out all primary features in simulation mode:
 - **12-Tactic Visual Matrix**: Full enterprise attack lifecycle heatmap from *Initial Access* to *Impact*.
 - **Incident Technique Mapping**: Visual badges linking live active incidents to specific techniques with 1-click playbook invocation.
 
-### 9. Shift Handover Reports & Forensic Dossiers
-- **SOC Shift Handover Generator**: Aggregates operational telemetry metrics, open critical incidents, top targeted users, and pending actions across configurable timeframes (8h, 12h, 24h, 48h).
+### 9. Executive Security Briefings & Forensic Dossiers
+- **Executive SOC Briefing Generator**: On-demand generation of operational telemetry metrics, open critical incidents, top targeted users, and pending actions across configurable timeframes (8h, 12h, 24h, 72h).
 - **Incident Markdown Dossiers**: 1-click generation of comprehensive, audit-ready incident post-mortem reports.
 
 ### 10. Threat Intelligence & Reputation Engine
