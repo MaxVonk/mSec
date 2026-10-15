@@ -35,9 +35,10 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const activeId = previewThemeId || currentThemeId;
   const activeTheme = getThemeById(activeId);
 
-  // Synchronize data-theme on <html> root element
+  // Synchronize data-theme and data-theme-type on <html> root element
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', activeId);
+    document.documentElement.setAttribute('data-theme-type', activeTheme.type);
 
     // Update browser theme-color meta tag if present
     let metaTag = document.querySelector('meta[name="theme-color"]');

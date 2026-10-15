@@ -8,6 +8,7 @@ import {
   Eye, 
   Terminal, 
   Moon, 
+  Sun,
   ShieldAlert, 
   Layers, 
   CornerDownLeft 
@@ -27,7 +28,7 @@ export const ThemeSelectorModal: React.FC = () => {
   } = useTheme();
 
   const [query, setQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<'all' | 'cyber' | 'dev' | 'tactical' | 'clean'>('all');
+  const [selectedCategory, setSelectedCategory] = useState<'all' | 'cyber' | 'dev' | 'tactical' | 'clean' | 'light'>('all');
   const [focusedIndex, setFocusedIndex] = useState(0);
 
   const inputRef = useRef<HTMLInputElement>(null);
@@ -160,6 +161,7 @@ export const ThemeSelectorModal: React.FC = () => {
           <div className="flex items-center gap-1 mt-3 overflow-x-auto no-scrollbar text-xs">
             {[
               { id: 'all', label: 'All Presets' },
+              { id: 'light', label: '☀️ Light Themes' },
               { id: 'dev', label: 'Developer Hits' },
               { id: 'cyber', label: 'Cyber & Neon' },
               { id: 'tactical', label: 'Tactical Red/Green' },
@@ -214,6 +216,17 @@ export const ThemeSelectorModal: React.FC = () => {
                       <span className="text-xs font-bold text-white tracking-wide">
                         {t.name}
                       </span>
+                      {t.type === 'light' ? (
+                        <span className="px-1.5 py-0.2 rounded-md bg-amber-500/15 text-amber-300 border border-amber-500/30 text-[10px] font-semibold flex items-center gap-0.5">
+                          <Sun className="w-2.5 h-2.5" />
+                          <span>Light</span>
+                        </span>
+                      ) : (
+                        <span className="px-1.5 py-0.2 rounded-md bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 text-[10px] font-semibold flex items-center gap-0.5">
+                          <Moon className="w-2.5 h-2.5" />
+                          <span>Dark</span>
+                        </span>
+                      )}
                       {isCommittedActive && (
                         <span className="px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-800/80 text-[10px] font-semibold flex items-center gap-1">
                           <Check className="w-3 h-3" />

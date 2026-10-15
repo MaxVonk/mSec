@@ -3,8 +3,15 @@ import assert from 'node:assert';
 import { THEMES, DEFAULT_THEME_ID, getThemeById } from '../src/themes/themeDefinitions.js';
 
 describe('VS Code-Style Theme Engine Suite', () => {
-  it('should load all 10 curated developer and tactical themes', () => {
-    assert.strictEqual(THEMES.length, 10, 'Expected exactly 10 themes in catalog');
+  it('should load all 15 curated developer, tactical, and clean light themes', () => {
+    assert.strictEqual(THEMES.length, 15, 'Expected exactly 15 themes in catalog');
+  });
+
+  it('should include 10 dark themes and 5 light themes', () => {
+    const darkThemes = THEMES.filter(t => t.type === 'dark');
+    const lightThemes = THEMES.filter(t => t.type === 'light');
+    assert.strictEqual(darkThemes.length, 10, 'Expected 10 dark themes');
+    assert.strictEqual(lightThemes.length, 5, 'Expected 5 light themes');
   });
 
   it('should include popular themes: cyber-cyan, dracula-pro, tokyo-night, catppuccin-mocha, nordic-frost, monokai-pro, crimson-alert, matrix-terminal', () => {
@@ -19,7 +26,12 @@ describe('VS Code-Style Theme Engine Suite', () => {
       'crimson-alert',
       'matrix-terminal',
       'synthwave-84',
-      'github-dark-dimmed'
+      'github-dark-dimmed',
+      'github-light',
+      'catppuccin-latte',
+      'nord-light',
+      'solarized-light',
+      'quiet-light'
     ];
 
     for (const exp of expected) {
@@ -55,12 +67,16 @@ describe('VS Code-Style Theme Engine Suite', () => {
     }
   });
 
-  it('should retrieve theme by ID or fallback to default', () => {
-    const dracula = getThemeById('dracula-pro');
-    assert.strictEqual(dracula.name, 'Dracula Pro');
+  it('should retrieve light themes by ID and fallback cleanly', () => {
+    const githubLight = getThemeById('github-light');
+    assert.strictEqual(githubLight.name, 'GitHub Light');
+    assert.strictEqual(githubLight.type, 'light');
+    assert.strictEqual(githubLight.category, 'light');
+
+    const catppuccinLatte = getThemeById('catppuccin-latte');
+    assert.strictEqual(catppuccinLatte.type, 'light');
 
     const fallback = getThemeById('non-existent-theme-xyz');
     assert.strictEqual(fallback.id, DEFAULT_THEME_ID);
   });
 });
-

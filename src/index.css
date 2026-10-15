@@ -148,3 +148,143 @@
   --color-cyan-600: #316dca;
   --color-cyan-950: #1d2c42;
 }
+
+/* ==============================================================================
+   LIGHT THEMES
+   ============================================================================== */
+
+[data-theme="github-light"] {
+  --color-slate-950: #f6f8fa;
+  --color-slate-900: #ffffff;
+  --color-slate-850: #f3f4f6;
+  --color-slate-800: #e5e7eb;
+  --color-slate-700: #d0d7de;
+  --color-slate-600: #9ca3af;
+  --color-slate-500: #656d76;
+  --color-slate-400: #4b5563;
+  --color-slate-300: #374151;
+  --color-slate-200: #1f2328;
+  --color-slate-100: #0f172a;
+  --color-slate-50: #020617;
+  --color-cyan-300: #0969da;
+  --color-cyan-400: #218bff;
+  --color-cyan-500: #0969da;
+  --color-cyan-600: #0550ae;
+  --color-cyan-950: #ddf4ff;
+}
+
+[data-theme="catppuccin-latte"] {
+  --color-slate-950: #eff1f5;
+  --color-slate-900: #ffffff;
+  --color-slate-850: #e6e9ef;
+  --color-slate-800: #ccd0da;
+  --color-slate-700: #bcc0cc;
+  --color-slate-600: #acb0be;
+  --color-slate-500: #8c8fa1;
+  --color-slate-400: #6c6f85;
+  --color-slate-300: #5c5f77;
+  --color-slate-200: #4c4f69;
+  --color-slate-100: #2a2b3d;
+  --color-slate-50: #1e1e2e;
+  --color-cyan-300: #8839ef;
+  --color-cyan-400: #7287fd;
+  --color-cyan-500: #8839ef;
+  --color-cyan-600: #7025d9;
+  --color-cyan-950: #eed8f7;
+}
+
+[data-theme="nord-light"] {
+  --color-slate-950: #eceff4;
+  --color-slate-900: #ffffff;
+  --color-slate-850: #e5e9f0;
+  --color-slate-800: #d8dee9;
+  --color-slate-700: #c2cbd8;
+  --color-slate-600: #9ba7b9;
+  --color-slate-500: #6b7a90;
+  --color-slate-400: #4c566a;
+  --color-slate-300: #3b4252;
+  --color-slate-200: #2e3440;
+  --color-slate-100: #1b2028;
+  --color-slate-50: #10141a;
+  --color-cyan-300: #5e81ac;
+  --color-cyan-400: #81a1c1;
+  --color-cyan-500: #5e81ac;
+  --color-cyan-600: #4c698f;
+  --color-cyan-950: #dce5ef;
+}
+
+[data-theme="solarized-light"] {
+  --color-slate-950: #fdf6e3;
+  --color-slate-900: #fbf7ed;
+  --color-slate-850: #eee8d5;
+  --color-slate-800: #ded7c2;
+  --color-slate-700: #cec7b2;
+  --color-slate-600: #93a1a1;
+  --color-slate-500: #657b83;
+  --color-slate-400: #586e75;
+  --color-slate-300: #073642;
+  --color-slate-200: #002b36;
+  --color-slate-100: #00212b;
+  --color-slate-50: #00171f;
+  --color-cyan-300: #268bd2;
+  --color-cyan-400: #2aa198;
+  --color-cyan-500: #268bd2;
+  --color-cyan-600: #17669d;
+  --color-cyan-950: #daedf8;
+}
+
+[data-theme="quiet-light"] {
+  --color-slate-950: #f5f3f7;
+  --color-slate-900: #ffffff;
+  --color-slate-850: #ede8f2;
+  --color-slate-800: #ded7e6;
+  --color-slate-700: #cfc6d9;
+  --color-slate-600: #9f94ab;
+  --color-slate-500: #786c87;
+  --color-slate-400: #584c67;
+  --color-slate-300: #3e334d;
+  --color-slate-200: #292035;
+  --color-slate-100: #1b1424;
+  --color-slate-50: #100a18;
+  --color-cyan-300: #7a3e9d;
+  --color-cyan-400: #9c51c7;
+  --color-cyan-500: #7a3e9d;
+  --color-cyan-600: #5f2e7c;
+  --color-cyan-950: #f2e4fa;
+}
+
+/* ==============================================================================
+   Light Theme Contrast & Element Refinements
+   ============================================================================== */
+
+[data-theme-type="light"] {
+  color-scheme: light;
+  --color-white: #0f172a;
+}
+
+/* Ensure solid action buttons retain crisp white text */
+[data-theme-type="light"] button[class*="bg-cyan-"],
+[data-theme-type="light"] button[class*="bg-blue-"],
+[data-theme-type="light"] button[class*="bg-red-"],
+[data-theme-type="light"] button[class*="bg-emerald-"],
+[data-theme-type="light"] button[class*="bg-purple-"],
+[data-theme-type="light"] button[class*="bg-gradient-"],
+[data-theme-type="light"] a[class*="bg-gradient-"],
+[data-theme-type="light"] [class*="bg-cyan-600"] > .text-white,
+[data-theme-type="light"] [class*="bg-blue-600"] > .text-white,
+[data-theme-type="light"] [class*="bg-red-600"] > .text-white,
+[data-theme-type="light"] [class*="bg-gradient-"] > .text-white,
+[data-theme-type="light"] [class*="bg-gradient-"] .text-white {
+  color: #ffffff !important;
+}
+
+/* Subtle modern card drop shadow in light mode */
+[data-theme-type="light"] .bg-slate-900 {
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.05), 0 1px 2px -1px rgb(0 0 0 / 0.05);
+}
+
+/* Semi-transparent dark overlay for high-focus modals in light mode */
+[data-theme-type="light"] .fixed.inset-0[class*="bg-slate-950"] {
+  background-color: rgba(15, 23, 42, 0.65) !important;
+}
+
