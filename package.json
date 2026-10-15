@@ -8,11 +8,12 @@
     "dev:server": "tsx watch server/index.ts",
     "dev:client": "vite",
     "dev": "concurrently -n \"SERVER,CLIENT\" -c \"cyan,magenta\" \"npm run dev:server\" \"npm run dev:client\"",
+    "demo": "concurrently -n \"SERVER,CLIENT\" -c \"cyan,magenta\" \"npm run dev:server\" \"npm run dev:client\"",
     "build": "tsc && vite build",
     "start": "tsx server/index.ts",
     "setup:entra": "bash ./scripts/setup-entra.sh",
     "setup:ssl": "bash ./init-letsencrypt.sh",
-    "test": "tsx --test --test-concurrency=1 test/normalizer.test.ts test/phishpilot.test.ts test/auth.test.ts test/enhancements.test.ts test/analytics_graph.test.ts test/operations_suite.test.ts test/auth_usermgmt.test.ts test/tier3_soc_suite.test.ts test/incident_correlator.test.ts test/threat_feed.test.ts test/playbook_recommender.test.ts test/quishing.test.ts"
+    "test": "tsx --test --test-concurrency=1 test/normalizer.test.ts test/phishpilot.test.ts test/auth.test.ts test/enhancements.test.ts test/analytics_graph.test.ts test/operations_suite.test.ts test/auth_usermgmt.test.ts test/tier3_soc_suite.test.ts test/incident_correlator.test.ts test/threat_feed.test.ts test/playbook_recommender.test.ts test/quishing.test.ts test/database.test.ts test/bidirectional_sync.test.ts"
   },
   "dependencies": {
     "@types/mailparser": "^3.4.6",

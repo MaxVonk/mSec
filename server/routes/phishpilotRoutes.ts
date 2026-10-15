@@ -1,4 +1,6 @@
 import { Router } from 'express';
+import fs from 'fs';
+import path from 'path';
 import multer from 'multer';
 import { ReportGeneratorService } from '../services/phishpilot/reportGenerator.js';
 import { PhishPilotStore } from '../services/phishpilot/phishpilotStore.js';
@@ -35,6 +37,40 @@ router.post('/analyze/file', upload.single('file'), async (req, res, next) => {
       return;
     }
     const report = await ReportGeneratorService.generateReport(req.file.buffer);
+    res.json(report);
+  } catch (e) {
+    next(e);
+  }
+});
+
+router.get('/samples/:type', async (req, res, next) => {
+  try {
+    const type = req.params.type;
+    const filename = type === 'legitimate' ? 'sample_legitimate.eml' : 'sample_phishing.eml';
+    const filePath = path.join(process.cwd(), 'samples', filename);
+    if (fs.existsSync(filePath)) {
+      const content = fs.readFileSync(filePath, 'utf-8');
+      res.setHeader('Content-Type', 'text/plain');
+      res.send(content);
+    } else {
+      res.status(404).json({ error: 'Sample file not found' });
+    }
+  } catch (e) {
+    next(e);
+  }
+});
+
+router.post('/samples/:type/analyze', async (req, res, next) => {
+  try {
+    const type = req.params.type;
+    const filename = type === 'legitimate' ? 'sample_legitimate.eml' : 'sample_phishing.eml';
+    const filePath = path.join(process.cwd(), 'samples', filename);
+    if (!fs.existsSync(filePath)) {
+      res.status(404).json({ error: 'Sample file not found' });
+      return;
+    }
+    const buffer = fs.readFileSync(filePath);
+    const report = await ReportGeneratorService.generateReport(buffer);
     res.json(report);
   } catch (e) {
     next(e);

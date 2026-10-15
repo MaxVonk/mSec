@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { UploadCloud, FileText, Loader2, Send } from 'lucide-react';
+import { UploadCloud, FileText, Loader2, Send, Sparkles, ShieldAlert, ShieldCheck } from 'lucide-react';
 import { PhishPilotReport } from '../../phishpilotTypes';
 
 interface Props {
@@ -41,6 +41,21 @@ export const EmailSubmitForm: React.FC<Props> = ({ onAnalysisComplete }) => {
     setIsDragging(false);
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       handleFileUpload(e.dataTransfer.files[0]);
+    }
+  };
+
+  const handleLoadSample = async (type: 'phishing' | 'legitimate') => {
+    setIsAnalyzing(true);
+    try {
+      const res = await fetch(`/api/phishpilot/samples/${type}/analyze`, { method: 'POST' });
+      if (res.ok) {
+        const report = await res.json();
+        onAnalysisComplete(report);
+      }
+    } catch (err) {
+      console.error('Failed to analyze sample email:', err);
+    } finally {
+      setIsAnalyzing(false);
     }
   };
 
@@ -156,6 +171,33 @@ export const EmailSubmitForm: React.FC<Props> = ({ onAnalysisComplete }) => {
             </div>
           </div>
         )}
+
+        <div className="mt-6 pt-4 border-t border-slate-800/80 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400">
+          <div className="flex items-center gap-1.5 font-medium text-slate-300">
+            <Sparkles className="w-4 h-4 text-cyan-400" />
+            <span>Try Sandboxed Demo Samples:</span>
+          </div>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <button
+              type="button"
+              onClick={() => handleLoadSample('phishing')}
+              disabled={isAnalyzing}
+              className="flex-1 sm:flex-none px-3 py-1.5 rounded-lg bg-red-950/40 hover:bg-red-900/50 text-red-300 border border-red-800/60 transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50"
+            >
+              <ShieldAlert className="w-3.5 h-3.5 text-red-400" />
+              <span>Phishing & Quishing EML</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleLoadSample('legitimate')}
+              disabled={isAnalyzing}
+              className="flex-1 sm:flex-none px-3 py-1.5 rounded-lg bg-emerald-950/40 hover:bg-emerald-900/50 text-emerald-300 border border-emerald-800/60 transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50"
+            >
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Legitimate Clean EML</span>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
