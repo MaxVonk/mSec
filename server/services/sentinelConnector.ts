@@ -149,5 +149,113 @@ export class SentinelConnector {
 
     return { importedCount: newIncidents.length, errors };
   }
+
+  /**
+   * Updates an incident in Microsoft Sentinel workspace via Azure Resource Manager REST API
+   */
+  public static async updateIncident(
+    config: SentinelConnectorConfig,
+    incidentId: string,
+    updates: {
+      status?: 'New' | 'Active' | 'Closed';
+      severity?: 'High' | 'Medium' | 'Low' | 'Informational';
+      classification?: 'TruePositive' | 'FalsePositive' | 'Undetermined';
+      classificationComment?: string;
+      classificationReason?: string;
+      title?: string;
+    }
+  ): Promise<{ success: boolean; message: string }> {
+    try {
+      const token = await this.getArmToken(config);
+      const subId = config.subscriptionId?.trim();
+      const rg = config.resourceGroup?.trim();
+      const ws = config.workspaceName?.trim();
+
+      if (!subId || !rg || !ws) {
+        throw new Error('Azure Subscription ID, Resource Group Name, and Workspace Name are all required.');
+      }
+
+      const url = `https://management.azure.com/subscriptions/${subId}/resourceGroups/${rg}/providers/Microsoft.OperationalInsights/workspaces/${ws}/providers/Microsoft.SecurityInsights/incidents/${encodeURIComponent(incidentId)}?api-version=2023-11-01`;
+
+      // Fetch existing incident to preserve etag and mandatory fields
+      const getRes = await fetch(url, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (!getRes.ok) {
+        throw new Error(`Sentinel incident not found or inaccessible (${getRes.status})`);
+      }
+
+      const existing = await getRes.json() as any;
+      const etag = existing.etag;
+      const properties = existing.properties || {};
+
+      if (updates.status) properties.status = updates.status;
+      if (updates.severity) properties.severity = updates.severity;
+      if (updates.classification) properties.classification = updates.classification;
+      if (updates.classificationComment) properties.classificationComment = updates.classificationComment;
+      if (updates.classificationReason) properties.classificationReason = updates.classificationReason;
+
+      const putRes = await fetch(url, {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          ...(etag ? { 'If-Match': etag } : {})
+        },
+        body: JSON.stringify({ etag, properties })
+      });
+
+      if (!putRes.ok) {
+        const errText = await putRes.text();
+        throw new Error(`Sentinel update failed (${putRes.status}): ${errText}`);
+      }
+
+      return { success: true, message: `Successfully updated Sentinel incident ${incidentId}.` };
+    } catch (err: any) {
+      return { success: false, message: err.message || 'Failed to update Sentinel incident' };
+    }
+  }
+
+  /**
+   * Adds an incident comment in Microsoft Sentinel workspace
+   */
+  public static async addComment(
+    config: SentinelConnectorConfig,
+    incidentId: string,
+    message: string
+  ): Promise<{ success: boolean; message: string }> {
+    try {
+      const token = await this.getArmToken(config);
+      const subId = config.subscriptionId?.trim();
+      const rg = config.resourceGroup?.trim();
+      const ws = config.workspaceName?.trim();
+
+      const commentId = crypto.randomUUID();
+      const url = `https://management.azure.com/subscriptions/${subId}/resourceGroups/${rg}/providers/Microsoft.OperationalInsights/workspaces/${ws}/providers/Microsoft.SecurityInsights/incidents/${encodeURIComponent(incidentId)}/comments/${commentId}?api-version=2023-11-01`;
+
+      const res = await fetch(url, {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          properties: {
+            message
+          }
+        })
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(`Failed to post comment to Sentinel (${res.status}): ${errText}`);
+      }
+
+      return { success: true, message: `Comment added to Sentinel incident ${incidentId}.` };
+    } catch (err: any) {
+      return { success: false, message: err.message || 'Failed to add comment to Sentinel' };
+    }
+  }
 }
 

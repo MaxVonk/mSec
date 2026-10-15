@@ -14,6 +14,7 @@ import {
   EntityType
 } from '../types/security';
 import { SAMPLE_INCIDENTS } from './sampleData';
+import { DatabaseService } from './dbService';
 
 export interface StorageConfig {
   graph: GraphConnectorConfig;
@@ -91,13 +92,23 @@ export class DataStore {
         };
       }
 
-      // Load incidents if exists, otherwise load SAMPLE_INCIDENTS by default
-      if (fs.existsSync(this.incidentsFile)) {
+      // Initialize SQLite database
+      DatabaseService.init();
+
+      // Check SQLite first
+      const sqliteIncidents = DatabaseService.getAllIncidents();
+      if (sqliteIncidents.length > 0) {
+        sqliteIncidents.forEach(inc => this.incidents.set(inc.id, inc));
+      } else if (fs.existsSync(this.incidentsFile)) {
+        // Migrate existing JSON incidents to SQLite
         const raw = fs.readFileSync(this.incidentsFile, 'utf-8');
         const parsed: UnifiedIncident[] = JSON.parse(raw);
         parsed.forEach(inc => this.incidents.set(inc.id, inc));
+        DatabaseService.saveIncidentsBatch(parsed);
       } else {
+        // Seed default sample incidents
         SAMPLE_INCIDENTS.forEach(inc => this.incidents.set(inc.id, inc));
+        DatabaseService.saveIncidentsBatch(SAMPLE_INCIDENTS);
         this.saveIncidents();
       }
     } catch (err) {
@@ -110,6 +121,9 @@ export class DataStore {
   private saveIncidents() {
     try {
       const arr = Array.from(this.incidents.values());
+      // Persist to SQLite
+      DatabaseService.saveIncidentsBatch(arr);
+      // Also persist to JSON file for backward compatibility
       fs.writeFileSync(this.incidentsFile, JSON.stringify(arr, null, 2), 'utf-8');
     } catch (err) {
       console.error('Failed to save incidents to disk:', err);
@@ -178,18 +192,24 @@ export class DataStore {
 
   public delete(id: string): boolean {
     const res = this.incidents.delete(id);
-    if (res) this.saveIncidents();
+    if (res) {
+      DatabaseService.deleteIncident(id);
+      this.saveIncidents();
+    }
     return res;
   }
 
   public clear() {
     this.incidents.clear();
+    DatabaseService.clearIncidents();
     this.saveIncidents();
   }
 
   public resetToDemo() {
     this.incidents.clear();
+    DatabaseService.clearIncidents();
     SAMPLE_INCIDENTS.forEach(inc => this.incidents.set(inc.id, inc));
+    DatabaseService.saveIncidentsBatch(SAMPLE_INCIDENTS);
     this.saveIncidents();
   }
 

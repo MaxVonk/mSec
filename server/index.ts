@@ -4,6 +4,8 @@ import path from 'path';
 import fs from 'fs';
 import cors from 'cors';
 import multer from 'multer';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import { parse as parseCsv } from 'csv-parse/sync';
 import { store } from './services/store';
 import { DataNormalizer } from './services/normalizer';
@@ -34,6 +36,35 @@ ThreatFeedService.init().catch(err => console.error('[ThreatFeed] Init error:', 
 const app = express();
 app.set('trust proxy', 1);
 const port = process.env.PORT || 3310;
+
+// Security HTTP headers
+app.use(helmet({
+  contentSecurityPolicy: false,
+  crossOriginEmbedderPolicy: false
+}));
+
+// Rate limiting
+const apiLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 600,
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: () => process.env.NODE_ENV === 'test',
+  message: { error: 'Too many requests, please try again shortly.' }
+});
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: () => process.env.NODE_ENV === 'test',
+  message: { error: 'Too many authentication attempts, please try again in 15 minutes.' }
+});
+
+app.use('/api', apiLimiter);
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/reset-password', authLimiter);
 
 // Upload handler (memory storage)
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 25 * 1024 * 1024 } });
@@ -138,6 +169,110 @@ app.patch('/api/incidents/:id/status', (req, res) => {
     return res.status(404).json({ error: 'Incident not found' });
   }
   res.json(updated);
+});
+
+// Bidirectional Microsoft Cloud Sync & Incident Update endpoint
+app.patch('/api/incidents/:id', async (req, res) => {
+  const { status, severity, classification, determination, comment, syncToProvider } = req.body;
+  const incident = store.getById(req.params.id);
+  if (!incident) {
+    return res.status(404).json({ error: 'Incident not found' });
+  }
+
+  if (status) incident.status = status;
+  if (severity) incident.severity = severity;
+  if (classification) {
+    (incident as any).classification = classification;
+  }
+
+  incident.lastUpdatedTime = new Date().toISOString();
+  store.addOrUpdate(incident);
+
+  let providerSyncResult: { success: boolean; message: string; simulated?: boolean } = {
+    success: true,
+    message: 'Local incident updated successfully.'
+  };
+
+  if (syncToProvider) {
+    const config = store.getConfig();
+    const isDefender = incident.provider === 'M365_DEFENDER' || incident.provider.startsWith('DEFENDER') || (incident.provider as string) === 'M365 Defender';
+    const isSentinel = incident.provider === 'SENTINEL_SIEM' || (incident.provider as string) === 'Sentinel';
+
+    if (isDefender) {
+      if (config.graph.enabled) {
+        providerSyncResult = await GraphConnector.updateIncident(config.graph, incident.id, {
+          status: status ? (status === 'RESOLVED' || status === 'CLOSED' ? 'resolved' : status === 'IN_PROGRESS' ? 'inProgress' : 'active') : undefined,
+          classification: classification === 'TruePositive' ? 'truePositive' : classification === 'FalsePositive' ? 'falsePositive' : undefined,
+          determination,
+          comment
+        });
+      } else {
+        providerSyncResult = {
+          success: true,
+          simulated: true,
+          message: 'Microsoft Graph connector not connected. Update simulated locally.'
+        };
+      }
+    } else if (isSentinel) {
+      if (config.sentinel.enabled) {
+        providerSyncResult = await SentinelConnector.updateIncident(config.sentinel, incident.id, {
+          status: status ? (status === 'RESOLVED' || status === 'CLOSED' ? 'Closed' : status === 'IN_PROGRESS' ? 'Active' : 'New') : undefined,
+          severity: severity ? (severity === 'CRITICAL' || severity === 'HIGH' ? 'High' : severity === 'MEDIUM' ? 'Medium' : 'Low') : undefined,
+          classification: classification as any,
+          classificationComment: comment
+        });
+      } else {
+        providerSyncResult = {
+          success: true,
+          simulated: true,
+          message: 'Microsoft Sentinel connector not connected. Update simulated locally.'
+        };
+      }
+    }
+  }
+
+  res.json({
+    incident,
+    providerSync: providerSyncResult
+  });
+});
+
+// Add comment and optionally sync to Microsoft Cloud
+app.post('/api/incidents/:id/comments', async (req, res) => {
+  const { comment, syncToProvider } = req.body;
+  if (!comment) {
+    return res.status(400).json({ error: 'Comment text is required' });
+  }
+
+  const incident = store.getById(req.params.id);
+  if (!incident) {
+    return res.status(404).json({ error: 'Incident not found' });
+  }
+
+  let providerSync: { success: boolean; message: string; simulated?: boolean } = { 
+    success: true, 
+    message: 'Comment recorded locally.' 
+  };
+
+  if (syncToProvider) {
+    const config = store.getConfig();
+    const isDefender = incident.provider === 'M365_DEFENDER' || incident.provider.startsWith('DEFENDER') || (incident.provider as string) === 'M365 Defender';
+    const isSentinel = incident.provider === 'SENTINEL_SIEM' || (incident.provider as string) === 'Sentinel';
+
+    if (isSentinel && config.sentinel.enabled) {
+      providerSync = await SentinelConnector.addComment(config.sentinel, incident.id, comment);
+    } else if (isDefender && config.graph.enabled) {
+      providerSync = await GraphConnector.updateIncident(config.graph, incident.id, { comment });
+    } else {
+      providerSync = {
+        success: true,
+        simulated: true,
+        message: 'Connector not enabled. Cloud comment simulated locally.'
+      };
+    }
+  }
+
+  res.json({ success: true, providerSync });
 });
 
 // Execute containment action

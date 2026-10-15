@@ -4,7 +4,7 @@ import {
   AlertTriangle, CheckCircle, Link as LinkIcon, 
   Paperclip, FileText, ChevronDown, ChevronUp, Copy, BrainCircuit,
   Download, RefreshCw, Ban, UserX, Trash2, ArrowUpRight,
-  Shield, Check, ExternalLink, Printer, ArrowLeft
+  Shield, Check, ExternalLink, Printer, ArrowLeft, QrCode
 } from 'lucide-react';
 import { PhishPilotReport, PhishPilotVerdict } from '../../phishpilotTypes';
 
@@ -16,7 +16,7 @@ interface Props {
 
 export const AnalysisReport: React.FC<Props> = ({ report: initialReport, onClose, onReportUpdated }) => {
   const [report, setReport] = useState<PhishPilotReport | null>(initialReport);
-  const [activeTab, setActiveTab] = useState<'overview' | 'remediation' | 'auth' | 'urls' | 'attachments' | 'microsoft' | 'raw'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'remediation' | 'auth' | 'urls' | 'attachments' | 'quishing' | 'microsoft' | 'raw'>('overview');
   const [headersExpanded, setHeadersExpanded] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
   
@@ -238,7 +238,7 @@ export const AnalysisReport: React.FC<Props> = ({ report: initialReport, onClose
 
         {/* Tabs Navigation Bar (Locked with shrink-0, sticky) */}
         <div className="flex px-6 py-2.5 border-b border-slate-800 bg-slate-900/90 gap-2 overflow-x-auto shrink-0 sticky top-0 z-20">
-          {(['overview', 'remediation', 'auth', 'urls', 'attachments', 'microsoft', 'raw'] as const).map(tab => (
+          {(['overview', 'remediation', 'auth', 'urls', 'attachments', 'quishing', 'microsoft', 'raw'] as const).map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -248,7 +248,7 @@ export const AnalysisReport: React.FC<Props> = ({ report: initialReport, onClose
                   : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/80 border border-transparent'
               }`}
             >
-              <span className="capitalize">{tab === 'microsoft' ? 'Microsoft Cloud' : tab === 'auth' ? 'Email Auth' : tab}</span>
+              <span className="capitalize">{tab === 'quishing' ? 'Quishing (QR)' : tab === 'microsoft' ? 'Microsoft Cloud' : tab === 'auth' ? 'Email Auth' : tab}</span>
               {tab === 'remediation' && (report.remediationLogs?.length || 0) > 0 && (
                 <span className="ml-1 bg-cyan-900 text-cyan-300 px-1.5 py-0.2 rounded-full text-[10px] font-mono">
                   {report.remediationLogs?.length}
@@ -267,6 +267,15 @@ export const AnalysisReport: React.FC<Props> = ({ report: initialReport, onClose
               {tab === 'attachments' && report.attachmentAnalysis.length > 0 && (
                 <span className="ml-1 bg-slate-800 text-slate-300 px-1.5 py-0.2 rounded-full text-[10px] font-mono">
                   {report.attachmentAnalysis.length}
+                </span>
+              )}
+              {tab === 'quishing' && (report.qrCodeAnalysis?.length || 0) > 0 && (
+                <span className={`ml-1 px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+                  report.qrCodeAnalysis?.some(q => q.isMalicious)
+                    ? 'bg-red-500/30 text-red-400'
+                    : 'bg-amber-500/30 text-amber-400'
+                }`}>
+                  {report.qrCodeAnalysis?.length} QR
                 </span>
               )}
               {tab === 'microsoft' && report.microsoftEnrichment?.senderEntraStatus?.impersonationDetected && (
@@ -947,6 +956,103 @@ export const AnalysisReport: React.FC<Props> = ({ report: initialReport, onClose
                         </div>
                       )}
                     </div>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+
+          {/* QUISHING / QR CODES TAB */}
+          {activeTab === 'quishing' && (
+            <div className="space-y-4">
+              {(!report.qrCodeAnalysis || report.qrCodeAnalysis.length === 0) ? (
+                <div className="text-center py-12 text-slate-500 flex flex-col items-center bg-slate-900/60 border border-slate-800 rounded-xl">
+                  <QrCode className="w-12 h-12 mb-4 opacity-20 text-slate-400" />
+                  <p className="font-semibold text-slate-300">No QR codes detected in this email.</p>
+                  <p className="text-xs text-slate-500 mt-1">Neither image attachments nor inline HTML images contained embedded QR barcodes.</p>
+                </div>
+              ) : (
+                report.qrCodeAnalysis.map((qr, i) => (
+                  <div key={i} className={`bg-slate-900 border rounded-xl p-5 ${
+                    qr.isMalicious ? 'border-red-500/60 shadow-lg shadow-red-950/20' : 'border-amber-500/50 shadow-md shadow-amber-950/20'
+                  }`}>
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className={`p-2.5 rounded-xl ${qr.isMalicious ? 'bg-red-500/20 text-red-400' : 'bg-amber-500/20 text-amber-400'}`}>
+                          <QrCode className="w-6 h-6" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-slate-200">
+                              {qr.source === 'ATTACHMENT' ? 'Attachment QR Code' : 'Inline Body QR Code'}
+                            </span>
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
+                              qr.isMalicious ? 'bg-red-500/20 text-red-400 border border-red-500/40' : 'bg-amber-500/20 text-amber-400 border border-amber-500/40'
+                            }`}>
+                              {qr.isMalicious ? 'MALICIOUS QUISHING' : 'QUISHING VECTOR DETECTED'}
+                            </span>
+                          </div>
+                          <div className="text-xs text-slate-400 font-mono mt-0.5">
+                            Source: {qr.filename || qr.source} • Risk: +{qr.riskPoints} pts
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 mb-4 space-y-2">
+                      <div className="text-xs text-slate-500 uppercase font-bold tracking-wider">Decoded Destination Payload</div>
+                      <div className="flex items-center justify-between gap-3 bg-slate-900/80 p-2.5 rounded-lg border border-slate-800/80">
+                        <span className="font-mono text-sm text-cyan-300 break-all select-all font-semibold">
+                          {qr.decodedUrl}
+                        </span>
+                        {/^https?:\/\//i.test(qr.decodedUrl) && (
+                          <a
+                            href={qr.decodedUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 px-3 py-1 bg-red-950 hover:bg-red-900 text-red-300 hover:text-red-200 border border-red-700/50 rounded-lg text-xs font-semibold shrink-0 transition-colors"
+                          >
+                            <span>Inspect URL</span>
+                            <ExternalLink className="w-3.5 h-3.5" />
+                          </a>
+                        )}
+                      </div>
+                    </div>
+
+                    {qr.homoglyph?.isSuspicious && (
+                      <div className="mb-4 p-3 bg-red-950/30 border border-red-900/60 rounded-lg text-xs space-y-1 text-red-200">
+                        <div className="flex items-center gap-2 font-bold text-red-300">
+                          <AlertTriangle className="w-4 h-4 text-red-400" />
+                          <span>QR Payload Deceptive Domain / Homoglyph Match</span>
+                        </div>
+                        <div className="text-slate-300 text-[11px] leading-relaxed">
+                          {qr.homoglyph.explanation}
+                        </div>
+                      </div>
+                    )}
+
+                    {qr.reputationSources && qr.reputationSources.length > 0 && (
+                      <div className="space-y-1.5">
+                        <div className="text-xs text-slate-400 font-bold uppercase tracking-wider">Reputation Signals</div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          {qr.reputationSources.map((rep, j) => (
+                            <div key={j} className="flex flex-col text-xs bg-slate-950/60 border border-slate-800 p-2.5 rounded-lg gap-1">
+                              <div className="flex items-center justify-between">
+                                <span className="text-slate-300 font-medium">{rep.source}</span>
+                                <span className={`font-bold uppercase text-[10px] px-1.5 py-0.5 rounded border ${
+                                  rep.result === 'malicious' ? 'bg-red-500/20 text-red-400 border-red-500/30' :
+                                  rep.result === 'suspicious' ? 'bg-amber-500/20 text-amber-400 border-amber-500/30' :
+                                  'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                                }`}>
+                                  {rep.result}
+                                </span>
+                              </div>
+                              {rep.detail && <span className="text-[11px] text-slate-400">{rep.detail}</span>}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))
               )}

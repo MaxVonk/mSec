@@ -3,13 +3,7 @@ dist/
 .env
 .env.local
 .env.*.local
-.msec_data/connectors.json
-.msec_data/scheduler_config.json
-.msec_data/webhook_config.json
-.msec_data/threat_intel_cache.json
-.msec_data/users.json
-.msec_data/sync_logs.json
-.msec_data/threat_feeds.json
+.msec_data/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*

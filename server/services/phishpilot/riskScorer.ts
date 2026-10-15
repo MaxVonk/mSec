@@ -4,6 +4,7 @@ import {
   HeaderAnalysisResult, 
   UrlAnalysisResult, 
   AttachmentAnalysisResult, 
+  QrCodeAnalysisResult,
   PhishPilotVerdict, 
   ParsedEmail,
   MicrosoftSecurityEnrichment 
@@ -15,7 +16,8 @@ export class RiskScorerService {
     headerAnalysis: HeaderAnalysisResult,
     urlAnalysis: UrlAnalysisResult[],
     attachmentAnalysis: AttachmentAnalysisResult[],
-    microsoftEnrichment?: MicrosoftSecurityEnrichment
+    microsoftEnrichment?: MicrosoftSecurityEnrichment,
+    qrCodeAnalysis: QrCodeAnalysisResult[] = []
   ): RiskScoreBreakdown {
     const items: RiskScoreItem[] = [];
 
@@ -173,6 +175,20 @@ export class RiskScorerService {
           : (scl !== undefined ? `Exchange Online SCL is ${scl} (Clean)` : 'No Exchange EOP SCL header present')
       });
     }
+
+    // 6. QR Code / Quishing detection
+    const hasQr = qrCodeAnalysis.length > 0;
+    const hasMaliciousQr = qrCodeAnalysis.some(q => q.isMalicious);
+    items.push({
+      condition: 'Quishing / Embedded QR Code Vector',
+      points: hasMaliciousQr ? 50 : 25,
+      triggered: hasQr,
+      detail: hasQr
+        ? (hasMaliciousQr
+            ? `Malicious QR code detected pointing to: ${qrCodeAnalysis.map(q => q.decodedUrl).join(', ')}`
+            : `Embedded QR code detected with URL: ${qrCodeAnalysis.map(q => q.decodedUrl).join(', ')}`)
+        : 'No embedded QR codes detected'
+    });
 
     // Calculate total score and max possible
     const totalScore = items.filter(i => i.triggered).reduce((acc, curr) => acc + curr.points, 0);

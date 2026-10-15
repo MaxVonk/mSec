@@ -58,6 +58,7 @@ export class MailboxPollerService {
     this.pollTimer = setInterval(() => {
       this.syncMailbox('SCHEDULED').catch(err => console.error('[MailboxPoller] Background sync error:', err));
     }, intervalMs);
+    this.pollTimer.unref();
     console.log(`[MailboxPoller] Started background polling for ${this.config.mailbox} every ${this.config.pollingIntervalMinutes}m`);
   }
 

@@ -70,6 +70,7 @@ export class IngestionSchedulerService {
     this.sentinelTimer = setInterval(() => {
       this.syncSentinel('SCHEDULED').catch(err => console.error('[Scheduler] Sentinel auto-sync error:', err));
     }, intervalMs);
+    this.sentinelTimer.unref();
     console.log(`[Scheduler] Started background Sentinel polling every ${this.config.sentinelIntervalMinutes}m`);
   }
 
@@ -86,6 +87,7 @@ export class IngestionSchedulerService {
     this.graphTimer = setInterval(() => {
       this.syncGraph('SCHEDULED').catch(err => console.error('[Scheduler] Graph/Defender auto-sync error:', err));
     }, intervalMs);
+    this.graphTimer.unref();
     console.log(`[Scheduler] Started background Graph/Defender polling every ${this.config.graphIntervalMinutes}m`);
   }
 

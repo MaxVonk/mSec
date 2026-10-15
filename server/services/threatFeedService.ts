@@ -50,7 +50,7 @@ export class ThreatFeedService {
   private static isRefreshing = false;
   private static refreshTimer: NodeJS.Timeout | null = null;
 
-  public static async init(): Promise<void> {
+  public static async init(options?: { syncImmediately?: boolean; startTimer?: boolean }): Promise<void> {
     try {
       if (!fs.existsSync(DATA_DIR)) {
         fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -71,19 +71,29 @@ export class ThreatFeedService {
       }
 
       // Initial non-blocking fetch in background
-      this.refreshFeeds().catch(err => {
-        console.warn('[ThreatFeed] Initial feed sync warning:', err.message);
-      });
+      if (options?.syncImmediately !== false) {
+        this.refreshFeeds().catch(err => {
+          console.warn('[ThreatFeed] Initial feed sync warning:', err.message);
+        });
+      }
 
       // Background periodic poller every 60 minutes
-      if (!this.refreshTimer) {
+      if (options?.startTimer !== false && !this.refreshTimer) {
         this.refreshTimer = setInterval(() => {
           this.refreshFeeds().catch(err => console.error('[ThreatFeed] Periodic poll error:', err));
         }, 60 * 60 * 1000);
+        this.refreshTimer.unref();
       }
     } catch (err) {
       console.error('[ThreatFeed] Init error:', err);
       this.sources = [...DEFAULT_FEED_SOURCES];
+    }
+  }
+
+  public static stop(): void {
+    if (this.refreshTimer) {
+      clearInterval(this.refreshTimer);
+      this.refreshTimer = null;
     }
   }
 

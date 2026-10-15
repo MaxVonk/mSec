@@ -93,6 +93,17 @@ export interface UrlAnalysisResult {
   homoglyph?: HomoglyphResult;
 }
 
+export interface QrCodeAnalysisResult {
+  source: 'ATTACHMENT' | 'BODY_IMAGE';
+  filename?: string;
+  decodedUrl: string;
+  domain?: string;
+  isMalicious: boolean;
+  reputationSources: ReputationSource[];
+  homoglyph?: HomoglyphResult;
+  riskPoints: number;
+}
+
 export interface AttachmentAnalysisResult {
   filename: string;
   mimeType: string;
@@ -181,6 +192,7 @@ export interface PhishPilotReport {
   headerAnalysis: HeaderAnalysisResult;
   urlAnalysis: UrlAnalysisResult[];
   attachmentAnalysis: AttachmentAnalysisResult[];
+  qrCodeAnalysis?: QrCodeAnalysisResult[];
   aiClassification: AiClassification | null;
   riskBreakdown: RiskScoreBreakdown;
   recommendedActions: string[];

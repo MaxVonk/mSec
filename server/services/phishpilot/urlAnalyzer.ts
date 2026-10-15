@@ -8,69 +8,75 @@ export class UrlAnalyzerService {
     const results: UrlAnalysisResult[] = [];
 
     for (const urlStr of parsed.urls) {
-      try {
-        const urlObj = new URL(urlStr);
-        const domain = urlObj.hostname;
-
-        // Determine if there's display URL deception
-        const deceptionRegex = new RegExp(`>\\s*https?://([^<]+)\\s*</a>`, 'gi');
-        let isDeceptive = false;
-        
-        for (const match of parsed.htmlBody.matchAll(deceptionRegex)) {
-           const textUrl = match[1];
-           if (textUrl && !textUrl.includes(domain) && urlStr.includes(domain)) {
-             isDeceptive = true;
-           }
-        }
-
-        const reputationSources: ReputationSource[] = [];
-
-        // 1. Check URLHaus
-        const urlHausMalicious = await this.checkUrlHaus(urlStr);
-        reputationSources.push({
-          source: 'URLHaus',
-          result: urlHausMalicious ? 'malicious' : 'clean',
-          detail: urlHausMalicious ? 'Flagged in URLHaus malware distribution database' : 'No threat detected'
-        });
-
-        // 2. Check VirusTotal API v3 (if key provided)
-        const vtSource = await this.checkVirusTotalUrl(urlStr);
-        if (vtSource) {
-          reputationSources.push(vtSource);
-        }
-
-        // 3. Domain age & heuristic evaluation
-        const isSuspiciousDomain = /(verify|secure|update|login|account|banking|paypal|microsoft|apple).*\.(xyz|top|ru|cc|tk|ga|cf|gq|ml|buzz)/i.test(domain);
-        let domainAgeDays = isSuspiciousDomain ? 4 : 365;
-
-        // 4. Homoglyph / Confusable lookalike domain detection
-        const homoglyph = HomoglyphDetector.evaluateDomain(domain);
-        if (homoglyph.isSuspicious) {
-          reputationSources.push({
-            source: 'Homoglyph Guard',
-            result: 'malicious',
-            detail: homoglyph.explanation
-          });
-        }
-
-        const vtMalicious = vtSource ? (vtSource.maliciousCount !== undefined && vtSource.maliciousCount > 0) : false;
-        const isMalicious = urlHausMalicious || isSuspiciousDomain || vtMalicious || homoglyph.isSuspicious;
-
-        results.push({
-          url: urlStr,
-          domain,
-          domainAgeDays,
-          isMalicious,
-          isDeceptive,
-          reputationSources,
-          homoglyph: homoglyph.isSuspicious ? homoglyph : undefined
-        });
-      } catch (e) {
-        // Invalid URL
-        continue;
+      const res = await this.analyzeSingleUrl(urlStr, parsed.htmlBody);
+      if (res) {
+        results.push(res);
       }
     }
     return results;
+  }
+
+  public static async analyzeSingleUrl(urlStr: string, htmlBody: string = ''): Promise<UrlAnalysisResult | null> {
+    try {
+      const urlObj = new URL(urlStr);
+      const domain = urlObj.hostname;
+
+      // Determine if there's display URL deception
+      const deceptionRegex = new RegExp(`>\\s*https?://([^<]+)\\s*</a>`, 'gi');
+      let isDeceptive = false;
+      
+      for (const match of htmlBody.matchAll(deceptionRegex)) {
+         const textUrl = match[1];
+         if (textUrl && !textUrl.includes(domain) && urlStr.includes(domain)) {
+           isDeceptive = true;
+         }
+      }
+
+      const reputationSources: ReputationSource[] = [];
+
+      // 1. Check URLHaus
+      const urlHausMalicious = await this.checkUrlHaus(urlStr);
+      reputationSources.push({
+        source: 'URLHaus',
+        result: urlHausMalicious ? 'malicious' : 'clean',
+        detail: urlHausMalicious ? 'Flagged in URLHaus malware distribution database' : 'No threat detected'
+      });
+
+      // 2. Check VirusTotal API v3 (if key provided)
+      const vtSource = await this.checkVirusTotalUrl(urlStr);
+      if (vtSource) {
+        reputationSources.push(vtSource);
+      }
+
+      // 3. Domain age & heuristic evaluation
+      const isSuspiciousDomain = /(verify|secure|update|login|account|banking|paypal|microsoft|apple).*\.(xyz|top|ru|cc|tk|ga|cf|gq|ml|buzz)/i.test(domain);
+      let domainAgeDays = isSuspiciousDomain ? 4 : 365;
+
+      // 4. Homoglyph / Confusable lookalike domain detection
+      const homoglyph = HomoglyphDetector.evaluateDomain(domain);
+      if (homoglyph.isSuspicious) {
+        reputationSources.push({
+          source: 'Homoglyph Guard',
+          result: 'malicious',
+          detail: homoglyph.explanation
+        });
+      }
+
+      const vtMalicious = vtSource ? (vtSource.maliciousCount !== undefined && vtSource.maliciousCount > 0) : false;
+      const isMalicious = urlHausMalicious || isSuspiciousDomain || vtMalicious || homoglyph.isSuspicious;
+
+      return {
+        url: urlStr,
+        domain,
+        domainAgeDays,
+        isMalicious,
+        isDeceptive,
+        reputationSources,
+        homoglyph: homoglyph.isSuspicious ? homoglyph : undefined
+      };
+    } catch (e) {
+      return null;
+    }
   }
 
   private static async checkUrlHaus(url: string): Promise<boolean> {

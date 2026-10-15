@@ -161,5 +161,61 @@ export class GraphConnector {
 
     return { importedCount: newIncidents.length, errors };
   }
+
+  /**
+   * Updates an incident in Microsoft 365 Defender via Microsoft Graph Security API
+   */
+  public static async updateIncident(
+    config: GraphConnectorConfig,
+    incidentId: string,
+    updates: {
+      status?: 'active' | 'resolved' | 'inProgress' | 'redirected';
+      classification?: 'truePositive' | 'falsePositive' | 'informationalExpectedActivity';
+      determination?: string;
+      assignedTo?: string;
+      comment?: string;
+    }
+  ): Promise<{ success: boolean; message: string }> {
+    try {
+      const token = await this.getAccessToken(config);
+      const url = `https://graph.microsoft.com/v1.0/security/incidents/${encodeURIComponent(incidentId)}`;
+
+      const body: Record<string, any> = {};
+      if (updates.status) body.status = updates.status;
+      if (updates.classification) body.classification = updates.classification;
+      if (updates.determination) body.determination = updates.determination;
+      if (updates.assignedTo) body.assignedTo = updates.assignedTo;
+      if (updates.comment) {
+        body.comments = [
+          {
+            comment: updates.comment,
+            createdBy: {
+              user: {
+                displayName: 'mSec SOC Analyst'
+              }
+            }
+          }
+        ];
+      }
+
+      const res = await fetch(url, {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(body)
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(`Graph update failed (${res.status}): ${errText}`);
+      }
+
+      return { success: true, message: `Successfully updated Defender incident ${incidentId} in Microsoft Graph.` };
+    } catch (err: any) {
+      return { success: false, message: err.message || 'Failed to update Defender incident in Graph' };
+    }
+  }
 }
 

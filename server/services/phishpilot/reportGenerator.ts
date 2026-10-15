@@ -4,6 +4,7 @@ import { EmailParserService } from './emailParser.js';
 import { HeaderAnalyzerService } from './headerAnalyzer.js';
 import { UrlAnalyzerService } from './urlAnalyzer.js';
 import { AttachmentAnalyzerService } from './attachmentAnalyzer.js';
+import { QrCodeAnalyzerService } from './qrCodeAnalyzer.js';
 import { AiAnalyzerService } from './aiAnalyzer.js';
 import { RiskScorerService } from './riskScorer.js';
 import { MicrosoftSecurityLookupService } from './microsoftSecurityLookup.js';
@@ -14,14 +15,15 @@ export class ReportGeneratorService {
   public static async generateReport(emlContent: string | Buffer): Promise<PhishPilotReport> {
     const parsed: ParsedEmail = await EmailParserService.parse(emlContent);
     
-    const [headerAnalysis, urlAnalysis, attachmentAnalysis, microsoftEnrichment] = await Promise.all([
+    const [headerAnalysis, urlAnalysis, attachmentAnalysis, microsoftEnrichment, qrCodeAnalysis] = await Promise.all([
       HeaderAnalyzerService.analyze(parsed),
       UrlAnalyzerService.analyze(parsed),
       AttachmentAnalyzerService.analyze(parsed),
-      MicrosoftSecurityLookupService.enrich(parsed)
+      MicrosoftSecurityLookupService.enrich(parsed),
+      QrCodeAnalyzerService.analyze(parsed)
     ]);
 
-    const riskBreakdown = RiskScorerService.analyze(parsed, headerAnalysis, urlAnalysis, attachmentAnalysis, microsoftEnrichment);
+    const riskBreakdown = RiskScorerService.analyze(parsed, headerAnalysis, urlAnalysis, attachmentAnalysis, microsoftEnrichment, qrCodeAnalysis);
     
     const aiClassification = await AiAnalyzerService.analyze(parsed, headerAnalysis, urlAnalysis, attachmentAnalysis);
 
@@ -60,6 +62,10 @@ export class ReportGeneratorService {
       );
     }
 
+    if (qrCodeAnalysis.length > 0) {
+      recommendedActions.push('Do NOT scan embedded QR codes using personal mobile devices or untrusted cameras');
+    }
+
     const emailSummary: ParsedEmailSummary = {
       from: parsed.from,
       to: parsed.to,
@@ -86,6 +92,7 @@ export class ReportGeneratorService {
       headerAnalysis,
       urlAnalysis,
       attachmentAnalysis,
+      qrCodeAnalysis,
       aiClassification,
       riskBreakdown,
       recommendedActions,

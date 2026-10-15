@@ -92,7 +92,7 @@ describe('Threat Insight RSS & Cyber Intelligence Feed Ingestion Suite', () => {
   });
 
   it('should manage default sources and support source updates and filtering', async () => {
-    await ThreatFeedService.init();
+    await ThreatFeedService.init({ syncImmediately: false, startTimer: false });
     const sources = ThreatFeedService.getSources();
     assert.ok(sources.length >= 4, 'Should initialize with default reputable feed sources');
     assert.ok(sources.some(s => s.id === 'cert-se' && s.url.includes('cert.se')));
@@ -106,5 +106,7 @@ describe('Threat Insight RSS & Cyber Intelligence Feed Ingestion Suite', () => {
     assert.ok(Array.isArray(query.items));
     assert.equal(typeof query.total, 'number');
     assert.equal(typeof query.activeFeedsCount, 'number');
+
+    ThreatFeedService.stop();
   });
 });

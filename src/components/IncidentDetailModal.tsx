@@ -35,7 +35,9 @@ import {
   Link2,
   Calendar,
   Zap,
-  ArrowRight
+  ArrowRight,
+  Cloud,
+  RefreshCw
 } from 'lucide-react';
 import { InvestigationGraph } from './graph/InvestigationGraph';
 import { buildIncidentGraph } from '../utils/graphBuilder';
@@ -64,6 +66,56 @@ export const IncidentDetailModal: React.FC<IncidentDetailModalProps> = ({
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [executingActionId, setExecutingActionId] = useState<string | null>(null);
   const [rawSource, setRawSource] = useState<'unified' | 'defender' | 'sentinel'>('unified');
+
+  // Cloud Sync Modal state
+  const [showSyncModal, setShowSyncModal] = useState(false);
+  const [syncStatus, setSyncStatus] = useState<string>(incident?.status || 'ACTIVE');
+  const [syncClassification, setSyncClassification] = useState<string>((incident as any)?.classification || 'TruePositive');
+  const [syncComment, setSyncComment] = useState<string>('');
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncFeedback, setSyncFeedback] = useState<{ success: boolean; message: string } | null>(null);
+
+  const handleSyncToCloud = async () => {
+    if (!incident) return;
+    setIsSyncing(true);
+    setSyncFeedback(null);
+    try {
+      const res = await fetch(`/api/incidents/${incident.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          status: syncStatus,
+          classification: syncClassification,
+          comment: syncComment.trim() || undefined,
+          syncToProvider: true
+        })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        onUpdateStatus(incident.id, syncStatus as IncidentStatus);
+        setSyncFeedback({
+          success: true,
+          message: data.providerSync?.message || 'Updated and synchronized with Microsoft Cloud successfully.'
+        });
+        setTimeout(() => {
+          setShowSyncModal(false);
+          setSyncFeedback(null);
+        }, 1800);
+      } else {
+        setSyncFeedback({
+          success: false,
+          message: data.error || 'Failed to update incident.'
+        });
+      }
+    } catch (err: any) {
+      setSyncFeedback({
+        success: false,
+        message: err.message || 'Network error while contacting server.'
+      });
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   // React Rules of Hooks: All hooks MUST be declared unconditionally at top
   const emailEvidenceList = useMemo(() => {
@@ -341,6 +393,21 @@ export const IncidentDetailModal: React.FC<IncidentDetailModalProps> = ({
             >
               <Download className="w-3.5 h-3.5" />
               <span>Export Report</span>
+            </button>
+
+            <button
+              onClick={() => {
+                setSyncStatus(incident.status);
+                setSyncClassification((incident as any).classification || 'TruePositive');
+                setSyncComment('');
+                setSyncFeedback(null);
+                setShowSyncModal(true);
+              }}
+              title="Synchronize triage status, classification, and notes with Microsoft Defender / Sentinel"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-950/80 hover:bg-blue-900 border border-blue-600/60 text-blue-300 rounded-lg text-xs font-semibold transition-colors cursor-pointer shadow-sm"
+            >
+              <Cloud className="w-3.5 h-3.5 text-blue-400" />
+              <span>Sync to Cloud</span>
             </button>
 
             <select
@@ -1353,6 +1420,110 @@ export const IncidentDetailModal: React.FC<IncidentDetailModalProps> = ({
             </div>
           )}
         </div>
+
+        {/* Bidirectional Cloud Sync Modal Dialog */}
+        {showSyncModal && (
+          <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
+            <div className="bg-slate-900 border border-slate-700/80 rounded-2xl w-full max-w-lg shadow-2xl p-6 space-y-5 animate-in fade-in zoom-in-95 duration-150">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 bg-blue-500/20 text-blue-400 rounded-lg">
+                    <Cloud className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-white">Sync with Microsoft Cloud</h3>
+                    <p className="text-xs text-slate-400">
+                      Push status, classification, and triage comments to {incident.provider}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowSyncModal(false)}
+                  className="text-slate-400 hover:text-white p-1 rounded-lg"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {syncFeedback && (
+                <div className={`p-3 rounded-xl text-xs flex items-center gap-2 border ${
+                  syncFeedback.success 
+                    ? 'bg-emerald-950/40 text-emerald-300 border-emerald-800/80' 
+                    : 'bg-red-950/40 text-red-300 border-red-800/80'
+                }`}>
+                  {syncFeedback.success ? <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" /> : <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" />}
+                  <span>{syncFeedback.message}</span>
+                </div>
+              )}
+
+              <div className="space-y-4 text-xs">
+                <div>
+                  <label className="block text-slate-300 font-semibold mb-1.5">Target Status</label>
+                  <select
+                    value={syncStatus}
+                    onChange={(e) => setSyncStatus(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-200 focus:outline-none focus:border-cyan-500"
+                  >
+                    <option value="ACTIVE">Active (Under Investigation)</option>
+                    <option value="IN_PROGRESS">In Progress (Containment Active)</option>
+                    <option value="RESOLVED">Resolved (Remediated)</option>
+                    <option value="CLOSED">Closed (Archived)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-slate-300 font-semibold mb-1.5">SOC Classification</label>
+                  <select
+                    value={syncClassification}
+                    onChange={(e) => setSyncClassification(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-200 focus:outline-none focus:border-cyan-500"
+                  >
+                    <option value="TruePositive">True Positive (Confirmed Security Threat)</option>
+                    <option value="FalsePositive">False Positive (Benign / Expected Activity)</option>
+                    <option value="Undetermined">Undetermined (Insufficient Telemetry)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-slate-300 font-semibold mb-1.5">Analyst Triage Comment / Notes</label>
+                  <textarea
+                    rows={3}
+                    value={syncComment}
+                    onChange={(e) => setSyncComment(e.target.value)}
+                    placeholder="Enter analyst resolution notes, mitigation steps executed, or reason for closure..."
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-cyan-500 font-sans"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-800">
+                <button
+                  onClick={() => setShowSyncModal(false)}
+                  className="px-4 py-2 text-xs font-semibold text-slate-400 hover:text-slate-200 rounded-lg"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSyncToCloud}
+                  disabled={isSyncing}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:bg-blue-900 text-white font-semibold rounded-lg text-xs shadow-md shadow-blue-900/30 transition-all cursor-pointer"
+                >
+                  {isSyncing ? (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      <span>Syncing with Cloud...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Cloud className="w-3.5 h-3.5" />
+                      <span>Dispatch Update to Cloud</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

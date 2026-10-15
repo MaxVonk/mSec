@@ -1,6 +1,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { PhishPilotReport, PhishPilotStats } from '../../types/phishpilot.js';
+import { DatabaseService } from '../dbService.js';
 
 const DATA_FILE = path.resolve('.msec_data/phishpilot_reports.json');
 
@@ -38,6 +39,7 @@ export class PhishPilotStore {
   public static async save(report: PhishPilotReport): Promise<void> {
     const reports = await this.getAll();
     reports.unshift(report);
+    DatabaseService.savePhishReport(report);
     await fs.writeFile(DATA_FILE, JSON.stringify(reports, null, 2));
   }
 
