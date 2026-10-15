@@ -72,6 +72,18 @@ export const SyncLogModal: React.FC<SyncLogModalProps> = ({
     }
   }, [isOpen, inline, filterSource, filterStatus, filterTrigger]);
 
+  useEffect(() => {
+    if (!isOpen || inline) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        if (onClose) onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, inline, onClose]);
+
   const handleSyncAll = async () => {
     setIsSyncingAll(true);
     setStatusMessage(null);
@@ -167,66 +179,75 @@ export const SyncLogModal: React.FC<SyncLogModalProps> = ({
   const content = (
     <div className={`space-y-4 ${inline ? '' : 'text-slate-100 font-sans'}`}>
       {/* Top Header & Stat Cards */}
-      <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-800">
-        <div>
-          <div className="flex items-center gap-2">
-            <Activity className="w-5 h-5 text-cyan-400" />
+      <div className="flex flex-wrap items-start justify-between gap-4 pb-4 border-b border-slate-800">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Activity className="w-5 h-5 text-cyan-400 shrink-0" />
             <h2 className="text-base font-bold text-white tracking-tight">Synchronization & Connector History</h2>
             <span className="px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-400 border border-cyan-800 text-[10px] font-mono">
               Audit Trail
             </span>
           </div>
-          <p className="text-xs text-slate-400 mt-0.5">
+          <p className="text-xs text-slate-400 mt-1">
             Real-time execution log of automated cron schedulers, manual on-demand syncs, and API connector events.
           </p>
         </div>
 
-        {/* Global Actions */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <button
-            onClick={handleSyncAll}
-            disabled={isSyncingAll}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-xs font-semibold rounded-lg shadow-sm shadow-cyan-500/20 transition-all disabled:opacity-50 cursor-pointer"
-          >
-            <Zap className={`w-3.5 h-3.5 ${isSyncingAll ? 'animate-spin' : 'text-amber-300'}`} />
-            <span>{isSyncingAll ? 'Syncing All Sources...' : 'Sync All Feeds Now'}</span>
-          </button>
-
-          <button
-            onClick={fetchLogs}
-            disabled={isLoading}
-            title="Refresh Logs"
-            className="p-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-slate-300 hover:text-white transition-colors cursor-pointer disabled:opacity-50"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin text-cyan-400' : ''}`} />
-          </button>
-
-          {logs.length > 0 && (
+        {/* Global Actions & Dedicated Close */}
+        <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-1.5 p-1 bg-slate-950/70 rounded-xl border border-slate-800">
             <button
-              onClick={handleExportJson}
-              title="Export Log as JSON"
-              className="p-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-slate-300 hover:text-cyan-400 transition-colors cursor-pointer"
+              onClick={handleSyncAll}
+              disabled={isSyncingAll}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-xs font-semibold rounded-lg shadow-sm shadow-cyan-500/20 transition-all disabled:opacity-50 cursor-pointer"
             >
-              <Download className="w-3.5 h-3.5" />
+              <Zap className={`w-3.5 h-3.5 ${isSyncingAll ? 'animate-spin' : 'text-amber-300'}`} />
+              <span>{isSyncingAll ? 'Syncing...' : 'Sync All Feeds Now'}</span>
             </button>
-          )}
 
-          {logs.length > 0 && (
             <button
-              onClick={handleClearLogs}
-              title="Clear All Logs"
-              className="p-1.5 bg-rose-950/40 hover:bg-rose-950/70 border border-rose-900/60 rounded-lg text-rose-300 transition-colors cursor-pointer"
+              onClick={fetchLogs}
+              disabled={isLoading}
+              title="Refresh Logs"
+              className="p-1.5 hover:bg-slate-800 text-slate-300 hover:text-white rounded-lg transition-colors cursor-pointer disabled:opacity-50"
             >
-              <Trash2 className="w-3.5 h-3.5" />
+              <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin text-cyan-400' : ''}`} />
             </button>
-          )}
+
+            {logs.length > 0 && (
+              <button
+                onClick={handleExportJson}
+                title="Export Log as JSON"
+                className="p-1.5 hover:bg-slate-800 text-slate-300 hover:text-cyan-400 rounded-lg transition-colors cursor-pointer"
+              >
+                <Download className="w-3.5 h-3.5" />
+              </button>
+            )}
+
+            {logs.length > 0 && (
+              <button
+                onClick={handleClearLogs}
+                title="Clear All Logs"
+                className="p-1.5 hover:bg-rose-950/60 text-rose-400 hover:text-rose-300 rounded-lg transition-colors cursor-pointer"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
 
           {!inline && onClose && (
             <button
+              type="button"
               onClick={onClose}
-              className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border border-slate-700 hover:border-slate-600 rounded-xl text-xs font-semibold shadow-sm transition-all cursor-pointer ml-1"
+              title="Close modal (Esc)"
+              aria-label="Close modal"
             >
-              <X className="w-4 h-4" />
+              <kbd className="hidden sm:inline-block px-1.5 py-0.5 text-[9px] font-mono text-slate-400 bg-slate-900 rounded border border-slate-700">
+                ESC
+              </kbd>
+              <span>Close</span>
+              <X className="w-4 h-4 text-slate-300" />
             </button>
           )}
         </div>
@@ -454,14 +475,36 @@ export const SyncLogModal: React.FC<SyncLogModalProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in cursor-pointer"
+      onClick={onClose}
+    >
       <div 
-        className="w-full max-w-4xl bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl overflow-hidden max-h-[90vh] flex flex-col"
+        className="w-full max-w-4xl bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl overflow-hidden max-h-[90vh] flex flex-col relative cursor-default"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="overflow-y-auto pr-1">
           {content}
         </div>
+
+        {/* Modal Bottom Footer */}
+        {onClose && (
+          <div className="pt-4 mt-3 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400 shrink-0">
+            <span className="font-mono text-[11px] text-slate-500 hidden sm:inline">
+              Press <kbd className="px-1.5 py-0.5 bg-slate-800 text-slate-300 rounded text-[10px] border border-slate-700">Esc</kbd> or click outside to close
+            </span>
+            <div className="flex items-center gap-2 ml-auto">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white font-semibold rounded-xl border border-slate-700 transition-colors cursor-pointer text-xs flex items-center gap-1.5 shadow-sm"
+              >
+                <span>Close</span>
+                <X className="w-3.5 h-3.5 text-slate-400" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
