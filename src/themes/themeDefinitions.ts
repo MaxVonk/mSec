@@ -340,7 +340,7 @@ export const THEMES: AppTheme[] = [
     name: 'Quiet Light',
     category: 'light',
     type: 'light',
-    author: 'VS Code',
+    author: 'Studio Classic',
     description: 'Soft lavender-tinted light theme with muted purples and gentle contrast for reduced eye strain.',
     swatches: ['#f5f3f7', '#ffffff', '#7a3e9d', '#4b83cd', '#388a34'],
     colors: {

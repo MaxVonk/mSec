@@ -132,6 +132,9 @@ export const ThemeSelectorModal: React.FC = () => {
                 <Palette className="w-4 h-4" />
               </div>
               <h2 className="text-sm font-bold text-white tracking-tight">Select Color Theme</h2>
+              <span className="px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 text-[10px] font-mono">
+                Color Palette Engine
+              </span>
             </div>
 
             <div className="flex items-center gap-1.5">
