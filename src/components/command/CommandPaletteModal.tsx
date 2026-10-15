@@ -138,7 +138,7 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
       id: 'action-theme-switcher',
       category: 'ACTION',
       title: 'Preferences: Change Color Theme',
-      subtitle: `Current theme: ${theme.name}. Select from 10 developer & tactical themes with live preview`,
+      subtitle: `Current theme: ${theme.name}. Select from developer, tactical & light presets with live preview`,
       badge: 'THEME',
       icon: <Palette className="w-4 h-4 text-cyan-400" />,
       action: () => {
