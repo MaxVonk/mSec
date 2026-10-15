@@ -60,18 +60,28 @@ export const ThemeSelectorModal: React.FC = () => {
       // Revert preview on close if not committed
       setPreviewTheme(null);
     }
-  }, [isThemeSelectorOpen, currentThemeId, allThemes, setPreviewTheme]);
+  }, [isThemeSelectorOpen]);
 
-  // Live preview when focused item changes via keyboard navigation
+  // Live preview when focused item changes via keyboard navigation or hover
   useEffect(() => {
     if (isThemeSelectorOpen && filteredThemes.length > 0) {
-      const safeIndex = Math.min(focusedIndex, filteredThemes.length - 1);
+      const safeIndex = Math.min(Math.max(0, focusedIndex), filteredThemes.length - 1);
       const targetTheme = filteredThemes[safeIndex];
-      if (targetTheme) {
+      if (targetTheme && previewThemeId !== targetTheme.id) {
         setPreviewTheme(targetTheme.id);
       }
     }
-  }, [focusedIndex, filteredThemes, isThemeSelectorOpen, setPreviewTheme]);
+  }, [focusedIndex, filteredThemes, isThemeSelectorOpen, previewThemeId, setPreviewTheme]);
+
+  // Keep focused theme scrolled into view during arrow key navigation
+  useEffect(() => {
+    if (isThemeSelectorOpen && listRef.current) {
+      const activeEl = listRef.current.children[focusedIndex] as HTMLElement;
+      if (activeEl) {
+        activeEl.scrollIntoView({ block: 'nearest' });
+      }
+    }
+  }, [focusedIndex, isThemeSelectorOpen]);
 
   // Handle keyboard navigation (Arrow Up, Down, Enter, Esc)
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -199,10 +209,9 @@ export const ThemeSelectorModal: React.FC = () => {
                   key={t.id}
                   onMouseEnter={() => {
                     setFocusedIndex(idx);
-                    setPreviewTheme(t.id);
                   }}
                   onClick={() => handleApply(t.id)}
-                  className={`w-full p-3 rounded-xl border transition-all text-left flex items-center justify-between gap-3 cursor-pointer ${
+                  className={`w-full p-3 rounded-xl border transition-colors text-left flex items-center justify-between gap-3 cursor-pointer ${
                     isFocused
                       ? 'bg-slate-800 border-cyan-500/60 shadow-md ring-1 ring-cyan-500/40'
                       : 'bg-slate-900/60 border-slate-800/80 hover:bg-slate-800/40 hover:border-slate-700'

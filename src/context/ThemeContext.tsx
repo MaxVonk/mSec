@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from 'react';
 import { AppTheme, THEMES, DEFAULT_THEME_ID, getThemeById } from '../themes/themeDefinitions';
 
 interface ThemeContextType {
@@ -88,7 +88,7 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     };
   }, []);
 
-  const setTheme = (id: string) => {
+  const setTheme = useCallback((id: string) => {
     if (THEMES.some(t => t.id === id)) {
       setCurrentThemeId(id);
       setPreviewThemeId(null);
@@ -98,27 +98,27 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         // LocalStorage fallback
       }
     }
-  };
+  }, []);
 
-  const setPreviewTheme = (id: string | null) => {
+  const setPreviewTheme = useCallback((id: string | null) => {
     if (id === null || THEMES.some(t => t.id === id)) {
       setPreviewThemeId(id);
     }
-  };
+  }, []);
+
+  const contextValue = useMemo<ThemeContextType>(() => ({
+    theme: activeTheme,
+    currentThemeId,
+    previewThemeId,
+    setTheme,
+    setPreviewTheme,
+    isThemeSelectorOpen,
+    setIsThemeSelectorOpen,
+    allThemes: THEMES
+  }), [activeTheme, currentThemeId, previewThemeId, setTheme, setPreviewTheme, isThemeSelectorOpen]);
 
   return (
-    <ThemeContext.Provider
-      value={{
-        theme: activeTheme,
-        currentThemeId,
-        previewThemeId,
-        setTheme,
-        setPreviewTheme,
-        isThemeSelectorOpen,
-        setIsThemeSelectorOpen,
-        allThemes: THEMES
-      }}
-    >
+    <ThemeContext.Provider value={contextValue}>
       {children}
     </ThemeContext.Provider>
   );
