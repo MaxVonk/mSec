@@ -4,6 +4,7 @@
   "description": "",
   "main": "server/index.ts",
   "type": "module",
+  "license": "MIT",
   "scripts": {
     "dev:server": "tsx watch server/index.ts",
     "dev:client": "vite",
