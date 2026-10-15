@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Search, ShieldAlert, Crosshair, Monitor, FileText, Users, Play, ArrowRight, CornerDownLeft, Rss } from 'lucide-react';
+import { Search, ShieldAlert, Crosshair, Monitor, FileText, Users, Play, ArrowRight, CornerDownLeft, Rss, Palette } from 'lucide-react';
 import { UnifiedIncident, UserSessionProfile } from '../../types';
+import { useTheme } from '../../context/ThemeContext';
 
 interface CommandItem {
   id: string;
@@ -44,6 +45,7 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
+  const { setIsThemeSelectorOpen, theme } = useTheme();
 
   useEffect(() => {
     if (isOpen) {
@@ -130,6 +132,20 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
         }
       );
     }
+
+    // Theme Switcher Command
+    list.push({
+      id: 'action-theme-switcher',
+      category: 'ACTION',
+      title: 'Preferences: Change Color Theme',
+      subtitle: `Current theme: ${theme.name}. Select from 10 developer & tactical themes with live preview`,
+      badge: 'THEME',
+      icon: <Palette className="w-4 h-4 text-cyan-400" />,
+      action: () => {
+        onClose();
+        setIsThemeSelectorOpen(true);
+      }
+    });
 
     // 2. Incident Search
     incidents.forEach(inc => {

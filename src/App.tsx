@@ -20,6 +20,7 @@ import { PlaybookRunnerModal } from './components/soar/PlaybookRunnerModal';
 import { WarRoomModal } from './components/warroom/WarRoomModal';
 import { CommandPaletteModal } from './components/command/CommandPaletteModal';
 import { SyncLogModal } from './components/sync/SyncLogModal';
+import { ThemeSelectorModal } from './components/theme/ThemeSelectorModal';
 import { Sidebar, MainNavView } from './components/navigation/Sidebar';
 import { ThreatInsightDashboard } from './components/threatinsight/ThreatInsightDashboard';
 import { 
@@ -575,6 +576,9 @@ export const App: React.FC = () => {
         onOpenConnectors={() => setActiveView('settings')}
         onOpenThreatInsight={() => setActiveView('threat-insight')}
       />
+
+      {/* VS Code-Style Theme Selector (Alt+T or Ctrl+K, Ctrl+T) */}
+      <ThemeSelectorModal />
     </div>
   );
 };

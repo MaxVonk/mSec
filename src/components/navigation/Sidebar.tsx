@@ -19,9 +19,11 @@ import {
   Shield,
   LogOut,
   Activity,
-  Rss
+  Rss,
+  Palette
 } from 'lucide-react';
 import { UserSessionProfile } from '../../types';
+import { useTheme } from '../../context/ThemeContext';
 
 export type MainNavView =
   | 'dashboard'
@@ -66,6 +68,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onOpenSyncLog
 }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const { theme, setIsThemeSelectorOpen } = useTheme();
 
   const handleNav = (view: MainNavView) => {
     onSelectView(view);
@@ -331,6 +334,29 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 {!isCollapsed && <span>Sync Logs</span>}
               </button>
             )}
+
+            <button
+              onClick={() => setIsThemeSelectorOpen(true)}
+              title={`Color Theme: ${theme.name} (Alt+T)`}
+              className="w-full flex items-center justify-between px-3 py-2 rounded-xl transition-all cursor-pointer hover:bg-slate-800/50 hover:text-slate-200 text-slate-400 group"
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <Palette className="w-4 h-4 shrink-0 text-cyan-400 group-hover:rotate-12 transition-transform" />
+                {!isCollapsed && <span className="truncate">Theme</span>}
+              </div>
+              {!isCollapsed && (
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <span className="text-[10px] font-mono text-slate-400 bg-slate-800/80 px-1.5 py-0.5 rounded border border-slate-700/80 max-w-[80px] truncate">
+                    {theme.name.split(' ')[0]}
+                  </span>
+                  <div className="flex -space-x-1">
+                    {theme.swatches.slice(1, 4).map((c, i) => (
+                      <span key={i} className="w-2 h-2 rounded-full border border-black/50" style={{ backgroundColor: c }} />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </button>
 
             {currentUser?.role === 'ADMIN' && (
               <button
