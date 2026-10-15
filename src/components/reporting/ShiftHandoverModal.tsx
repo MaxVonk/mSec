@@ -84,13 +84,10 @@ export const ShiftHandoverModal: React.FC<ShiftHandoverModalProps> = ({ onClose,
           </div>
           <div>
             <h3 className="text-sm font-bold text-slate-100 flex items-center gap-2">
-              Executive Security Briefing & Operational Summary
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-400 border border-cyan-800 font-mono">
-                Executive Summary (On-Demand)
-              </span>
+              Security Briefings
             </h3>
             <p className="text-xs text-slate-400">
-              On-demand executive summary of triage metrics, threat status, and priority incident action items
+              On-demand summary of triage metrics, threat status, and priority incident action items
             </p>
           </div>
         </div>
@@ -178,11 +175,8 @@ export const ShiftHandoverModal: React.FC<ShiftHandoverModalProps> = ({ onClose,
                 <div className="flex items-center justify-between">
                   <div>
                     <h2 className="text-lg font-bold text-slate-100 print:text-black">
-                      Executive SOC Security Briefing & Activity Summary
+                      Security Briefings
                     </h2>
-                    <p className="text-xs text-slate-400 print:text-gray-600">
-                      Briefing Ref: <code className="text-cyan-400 font-mono print:text-black">{rep.shiftId}</code> • Timeframe: Last {rep.timeframeHours} Hours
-                    </p>
                   </div>
                   <div className="text-right text-xs text-slate-400 print:text-gray-600">
                     <span className="block font-semibold text-slate-200 print:text-black">{rep.analystName}</span>

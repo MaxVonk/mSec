@@ -116,11 +116,11 @@ export const Header: React.FC<HeaderProps> = ({
           {onOpenShiftHandover && (
             <button
               onClick={onOpenShiftHandover}
-              title="Generate Executive Security Briefing"
+              title="Security Briefings"
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-amber-300 bg-amber-950/50 hover:bg-amber-900/50 border border-amber-800/80 rounded-lg transition-colors cursor-pointer"
             >
               <FileText className="w-3.5 h-3.5" />
-              <span className="hidden md:inline">Executive Briefing</span>
+              <span className="hidden md:inline">Security Briefings</span>
             </button>
           )}
 
