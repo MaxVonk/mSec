@@ -109,8 +109,8 @@ describe('mSec Security Ingestion & Normalization Tests', () => {
           alertWebUrl: 'https://security.microsoft.com/alerts/da63924709-alert-1',
           comments: [
             {
-              comment: 'Alexander Widborg (Truesec Detect): False positive trufflehog checksum download.',
-              createdByDisplayName: 'Alexander Widborg',
+              comment: 'SOC Lead Analyst: False positive trufflehog checksum download.',
+              createdByDisplayName: 'SOC Lead Analyst',
               createdDateTime: '2026-09-09T11:35:00Z'
             }
           ],
@@ -161,7 +161,7 @@ describe('mSec Security Ingestion & Normalization Tests', () => {
 
     // Comments extracted
     assert.ok(normalized.comments && normalized.comments.length > 0);
-    assert.ok(normalized.comments.some(c => c.comment.includes('Alexander Widborg')));
+    assert.ok(normalized.comments.some(c => c.comment.includes('SOC Lead Analyst')));
 
     // Entities extracted from alert evidence
     const procEntity = normalized.entities.find(e => e.type === 'PROCESS');
