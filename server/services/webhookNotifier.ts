@@ -3,6 +3,8 @@ import path from 'path';
 import { WebhookConfig, UnifiedIncident, IncidentSeverity } from '../types/security.js';
 
 const CONFIG_FILE = path.resolve('.msec_data/webhook_config.json');
+const NOTIFIED_FILE = path.resolve('.msec_data/notified_incidents.json');
+const MAX_NOTIFIED_ENTRIES = 5000;
 
 const SEVERITY_ORDER: Record<IncidentSeverity, number> = {
   CRITICAL: 4,
@@ -13,6 +15,9 @@ const SEVERITY_ORDER: Record<IncidentSeverity, number> = {
 };
 
 export class WebhookNotifierService {
+  private static notifiedMap = new Map<string, IncidentSeverity>();
+  private static notifiedLoaded = false;
+
   private static config: WebhookConfig = {
     teamsWebhookUrl: process.env.TEAMS_WEBHOOK_URL || '',
     slackWebhookUrl: process.env.SLACK_WEBHOOK_URL || '',
@@ -31,6 +36,43 @@ export class WebhookNotifierService {
     } catch {
       // Default config
     }
+    await this.loadNotified();
+  }
+
+  private static async loadNotified(): Promise<void> {
+    if (this.notifiedLoaded) return;
+    this.notifiedLoaded = true;
+    try {
+      const raw = await fs.readFile(NOTIFIED_FILE, 'utf-8');
+      const parsed = JSON.parse(raw) as Record<string, IncidentSeverity>;
+      for (const [id, sev] of Object.entries(parsed)) {
+        if (sev in SEVERITY_ORDER) {
+          this.notifiedMap.set(id, sev);
+        }
+      }
+    } catch {
+      // No prior notification history
+    }
+  }
+
+  private static async saveNotified(): Promise<void> {
+    if (this.notifiedMap.size > MAX_NOTIFIED_ENTRIES) {
+      const excess = this.notifiedMap.size - MAX_NOTIFIED_ENTRIES;
+      const keys = this.notifiedMap.keys();
+      for (let i = 0; i < excess; i++) {
+        const next = keys.next();
+        if (next.done) break;
+        this.notifiedMap.delete(next.value);
+      }
+    }
+    await fs.mkdir(path.dirname(NOTIFIED_FILE), { recursive: true });
+    await fs.writeFile(NOTIFIED_FILE, JSON.stringify(Object.fromEntries(this.notifiedMap), null, 2));
+  }
+
+  public static async clearNotifiedHistory(): Promise<void> {
+    this.notifiedMap.clear();
+    this.notifiedLoaded = true;
+    await fs.rm(NOTIFIED_FILE, { force: true });
   }
 
   public static getConfig(): WebhookConfig {
@@ -45,13 +87,21 @@ export class WebhookNotifierService {
   }
 
   /**
-   * Dispatches alerts for new or escalated incidents
+   * Dispatches alerts for new or escalated incidents (deduplicated by incident ID + severity)
    */
   public static async notifyIncidents(incidents: UnifiedIncident[]): Promise<{ sent: number; errors: string[] }> {
     if (!this.config.enabled) return { sent: 0, errors: [] };
+    await this.loadNotified();
 
     const minRank = SEVERITY_ORDER[this.config.minSeverity] || 3;
-    const qualifying = incidents.filter(i => (SEVERITY_ORDER[i.severity] || 0) >= minRank);
+    const qualifying = incidents.filter(inc => {
+      const rank = SEVERITY_ORDER[inc.severity] || 0;
+      if (rank < minRank) return false;
+      if (inc.status === 'RESOLVED' || inc.status === 'CLOSED') return false;
+      const prev = this.notifiedMap.get(inc.id);
+      if (prev && (SEVERITY_ORDER[prev] || 0) >= rank) return false;
+      return true;
+    });
 
     let sent = 0;
     const errors: string[] = [];
@@ -59,10 +109,15 @@ export class WebhookNotifierService {
     for (const inc of qualifying) {
       try {
         await this.dispatchIncident(inc);
+        this.notifiedMap.set(inc.id, inc.severity);
         sent++;
       } catch (e: any) {
         errors.push(`Failed to dispatch webhook for ${inc.id}: ${e.message}`);
       }
+    }
+
+    if (sent > 0) {
+      await this.saveNotified();
     }
 
     return { sent, errors };

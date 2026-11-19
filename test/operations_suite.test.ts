@@ -79,6 +79,56 @@ describe('Advanced SOC Operations Suite Tests', () => {
       const res = await WebhookNotifierService.notifyIncidents([sampleIncident]);
       assert.strictEqual(res.sent, 0, 'Should not dispatch alerts when disabled');
     });
+
+    it('should deduplicate already-notified incidents unless severity escalates', async () => {
+      await WebhookNotifierService.clearNotifiedHistory();
+      await WebhookNotifierService.updateConfig({
+        teamsWebhookUrl: 'https://example.invalid/webhook',
+        slackWebhookUrl: '',
+        enabled: true,
+        minSeverity: 'HIGH'
+      });
+
+      const originalFetch = globalThis.fetch;
+      let fetchCalls = 0;
+      globalThis.fetch = (async () => {
+        fetchCalls++;
+        return new Response('ok', { status: 200 });
+      }) as typeof fetch;
+
+      try {
+        const inc: UnifiedIncident = {
+          id: 'dedup-inc-1',
+          incidentNumber: 1001,
+          title: 'Repeated high incident',
+          description: 'Test dedup',
+          provider: 'SENTINEL',
+          severity: 'HIGH',
+          status: 'ACTIVE',
+          createdTime: new Date().toISOString(),
+          lastUpdatedTime: new Date().toISOString(),
+          entities: [],
+          mitreTechniques: [],
+          alerts: []
+        };
+
+        const first = await WebhookNotifierService.notifyIncidents([inc]);
+        assert.strictEqual(first.sent, 1);
+        assert.strictEqual(fetchCalls, 1);
+
+        const second = await WebhookNotifierService.notifyIncidents([inc]);
+        assert.strictEqual(second.sent, 0, 'Should not re-send the same incident at the same severity');
+        assert.strictEqual(fetchCalls, 1);
+
+        const escalated = await WebhookNotifierService.notifyIncidents([{ ...inc, severity: 'CRITICAL' }]);
+        assert.strictEqual(escalated.sent, 1, 'Should notify if severity escalates');
+        assert.strictEqual(fetchCalls, 2);
+      } finally {
+        globalThis.fetch = originalFetch;
+        await WebhookNotifierService.clearNotifiedHistory();
+        await WebhookNotifierService.updateConfig({ teamsWebhookUrl: '', enabled: false });
+      }
+    });
   });
 
   describe('ThreatIntelService & Reputation Engine', () => {
